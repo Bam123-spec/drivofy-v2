@@ -6,6 +6,10 @@ import { stripe } from '@/lib/stripe';
 
 export async function POST(request: Request) {
     try {
+        if (!process.env.STRIPE_SECRET_KEY) {
+            return NextResponse.json({ error: 'Stripe is not configured' }, { status: 503 });
+        }
+
         // 1. Authenticate User
         const cookieStore = await cookies();
         const supabase = createClient(cookieStore);
