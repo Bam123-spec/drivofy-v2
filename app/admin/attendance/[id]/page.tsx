@@ -1,5 +1,7 @@
 "use client"
 
+export const runtime = 'edge';
+
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabaseClient"
@@ -252,10 +254,10 @@ export default function AttendanceDetailPage() {
                                                 onValueChange={(val) => handleStatusChange(student.id, val)}
                                             >
                                                 <SelectTrigger className={`w-[140px] border-transparent ring-1 ring-gray-200 ${attendanceMap[student.id] === 'present' ? 'bg-green-50 text-green-700 ring-green-200' :
-                                                        attendanceMap[student.id] === 'absent' ? 'bg-red-50 text-red-700 ring-red-200' :
-                                                            attendanceMap[student.id] === 'late' ? 'bg-yellow-50 text-yellow-700 ring-yellow-200' :
-                                                                attendanceMap[student.id] === 'excused' ? 'bg-blue-50 text-blue-700 ring-blue-200' :
-                                                                    'bg-gray-50 text-gray-500'
+                                                    attendanceMap[student.id] === 'absent' ? 'bg-red-50 text-red-700 ring-red-200' :
+                                                        attendanceMap[student.id] === 'late' ? 'bg-yellow-50 text-yellow-700 ring-yellow-200' :
+                                                            attendanceMap[student.id] === 'excused' ? 'bg-blue-50 text-blue-700 ring-blue-200' :
+                                                                'bg-gray-50 text-gray-500'
                                                     }`}>
                                                     <SelectValue placeholder="Mark Status" />
                                                 </SelectTrigger>

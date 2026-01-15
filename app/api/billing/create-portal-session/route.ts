@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+export const runtime = 'edge';
 // Force rebuild
 import { cookies } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';

@@ -1,9 +1,11 @@
 'use client'
 
+export const runtime = 'edge';
+
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { getCourseDetails, updateBatchAttendance, updateStudentGrade, updateStudentCertification, removeStudentFromCourse } from "@/app/actions/instructor"
-import { Loader2, Calendar, Users, Clock, CheckCircle2, XCircle, AlertCircle, ChevronLeft, Save, Trash2, Award, GraduationCap, MoreHorizontal } from "lucide-react"
+import { Loader2, Calendar, Users, Clock, CheckCircle2, XCircle, AlertCircle, ChevronLeft, Save, Trash2, Award, GraduationCap, MoreHorizontal, User } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"

@@ -1,5 +1,7 @@
 'use client'
 
+export const runtime = 'edge';
+
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { getStudentDetails, saveStudentNote } from "@/app/actions/instructor"
@@ -265,8 +267,8 @@ export default function StudentDetailPage() {
                                             </div>
                                         </div>
                                         <Badge variant="outline" className={`capitalize ${session.status === 'completed' || session.status === 'present' ? 'bg-green-50 text-green-700 border-green-200' :
-                                                session.status === 'scheduled' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                                                    'bg-gray-50 text-gray-600 border-gray-200'
+                                            session.status === 'scheduled' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                                'bg-gray-50 text-gray-600 border-gray-200'
                                             }`}>
                                             {session.status === 'present' ? 'Attended' : session.status}
                                         </Badge>

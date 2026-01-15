@@ -1,5 +1,7 @@
 'use client'
 
+export const runtime = 'edge';
+
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { getSessionDetails, updateAttendance, saveLessonNote, toggleSessionStatus } from "@/app/actions/instructor"
@@ -146,8 +148,8 @@ export default function TheoryLessonModePage() {
                             onClick={handleToggleStatus}
                             disabled={updatingStatus}
                             className={`rounded-full min-w-[140px] ${session.status === 'in_progress'
-                                    ? 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 shadow-none'
-                                    : 'bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-600/20'
+                                ? 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 shadow-none'
+                                : 'bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-600/20'
                                 }`}
                         >
                             {updatingStatus ? (
@@ -232,10 +234,10 @@ export default function TheoryLessonModePage() {
                                                 onValueChange={(val) => handleAttendanceChange(student.studentId, val)}
                                             >
                                                 <SelectTrigger className={`w-[140px] ${student.attendanceStatus === 'present' ? 'text-green-600 bg-green-50 border-green-200' :
-                                                        student.attendanceStatus === 'absent' ? 'text-red-600 bg-red-50 border-red-200' :
-                                                            student.attendanceStatus === 'late' ? 'text-orange-600 bg-orange-50 border-orange-200' :
-                                                                student.attendanceStatus === 'excused' ? 'text-blue-600 bg-blue-50 border-blue-200' :
-                                                                    'text-gray-500'
+                                                    student.attendanceStatus === 'absent' ? 'text-red-600 bg-red-50 border-red-200' :
+                                                        student.attendanceStatus === 'late' ? 'text-orange-600 bg-orange-50 border-orange-200' :
+                                                            student.attendanceStatus === 'excused' ? 'text-blue-600 bg-blue-50 border-blue-200' :
+                                                                'text-gray-500'
                                                     }`}>
                                                     <SelectValue />
                                                 </SelectTrigger>
