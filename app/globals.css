@@ -5,49 +5,57 @@
 
 :root {
   /* Premium Zinc & Indigo Palette */
-  --background: oklch(0.985 0.002 247.839); /* Zinc 50 */
-  --foreground: oklch(0.141 0.005 285.823); /* Zinc 950 */
-  
+  --background: oklch(0.985 0.002 247.839);
+  /* Zinc 50 */
+  --foreground: oklch(0.141 0.005 285.823);
+  /* Zinc 950 */
+
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.141 0.005 285.823);
-  
+
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.141 0.005 285.823);
-  
+
   /* Deep Indigo Primary */
-  --primary: oklch(0.43 0.15 270); 
+  --primary: oklch(0.43 0.15 270);
   --primary-foreground: oklch(0.985 0 0);
-  
-  --secondary: oklch(0.967 0.001 286.375); /* Zinc 100 */
-  --secondary-foreground: oklch(0.21 0.006 285.885); /* Zinc 900 */
-  
+
+  --secondary: oklch(0.967 0.001 286.375);
+  /* Zinc 100 */
+  --secondary-foreground: oklch(0.21 0.006 285.885);
+  /* Zinc 900 */
+
   --muted: oklch(0.967 0.001 286.375);
-  --muted-foreground: oklch(0.552 0.016 285.938); /* Zinc 500 */
-  
+  --muted-foreground: oklch(0.552 0.016 285.938);
+  /* Zinc 500 */
+
   --accent: oklch(0.967 0.001 286.375);
   --accent-foreground: oklch(0.21 0.006 285.885);
-  
+
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.985 0 0);
-  
-  --border: oklch(0.92 0.004 286.32); /* Zinc 200 */
+
+  --border: oklch(0.92 0.004 286.32);
+  /* Zinc 200 */
   --input: oklch(0.92 0.004 286.32);
   --ring: oklch(0.43 0.15 270);
-  
+
   --chart-1: oklch(0.43 0.15 270);
   --chart-2: oklch(0.6 0.15 270);
   --chart-3: oklch(0.3 0.1 270);
   --chart-4: oklch(0.8 0.1 270);
   --chart-5: oklch(0.5 0.1 270);
-  
+
   --radius: 0.5rem;
-  
+
   /* Sidebar: Dark Premium */
-  --sidebar: oklch(0.141 0.005 285.823); /* Zinc 950 */
+  --sidebar: oklch(0.141 0.005 285.823);
+  /* Zinc 950 */
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: oklch(0.43 0.15 270);
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.274 0.006 286.033); /* Zinc 800 */
+  --sidebar-accent: oklch(0.274 0.006 286.033);
+  /* Zinc 800 */
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(0.274 0.006 286.033);
   --sidebar-ring: oklch(0.43 0.15 270);
@@ -132,6 +140,7 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
