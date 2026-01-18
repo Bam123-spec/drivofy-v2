@@ -7,6 +7,7 @@ export type Instructor = {
 export type Class = {
     id: string
     name: string
+    class_type: 'DE' | 'RSEP' | 'DIP'
     start_date: string
     end_date: string
     time_slot: string
@@ -18,6 +19,7 @@ export type Class = {
 
 export type ClassFormData = {
     name: string
+    class_type: 'DE' | 'RSEP' | 'DIP'
     start_date: string
     end_date: string
     time_slot: string

@@ -43,6 +43,7 @@ export default function ClassesPageClient({ initialClasses, instructors }: Class
     const [search, setSearch] = useState("")
     const [statusFilter, setStatusFilter] = useState("all")
     const [instructorFilter, setInstructorFilter] = useState("all")
+    const [typeFilter, setTypeFilter] = useState("all")
 
     const [isCreateOpen, setIsCreateOpen] = useState(false)
     const [selectedClass, setSelectedClass] = useState<Class | null>(null)
@@ -56,7 +57,8 @@ export default function ClassesPageClient({ initialClasses, instructors }: Class
         const matchesSearch = cls.name.toLowerCase().includes(search.toLowerCase())
         const matchesStatus = statusFilter === "all" || cls.status === statusFilter
         const matchesInstructor = instructorFilter === "all" || cls.instructor_id === instructorFilter
-        return matchesSearch && matchesStatus && matchesInstructor
+        const matchesType = typeFilter === "all" || cls.class_type === typeFilter
+        return matchesSearch && matchesStatus && matchesInstructor && matchesType
     })
 
     // Actions
@@ -193,6 +195,8 @@ export default function ClassesPageClient({ initialClasses, instructors }: Class
                 setStatusFilter={setStatusFilter}
                 instructorFilter={instructorFilter}
                 setInstructorFilter={setInstructorFilter}
+                typeFilter={typeFilter}
+                setTypeFilter={setTypeFilter}
                 instructors={instructors}
             />
 

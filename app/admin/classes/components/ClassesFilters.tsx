@@ -19,6 +19,8 @@ interface ClassesFiltersProps {
     setStatusFilter: (value: string) => void
     instructorFilter: string
     setInstructorFilter: (value: string) => void
+    typeFilter: string
+    setTypeFilter: (value: string) => void
     instructors: Instructor[]
 }
 
@@ -29,14 +31,17 @@ export function ClassesFilters({
     setStatusFilter,
     instructorFilter,
     setInstructorFilter,
+    typeFilter,
+    setTypeFilter,
     instructors,
 }: ClassesFiltersProps) {
-    const hasFilters = search || statusFilter !== "all" || instructorFilter !== "all"
+    const hasFilters = search || statusFilter !== "all" || instructorFilter !== "all" || typeFilter !== "all"
 
     const clearFilters = () => {
         setSearch("")
         setStatusFilter("all")
         setInstructorFilter("all")
+        setTypeFilter("all")
     }
 
     return (
@@ -51,6 +56,18 @@ export function ClassesFilters({
                 />
             </div>
             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                <Select value={typeFilter} onValueChange={setTypeFilter}>
+                    <SelectTrigger className="w-full sm:w-[150px]">
+                        <SelectValue placeholder="Type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">All Types</SelectItem>
+                        <SelectItem value="DE">Driver's Ed</SelectItem>
+                        <SelectItem value="RSEP">RSEP</SelectItem>
+                        <SelectItem value="DIP">DIP</SelectItem>
+                    </SelectContent>
+                </Select>
+
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
                     <SelectTrigger className="w-full sm:w-[150px]">
                         <SelectValue placeholder="Status" />

@@ -81,7 +81,12 @@ export function ClassesTable({
                                 onClick={() => onEdit(cls)}
                             >
                                 <TableCell>
-                                    <div className="font-medium text-gray-900">{cls.name}</div>
+                                    <div className="flex items-center gap-2">
+                                        <div className="font-medium text-gray-900">{cls.name}</div>
+                                        <Badge variant="secondary" className="text-[10px] px-1 py-0 h-5">
+                                            {cls.class_type}
+                                        </Badge>
+                                    </div>
                                     <div className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
                                         <Clock className="h-3 w-3" />
                                         {cls.time_slot}

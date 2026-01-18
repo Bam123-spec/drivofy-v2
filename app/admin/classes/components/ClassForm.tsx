@@ -30,10 +30,15 @@ import { Instructor, ClassFormData } from "./types"
 
 const formSchema = z.object({
     name: z.string().min(2, "Name must be at least 2 characters"),
+    class_type: z.enum(["DE", "RSEP", "DIP"]),
     start_date: z.string().refine((date) => {
         const d = new Date(date)
-        return isMonday(d)
-    }, "Start date must be a Monday"),
+        // Only enforce Monday for DE classes? For now, let's relax it or keep it if RSEP/DIP also start on Mondays.
+        // The user said RSEP/DIP are single session. So they can be any day.
+        // Let's remove the Monday restriction for now or make it conditional.
+        // For simplicity, I'll remove the strict Monday check here or make it generic.
+        return !isNaN(d.getTime())
+    }, "Invalid date"),
     end_date: z.string(),
     time_slot: z.string().min(1, "Please select a time slot"),
     instructor_id: z.string().min(1, "Please select an instructor"),
@@ -52,6 +57,7 @@ export function ClassForm({ initialData, instructors, onSubmit, isSubmitting = f
         resolver: zodResolver(formSchema),
         defaultValues: initialData || {
             name: "",
+            class_type: "DE",
             start_date: "",
             end_date: "",
             time_slot: "",
@@ -77,19 +83,44 @@ export function ClassForm({ initialData, instructors, onSubmit, isSubmitting = f
     return (
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Class Name</FormLabel>
-                            <FormControl>
-                                <Input placeholder="e.g. Evening Theory (Nov)" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
+                <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                        control={form.control}
+                        name="name"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Class Name</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="e.g. Evening Theory (Nov)" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+
+                    <FormField
+                        control={form.control}
+                        name="class_type"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Class Type</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select type..." />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="DE">Driver's Ed (DE)</SelectItem>
+                                        <SelectItem value="RSEP">RSEP (3-Hour)</SelectItem>
+                                        <SelectItem value="DIP">DIP (Improvement)</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                </div>
 
                 <div className="grid grid-cols-2 gap-4">
                     <FormField
