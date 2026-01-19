@@ -4,13 +4,16 @@ import { createClient } from '@/lib/supabase/server'
 import { createCalendarEvent, getInstructorBusyTimes } from '@/lib/googleCalendar'
 import { revalidatePath } from 'next/cache'
 
+import { cookies } from "next/headers"
+
 export async function bookStudentLesson(data: {
     instructorId: string,
     date: string,
     time: string,
     duration: number // hours
 }) {
-    const supabase = await createClient()
+    const cookieStore = await cookies()
+    const supabase = createClient(cookieStore)
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {

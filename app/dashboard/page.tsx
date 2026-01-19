@@ -10,8 +10,11 @@ import Link from "next/link"
 import { format } from "date-fns"
 import { Badge } from "@/components/ui/badge"
 
+import { cookies } from "next/headers"
+
 export default async function DashboardPage() {
-  const supabase = await createClient()
+  const cookieStore = await cookies()
+  const supabase = createClient(cookieStore)
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {

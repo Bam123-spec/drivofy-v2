@@ -3,6 +3,7 @@ import { ClassList } from "@/components/services/class-list"
 import { createClient } from "@/lib/supabase/server"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
+import { cookies } from "next/headers"
 
 export const metadata = {
     title: "3-Hour Alcohol & Drug Program (RSEP) | Drivofy",
@@ -11,7 +12,8 @@ export const metadata = {
 
 export default async function RSEPPage() {
     const classes = await getClasses('RSEP')
-    const supabase = await createClient()
+    const cookieStore = await cookies()
+    const supabase = createClient(cookieStore)
     const { data: { user } } = await supabase.auth.getUser()
 
     return (

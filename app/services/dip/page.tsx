@@ -9,9 +9,12 @@ export const metadata = {
     description: "MVA-approved Driver Improvement Program for point reduction or court referrals.",
 }
 
+import { cookies } from "next/headers"
+
 export default async function DIPPage() {
     const classes = await getClasses('DIP')
-    const supabase = await createClient()
+    const cookieStore = cookies()
+    const supabase = createClient(cookieStore)
     const { data: { user } } = await supabase.auth.getUser()
 
     return (
