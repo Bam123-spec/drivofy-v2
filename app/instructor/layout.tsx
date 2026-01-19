@@ -96,7 +96,7 @@ export default function InstructorLayout({
             {
                 label: "Teaching",
                 items: [
-                    ...(canTheory ? [{ href: "/instructor/lessons", label: "Lessons", icon: BookOpen }] : []),
+                    ...(canTheory ? [{ href: "/instructor/lessons", label: "Classes", icon: BookOpen }] : []),
                     ...(canDriving ? [{ href: "/instructor/driving", label: "Driving Sessions", icon: Car }] : []),
                     { href: "/instructor/schedule", label: "My Schedule", icon: Calendar },
                 ]
@@ -116,7 +116,7 @@ export default function InstructorLayout({
     const navSections = getNavSections()
 
     return (
-        <div className="min-h-screen bg-gray-50/50 flex font-sans text-gray-900">
+        <div className="instructor-light min-h-screen bg-background flex font-sans text-foreground">
             {/* Mobile Sidebar Overlay */}
             {sidebarOpen && (
                 <div
@@ -178,8 +178,8 @@ export default function InstructorLayout({
                                                 className={`
                                                     group flex items-center ${collapsed ? 'justify-center' : 'justify-between px-3'} py-2.5 rounded-lg text-sm font-medium transition-all duration-200 relative
                                                     ${isActive
-                                                        ? "bg-blue-50 text-blue-700 shadow-sm ring-1 ring-blue-100"
-                                                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"}
+                                                        ? "bg-primary/10 text-primary shadow-sm ring-1 ring-primary/20"
+                                                        : "text-muted-foreground hover:bg-muted hover:text-foreground"}
                                                 `}
                                                 onClick={() => setSidebarOpen(false)}
                                                 title={collapsed ? item.label : undefined}
@@ -245,7 +245,7 @@ export default function InstructorLayout({
             </aside>
 
             {/* Main Content Area */}
-            <div className={`flex-1 flex flex-col min-w-0 bg-gray-50/50 transition-all duration-300 ${collapsed ? 'lg:ml-20' : 'lg:ml-72'}`}>
+            <div className={`flex-1 flex flex-col min-w-0 bg-muted/40 transition-all duration-300 ${collapsed ? 'lg:ml-20' : 'lg:ml-72'}`}>
                 {/* Top Header (Mobile & Desktop) */}
                 <header className="bg-white/80 backdrop-blur-md border-b border-gray-200 h-16 flex items-center justify-between px-4 lg:px-8 sticky top-0 z-30 transition-all">
                     <div className="flex items-center gap-4 lg:hidden">

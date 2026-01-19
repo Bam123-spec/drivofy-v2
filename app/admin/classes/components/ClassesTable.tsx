@@ -66,6 +66,7 @@ export function ClassesTable({
                 <TableHeader>
                     <TableRow className="bg-gray-50/50 hover:bg-gray-50/50">
                         <TableHead>Class Name</TableHead>
+                        <TableHead>Type</TableHead>
                         <TableHead>Schedule</TableHead>
                         <TableHead>Instructor</TableHead>
                         <TableHead>Status</TableHead>
@@ -81,16 +82,16 @@ export function ClassesTable({
                                 onClick={() => onEdit(cls)}
                             >
                                 <TableCell>
-                                    <div className="flex items-center gap-2">
-                                        <div className="font-medium text-gray-900">{cls.name}</div>
-                                        <Badge variant="secondary" className="text-[10px] px-1 py-0 h-5">
-                                            {cls.class_type}
-                                        </Badge>
-                                    </div>
+                                    <div className="font-medium text-gray-900">{cls.name}</div>
                                     <div className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
                                         <Clock className="h-3 w-3" />
                                         {cls.time_slot}
                                     </div>
+                                </TableCell>
+                                <TableCell>
+                                    <Badge variant="secondary" className="text-[10px] px-2 py-0.5 h-6 font-medium">
+                                        {cls.class_type}
+                                    </Badge>
                                 </TableCell>
                                 <TableCell>
                                     <div className="text-sm text-gray-600 flex items-center gap-2">

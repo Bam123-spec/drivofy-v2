@@ -112,10 +112,10 @@ export default function InstructorDashboard() {
             {/* Top Search / Header Area */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
+                    <h1 className="text-3xl font-bold text-foreground tracking-tight">
                         Good Morning, {instructorName.split(' ')[0]}! 👋
                     </h1>
-                    <p className="text-gray-500 mt-1 font-medium">Here's what's happening today.</p>
+                    <p className="text-muted-foreground mt-1 font-medium">Here's what's happening today.</p>
                 </div>
                 <Button variant="outline" className="hidden md:flex rounded-full px-6 border-gray-300 hover:bg-gray-50 hover:text-gray-900" asChild>
                     <Link href="/instructor/schedule">View Calendar</Link>
@@ -214,12 +214,12 @@ export default function InstructorDashboard() {
                         </div>
                     </div>
                 ) : (
-                    <div className="bg-white rounded-3xl p-10 text-center border border-gray-100 shadow-sm">
+                    <div className="bg-card rounded-3xl p-10 text-center border border-border shadow-sm">
                         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-50 text-green-600 mb-4 shadow-sm">
                             <CheckCircle2 className="h-8 w-8" />
                         </div>
-                        <h3 className="text-xl font-bold text-gray-900">No Upcoming Lessons</h3>
-                        <p className="text-gray-500 mt-2 max-w-md mx-auto">You're all caught up for now! Take a break or check your schedule for upcoming days.</p>
+                        <h3 className="text-xl font-bold text-foreground">No Upcoming Lessons</h3>
+                        <p className="text-muted-foreground mt-2 max-w-md mx-auto">You're all caught up for now! Take a break or check your schedule for upcoming days.</p>
                         <Button variant="outline" className="mt-6 rounded-full" asChild>
                             <Link href="/instructor/schedule">Check Schedule</Link>
                         </Button>
@@ -232,44 +232,44 @@ export default function InstructorDashboard() {
                 <div className="lg:col-span-2 space-y-8">
                     {/* Quick Stats */}
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                        <Card className="rounded-2xl border-gray-100 shadow-sm hover:shadow-md transition-shadow group">
+                        <Card className="rounded-2xl border-border shadow-sm hover:shadow-md transition-shadow group">
                             <CardContent className="p-5 flex flex-col items-start">
                                 <div className="h-10 w-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
                                     <Timer className="h-5 w-5" />
                                 </div>
-                                <div className="text-3xl font-bold text-gray-900 tracking-tight">{hoursToday}h</div>
-                                <div className="text-xs text-gray-500 font-medium mt-1">Hours Scheduled Today</div>
+                                <div className="text-3xl font-bold text-foreground tracking-tight">{hoursToday}h</div>
+                                <div className="text-xs text-muted-foreground font-medium mt-1">Hours Scheduled Today</div>
                             </CardContent>
                         </Card>
-                        <Card className="rounded-2xl border-gray-100 shadow-sm hover:shadow-md transition-shadow group">
+                        <Card className="rounded-2xl border-border shadow-sm hover:shadow-md transition-shadow group">
                             <CardContent className="p-5 flex flex-col items-start">
                                 <div className="h-10 w-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
                                     {canTheory ? <BookOpen className="h-5 w-5" /> : <Car className="h-5 w-5" />}
                                 </div>
-                                <div className="text-3xl font-bold text-gray-900 tracking-tight">{todaySessionsCount}</div>
-                                <div className="text-xs text-gray-500 font-medium mt-1">
+                                <div className="text-3xl font-bold text-foreground tracking-tight">{todaySessionsCount}</div>
+                                <div className="text-xs text-muted-foreground font-medium mt-1">
                                     {canDriving && canTheory ? "Total Sessions" : canTheory ? "Classes Today" : "Driving Sessions"}
                                 </div>
                             </CardContent>
                         </Card>
                         {canDriving && (
-                            <Card className="rounded-2xl border-gray-100 shadow-sm hover:shadow-md transition-shadow group">
+                            <Card className="rounded-2xl border-border shadow-sm hover:shadow-md transition-shadow group">
                                 <CardContent className="p-5 flex flex-col items-start">
                                     <div className="h-10 w-10 rounded-xl bg-green-50 text-green-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
                                         <Users className="h-5 w-5" />
                                     </div>
-                                    <div className="text-3xl font-bold text-gray-900 tracking-tight">{activeStudents}</div>
-                                    <div className="text-xs text-gray-500 font-medium mt-1">Active Students</div>
+                                    <div className="text-3xl font-bold text-foreground tracking-tight">{activeStudents}</div>
+                                    <div className="text-xs text-muted-foreground font-medium mt-1">Active Students</div>
                                 </CardContent>
                             </Card>
                         )}
                     </div>
 
                     {/* Schedule Card with Tabs */}
-                    <Card className="border-gray-100 shadow-sm rounded-2xl overflow-hidden">
-                        <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-gray-50 bg-gray-50/50 gap-4">
+                    <Card className="border-border shadow-sm rounded-2xl overflow-hidden">
+                        <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-border bg-muted/30 gap-4">
                             <div className="flex items-center gap-4">
-                                <CardTitle className="text-lg font-bold text-gray-900">Schedule</CardTitle>
+                                <CardTitle className="text-lg font-bold text-foreground">Schedule</CardTitle>
                                 {/* Segmented Control */}
                                 <div className="flex p-1 bg-gray-200/50 rounded-lg">
                                     {(['today', 'tomorrow', 'week'] as const).map((view) => (
@@ -359,9 +359,9 @@ export default function InstructorDashboard() {
 
                 {/* Right Column: Quick Actions */}
                 <div className="space-y-6">
-                    <Card className="rounded-2xl border-gray-100 shadow-sm">
+                    <Card className="rounded-2xl border-border shadow-sm">
                         <CardHeader className="pb-3">
-                            <CardTitle className="text-lg font-bold">Quick Actions</CardTitle>
+                            <CardTitle className="text-lg font-bold text-foreground">Quick Actions</CardTitle>
                         </CardHeader>
                         <CardContent className="flex flex-col gap-3">
                             <Button variant="outline" className="h-12 justify-start px-4 gap-3 rounded-xl border-gray-200 hover:border-blue-300 hover:bg-blue-50/50 hover:text-blue-700 transition-all group" asChild>

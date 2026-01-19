@@ -238,9 +238,9 @@ export default function AdminLayout({
             </aside>
 
             {/* Main Content Area */}
-            <div className={`flex-1 flex flex-col min-w-0 bg-background transition-all duration-300 ${collapsed ? "lg:ml-20" : "lg:ml-72"}`}>
+            <div className={`admin-light flex-1 flex flex-col min-w-0 bg-background text-foreground transition-all duration-300 ${collapsed ? "lg:ml-20" : "lg:ml-72"}`}>
                 {/* Top Header (Mobile & Desktop) */}
-                <header className="bg-background/80 backdrop-blur-md border-b border-border/40 h-16 flex items-center justify-between px-4 lg:px-8 sticky top-0 z-30 transition-all">
+                <header className="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-4 lg:px-8 sticky top-0 z-30 transition-all">
                     <div className="flex items-center gap-4 lg:hidden">
                         <button onClick={() => setSidebarOpen(true)} className="p-2 -ml-2 text-muted-foreground hover:text-foreground transition-colors">
                             <Menu className="h-5 w-5" />
@@ -254,7 +254,7 @@ export default function AdminLayout({
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
                             <Input
                                 placeholder="Search students, classes, or settings..."
-                                className="pl-10 h-9 bg-muted/50 border-transparent focus:bg-background focus:border-primary/20 focus:ring-2 focus:ring-primary/10 transition-all rounded-full text-sm shadow-sm"
+                                className="pl-10 h-9 bg-gray-100 border-transparent focus:bg-white focus:border-primary/20 focus:ring-2 focus:ring-primary/10 transition-all rounded-full text-sm shadow-sm text-gray-900 placeholder:text-gray-500"
                             />
                         </div>
                     </div>

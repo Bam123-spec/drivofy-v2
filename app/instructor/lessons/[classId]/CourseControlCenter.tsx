@@ -55,7 +55,7 @@ export default function CourseControlCenter() {
     }
 
     const handleAttendanceChange = (studentId: string, sessionId: string, status: string) => {
-        const key = `${studentId}-${sessionId}`
+        const key = `${studentId}::${sessionId}`
         setAttendanceChanges(prev => new Map(prev).set(key, status))
     }
 
@@ -65,12 +65,12 @@ export default function CourseControlCenter() {
 
         const updates: { classDayId: string, studentId: string, status: string }[] = []
         attendanceChanges.forEach((status, key) => {
-            const [studentId, sessionId] = key.split('-')
+            const [studentId, sessionId] = key.split('::')
             updates.push({ classDayId: sessionId, studentId, status })
         })
 
         try {
-            await updateBatchAttendance(updates)
+            await updateBatchAttendance(classId, updates)
             toast.success("Attendance updated")
             setAttendanceChanges(new Map())
             loadData()
@@ -165,8 +165,8 @@ export default function CourseControlCenter() {
 
     // Helper to get current status
     const getStatus = (studentId: string, sessionId: string) => {
-        if (attendanceChanges.has(`${studentId}-${sessionId}`)) {
-            return attendanceChanges.get(`${studentId}-${sessionId}`)
+        if (attendanceChanges.has(`${studentId}::${sessionId}`)) {
+            return attendanceChanges.get(`${studentId}::${sessionId}`)
         }
         const record = attendanceRecords.find((r: any) => r.student_id === studentId && r.class_day_id === sessionId)
         return record?.status || 'unmarked'
@@ -180,7 +180,7 @@ export default function CourseControlCenter() {
                     <ChevronLeft className="h-4 w-4" /> Back to Courses
                 </Link>
 
-                <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm flex flex-col md:flex-row justify-between gap-6">
+                <div className="bg-card border border-border rounded-2xl p-6 shadow-sm flex flex-col md:flex-row justify-between gap-6">
                     <div>
                         <h1 className="text-2xl font-bold text-gray-900">{course.name}</h1>
                         <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
@@ -208,8 +208,8 @@ export default function CourseControlCenter() {
             </div>
 
             {/* Attendance Grid */}
-            <Card className="overflow-hidden border-gray-200 shadow-sm">
-                <CardHeader className="flex flex-row items-center justify-between bg-gray-50/50 border-b border-gray-100">
+            <Card className="overflow-hidden border-border shadow-sm">
+                <CardHeader className="flex flex-row items-center justify-between bg-muted/30 border-b border-border">
                     <div>
                         <CardTitle>Attendance Grid</CardTitle>
                         <CardDescription>Track attendance for all sessions.</CardDescription>
@@ -223,9 +223,9 @@ export default function CourseControlCenter() {
                 </CardHeader>
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm text-left">
-                        <thead className="text-xs text-gray-500 uppercase bg-gray-50 border-b border-gray-200">
+                        <thead className="text-xs text-muted-foreground uppercase bg-muted/30 border-b border-border">
                             <tr>
-                                <th className="px-6 py-4 font-medium text-gray-900 sticky left-0 bg-gray-50 z-10 w-[250px]">Student</th>
+                                <th className="px-6 py-4 font-medium text-foreground sticky left-0 bg-muted/30 z-10 w-[250px]">Student</th>
                                 {sessions.map((session: any) => (
                                     <th key={session.id} className="px-4 py-3 min-w-[120px] text-center">
                                         <div className="font-semibold text-gray-900">{format(parseISO(session.date), "MMM d")}</div>
@@ -234,10 +234,10 @@ export default function CourseControlCenter() {
                                 ))}
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100 bg-white">
+                        <tbody className="divide-y divide-border bg-card">
                             {students.map((student: any) => (
-                                <tr key={student.id} className="hover:bg-gray-50/50 transition-colors">
-                                    <td className="px-6 py-4 sticky left-0 bg-white group-hover:bg-gray-50/50 z-10 border-r border-gray-100">
+                                <tr key={student.id} className="hover:bg-muted/20 transition-colors">
+                                    <td className="px-6 py-4 sticky left-0 bg-card group-hover:bg-muted/20 z-10 border-r border-border">
                                         <div className="flex items-center gap-3">
                                             <Avatar className="h-8 w-8 border border-gray-200">
                                                 <AvatarImage src={student.avatar_url} />
@@ -287,7 +287,7 @@ export default function CourseControlCenter() {
             </Card>
 
             {/* Students Panel */}
-            <Card className="border-gray-200 shadow-sm">
+            <Card className="border-border shadow-sm">
                 <CardHeader>
                     <CardTitle>Enrolled Students</CardTitle>
                     <CardDescription>Manage grades and certification status.</CardDescription>
@@ -295,7 +295,7 @@ export default function CourseControlCenter() {
                 <CardContent>
                     <div className="space-y-4">
                         {students.map((student: any) => (
-                            <div key={student.id} className="flex flex-col md:flex-row md:items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100 gap-4">
+                            <div key={student.id} className="flex flex-col md:flex-row md:items-center justify-between p-4 bg-muted/20 rounded-xl border border-border gap-4">
                                 <div className="flex items-center gap-4 min-w-[250px]">
                                     <Avatar className="h-10 w-10 border border-gray-200">
                                         <AvatarImage src={student.avatar_url} />
@@ -312,9 +312,9 @@ export default function CourseControlCenter() {
                                 <div className="flex flex-wrap items-center gap-4">
                                     {/* Grade Input */}
                                     <div className="flex items-center gap-2">
-                                        <span className="text-sm text-gray-500">Grade:</span>
+                                        <span className="text-sm text-muted-foreground">Grade:</span>
                                         <Input
-                                            className="h-9 w-20 bg-white"
+                                            className="h-9 w-20 bg-card"
                                             defaultValue={student.grade || ""}
                                             onBlur={(e) => handleUpdateGrade(student.enrollmentId, e.target.value)}
                                             placeholder="-"
@@ -328,7 +328,7 @@ export default function CourseControlCenter() {
                                     >
                                         <SelectTrigger className={`w-[140px] h-9 ${student.certification_status === 'certified' ? 'bg-green-50 text-green-700 border-green-200' :
                                             student.certification_status === 'honors' ? 'bg-purple-50 text-purple-700 border-purple-200' :
-                                                'bg-white'
+                                                'bg-card'
                                             }`}>
                                             <SelectValue />
                                         </SelectTrigger>

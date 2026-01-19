@@ -24,7 +24,7 @@ export default async function DashboardPage() {
   // Get user profile name
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name')
+    .select('full_name, driving_balance_sessions, driving_balance_hours')
     .eq('id', user.id)
     .single()
 
@@ -33,7 +33,7 @@ export default async function DashboardPage() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-gradient-to-b from-background to-muted/20">
+      <main className="min-h-screen bg-gray-50">
         <div className="container mx-auto px-4 py-12">
           <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
@@ -44,10 +44,13 @@ export default async function DashboardPage() {
             </div>
             <div className="flex gap-2">
               <Button asChild>
-                <Link href="/services/rsep">Browse RSEP</Link>
+                <Link href="/dashboard/book-driving">
+                  <Car className="mr-2 h-4 w-4" />
+                  Book Driving Lesson
+                </Link>
               </Button>
               <Button asChild variant="outline">
-                <Link href="/services/dip">Browse DIP</Link>
+                <Link href="/services/rsep">Browse RSEP</Link>
               </Button>
             </div>
           </div>
@@ -131,16 +134,25 @@ export default async function DashboardPage() {
                 <PlusCircle className="h-5 w-5 text-muted-foreground" />
               </CardHeader>
               <CardContent className="space-y-3">
+                <div className="p-3 bg-blue-50 rounded-lg border border-blue-100 mb-2">
+                  <p className="text-xs font-medium text-blue-800 uppercase tracking-wider mb-1">Driving Credits</p>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl font-bold text-blue-700">{profile?.driving_balance_sessions || 0}</span>
+                    <span className="text-sm text-blue-600">sessions</span>
+                  </div>
+                  <p className="text-xs text-blue-500 mt-1">({profile?.driving_balance_hours || 0} hours remaining)</p>
+                </div>
+
+                <Button className="w-full justify-start gap-2" asChild>
+                  <Link href="/dashboard/book-driving">
+                    <Car className="h-4 w-4" />
+                    Book Driving Lesson
+                  </Link>
+                </Button>
                 <Button variant="outline" className="w-full justify-start gap-2" asChild>
                   <Link href="/contact">
                     <Users className="h-4 w-4" />
                     Contact Support
-                  </Link>
-                </Button>
-                <Button variant="outline" className="w-full justify-start gap-2" asChild>
-                  <Link href="/services/rsep">
-                    <Calendar className="h-4 w-4" />
-                    Book RSEP Class
                   </Link>
                 </Button>
               </CardContent>

@@ -25,4 +25,8 @@ export type ClassFormData = {
     time_slot: string
     instructor_id: string
     status: 'upcoming' | 'active' | 'completed' | 'cancelled'
+    recurrence_enabled?: boolean
+    recurrence_interval_value?: number
+    recurrence_interval_unit?: 'days' | 'weeks'
+    recurrence_count?: number
 }

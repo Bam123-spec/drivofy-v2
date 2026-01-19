@@ -136,12 +136,12 @@ export default function AdminAttendancePage() {
                                 className="block hover:bg-gray-50 transition-colors"
                             >
                                 <div className="p-4 sm:px-6 flex items-center gap-4 sm:gap-6">
-                                    <div className={`flex flex-col items-center justify-center w-14 h-14 rounded-lg shrink-0 ${isSameDay(new Date(day.date), new Date())
-                                            ? 'bg-blue-100 text-blue-700'
-                                            : 'bg-gray-100 text-gray-700'
+                                    <div className={`flex flex-col items-center justify-center w-14 h-14 rounded-lg shrink-0 ${isSameDay(new Date(day.date + 'T00:00:00'), new Date())
+                                        ? 'bg-blue-100 text-blue-700'
+                                        : 'bg-gray-100 text-gray-700'
                                         }`}>
-                                        <span className="text-xs font-bold uppercase">{format(new Date(day.date), "MMM")}</span>
-                                        <span className="text-xl font-bold">{format(new Date(day.date), "d")}</span>
+                                        <span className="text-xs font-bold uppercase">{format(new Date(day.date + 'T00:00:00'), "MMM")}</span>
+                                        <span className="text-xl font-bold">{format(new Date(day.date + 'T00:00:00'), "d")}</span>
                                     </div>
 
                                     <div className="flex-1 min-w-0">

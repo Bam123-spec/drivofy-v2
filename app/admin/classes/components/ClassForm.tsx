@@ -43,6 +43,10 @@ const formSchema = z.object({
     time_slot: z.string().min(1, "Please select a time slot"),
     instructor_id: z.string().min(1, "Please select an instructor"),
     status: z.enum(["upcoming", "active", "completed", "cancelled"]),
+    recurrence_enabled: z.boolean().optional(),
+    recurrence_interval_value: z.coerce.number().min(1).optional(),
+    recurrence_interval_unit: z.enum(["days", "weeks"]).optional(),
+    recurrence_count: z.coerce.number().min(1).optional(),
 })
 
 interface ClassFormProps {
@@ -63,22 +67,33 @@ export function ClassForm({ initialData, instructors, onSubmit, isSubmitting = f
             time_slot: "",
             instructor_id: "",
             status: "upcoming",
+            recurrence_enabled: false,
+            recurrence_interval_value: 1,
+            recurrence_interval_unit: "weeks",
+            recurrence_count: 1,
         },
     })
 
-    // Watch start_date to auto-calculate end_date
+    // Watch start_date and class_type to auto-calculate end_date
     const startDate = form.watch("start_date")
+    const classType = form.watch("class_type")
 
     useEffect(() => {
         if (startDate) {
             const start = new Date(startDate)
             if (!isNaN(start.getTime())) {
-                // Auto-calculate end date: Start Date + 11 days (Friday of 2nd week)
-                const end = addDays(start, 11)
+                let end = start
+                if (classType === 'DE') {
+                    // DE: 2 weeks (11 days from Monday to next Friday)
+                    end = addDays(start, 11)
+                } else {
+                    // RSEP/DIP: Single day (0 days diff)
+                    end = start
+                }
                 form.setValue("end_date", format(end, "yyyy-MM-dd"))
             }
         }
-    }, [startDate, form])
+    }, [startDate, classType, form])
 
     return (
         <Form {...form}>
@@ -229,6 +244,92 @@ export function ClassForm({ initialData, instructors, onSubmit, isSubmitting = f
                         </FormItem>
                     )}
                 />
+
+                {!initialData && (
+                    <div className="p-4 bg-muted/50 rounded-lg space-y-4 border border-border">
+                        <div className="flex items-center justify-between">
+                            <h3 className="font-medium text-sm">Recurrence (Optional)</h3>
+                            <FormField
+                                control={form.control}
+                                name="recurrence_enabled"
+                                render={({ field }) => (
+                                    <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                                        <FormControl>
+                                            <input
+                                                type="checkbox"
+                                                checked={field.value}
+                                                onChange={field.onChange}
+                                                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                            />
+                                        </FormControl>
+                                        <FormLabel className="font-normal cursor-pointer">
+                                            Repeat this class
+                                        </FormLabel>
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
+
+                        {form.watch("recurrence_enabled") && (
+                            <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2">
+                                <div className="space-y-2">
+                                    <Label>Repeat every</Label>
+                                    <div className="flex gap-2">
+                                        <FormField
+                                            control={form.control}
+                                            name="recurrence_interval_value"
+                                            render={({ field }) => (
+                                                <FormItem className="flex-1">
+                                                    <FormControl>
+                                                        <Input type="number" min={1} {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={form.control}
+                                            name="recurrence_interval_unit"
+                                            render={({ field }) => (
+                                                <FormItem className="flex-1">
+                                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                        <FormControl>
+                                                            <SelectTrigger>
+                                                                <SelectValue />
+                                                            </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent>
+                                                            <SelectItem value="days">Days</SelectItem>
+                                                            <SelectItem value="weeks">Weeks</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </div>
+                                </div>
+
+                                <FormField
+                                    control={form.control}
+                                    name="recurrence_count"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <Label>Number of occurrences</Label>
+                                            <FormControl>
+                                                <Input type="number" min={1} max={52} {...field} />
+                                            </FormControl>
+                                            <FormDescription className="text-xs">
+                                                Total classes to create (including first one).
+                                            </FormDescription>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 <div className="flex justify-end pt-4">
                     <Button type="submit" disabled={isSubmitting}>

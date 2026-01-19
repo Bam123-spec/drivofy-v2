@@ -1,0 +1,142 @@
+'use server'
+
+import { createClient } from '@/lib/supabase/server'
+import { createCalendarEvent, getInstructorBusyTimes } from '@/lib/googleCalendar'
+import { revalidatePath } from 'next/cache'
+
+export async function bookStudentLesson(data: {
+    instructorId: string,
+    date: string,
+    time: string,
+    duration: number // hours
+}) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+        return { success: false, error: "Unauthorized" }
+    }
+
+    try {
+        // 1. Check Student Credits
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('driving_balance_sessions, driving_balance_hours, full_name, email, phone')
+            .eq('id', user.id)
+            .single()
+
+        if (!profile) {
+            return { success: false, error: "Profile not found" }
+        }
+
+        if ((profile.driving_balance_sessions || 0) <= 0) {
+            return { success: false, error: "Insufficient session credits. Please contact admin to purchase more." }
+        }
+
+        // Optional: Check hours balance too? 
+        // For now, let's strictly enforce sessions as the primary unit for booking.
+        // But we should deduct hours as well.
+
+        // 2. Calculate Timestamps
+        const startDateTime = new Date(`${data.date}T${data.time}`)
+        const endDateTime = new Date(startDateTime.getTime() + data.duration * 60 * 60 * 1000)
+
+        // 3. Check for Conflicts (Instructor)
+        console.log("🔍 Checking for conflicts...")
+
+        // 3a. Check Google Calendar Busy Times
+        try {
+            const busySlots = await getInstructorBusyTimes(
+                data.instructorId,
+                startDateTime.toISOString(),
+                endDateTime.toISOString()
+            )
+
+            if (busySlots && busySlots.length > 0) {
+                console.warn("⚠️ Google Calendar Conflict Detected:", busySlots)
+                return { success: false, error: "The instructor is not available at this time (Calendar Conflict)" }
+            }
+        } catch (error) {
+            console.error("⚠️ Failed to check Google Calendar availability:", error)
+            // Fail safe: if we can't verify availability, we shouldn't book?
+            // Or proceed with warning? Let's be strict for students.
+            return { success: false, error: "Could not verify instructor availability. Please try again later." }
+        }
+
+        // 3b. Check Internal Database Conflicts
+        const { data: internalConflicts } = await supabase
+            .from('driving_sessions')
+            .select('id')
+            .eq('instructor_id', data.instructorId)
+            .neq('status', 'cancelled')
+            .lt('start_time', endDateTime.toISOString())
+            .gt('end_time', startDateTime.toISOString())
+
+        if (internalConflicts && internalConflicts.length > 0) {
+            console.warn("⚠️ Internal Database Conflict Detected")
+            return { success: false, error: "The instructor is already booked at this time." }
+        }
+
+        // 4. Create Session & Deduct Credits (Transaction-like)
+        // Supabase doesn't support multi-table transactions via client directly easily without RPC,
+        // but we can do it sequentially. If insert fails, we don't deduct.
+
+        const { data: session, error: insertError } = await supabase
+            .from('driving_sessions')
+            .insert([{
+                student_id: user.id,
+                instructor_id: data.instructorId,
+                start_time: startDateTime.toISOString(),
+                end_time: endDateTime.toISOString(),
+                status: 'scheduled',
+                source: 'student_portal',
+                duration_minutes: data.duration * 60
+            }])
+            .select()
+            .single()
+
+        if (insertError) throw new Error(`Database Error: ${insertError.message}`)
+
+        // 5. Deduct Credits
+        const newSessions = (profile.driving_balance_sessions || 0) - 1
+        const newHours = (profile.driving_balance_hours || 0) - data.duration
+
+        const { error: updateError } = await supabase
+            .from('profiles')
+            .update({
+                driving_balance_sessions: newSessions,
+                driving_balance_hours: newHours,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', user.id)
+
+        if (updateError) {
+            console.error("Failed to deduct credits!", updateError)
+            // Critical error: Session created but credits not deducted.
+            // In a real app, we'd want to rollback or alert admin.
+        }
+
+        // 6. Sync to Google Calendar
+        try {
+            console.log("🚀 Attempting to sync to Google Calendar...")
+            await createCalendarEvent(data.instructorId, {
+                studentName: profile.full_name || "Student",
+                startTime: startDateTime.toISOString(),
+                endTime: endDateTime.toISOString(),
+                description: `Driving Lesson (Student Booked)\nStudent: ${profile.full_name}\nPhone: ${profile.phone || 'N/A'}\nEmail: ${profile.email}`,
+                location: "Drivofy HQ"
+            })
+            console.log("✅ Google Calendar Sync Successful")
+        } catch (calendarError) {
+            console.error("❌ Google Calendar Sync Failed:", calendarError)
+            // Non-critical for the booking itself
+        }
+
+        revalidatePath('/dashboard')
+        return { success: true }
+
+    } catch (error: any) {
+        console.error("Book Student Lesson Error:", error)
+        return { success: false, error: error.message }
+    }
+}

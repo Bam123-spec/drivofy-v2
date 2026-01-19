@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { supabase } from "@/lib/supabaseClient"
+import { getDashboardStats } from "@/app/actions/adminDashboard"
 import {
     Loader2,
     Users,
@@ -65,87 +65,21 @@ export default function AdminDashboard() {
 
     const fetchDashboardData = async () => {
         try {
-            // 1. Instructors
-            const { count: instructorCount } = await supabase
-                .from('instructors')
-                .select('*', { count: 'exact', head: true })
+            const data = await getDashboardStats()
 
-            // 2. Active Classes
-            const { count: classCount } = await supabase
-                .from('classes')
-                .select('*', { count: 'exact', head: true })
-                .eq('status', 'active')
+            if (data) {
+                setStats({ ...data.stats, debug: data.debug })
+                setTodaysSessions(data.todaysSessions)
+                setRecentActivity(data.recentActivity)
+                setDistributionData(data.distributionData)
+                setGrowthData(data.growthData)
 
-            // 3. Today's Sessions
-            const today = new Date().toISOString().split('T')[0]
-            const { count: sessionCount, data: sessions } = await supabase
-                .from('driving_sessions')
-                .select('*, profiles:student_id(full_name), instructors(full_name)')
-                .gte('start_time', `${today}T00:00:00`)
-                .lte('start_time', `${today}T23:59:59`)
-                .order('start_time', { ascending: true })
-                .limit(5)
-
-            // 4. Total Students (Profiles with role 'student') - Approximation via enrollments for now or separate query
-            // Using enrollments to get recent activity and stats
-            const { data: allEnrollments, error: enrollError } = await supabase
-                .from('enrollments')
-                .select('*, profiles:student_id(full_name), classes(name)')
-                .order('enrollment_date', { ascending: false })
-
-            if (enrollError) throw enrollError
-
-            // Process Enrollments for Stats & Charts
-            const totalStudents = new Set(allEnrollments?.map(e => e.student_id)).size
-            const recent = allEnrollments?.slice(0, 5) || []
-
-            // Distribution Data (Status)
-            const statusCounts: any = {}
-            allEnrollments?.forEach(e => {
-                const status = e.status || 'active'
-                statusCounts[status] = (statusCounts[status] || 0) + 1
-            })
-            const distData = Object.keys(statusCounts).map(key => ({
-                name: key.charAt(0).toUpperCase() + key.slice(1),
-                value: statusCounts[key]
-            }))
-
-            // Growth Data (Enrollments by Month - Last 6 Months)
-            const months: any = {}
-            const now = new Date()
-            for (let i = 5; i >= 0; i--) {
-                const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
-                const monthName = d.toLocaleString('default', { month: 'short' })
-                months[monthName] = 0
-            }
-
-            allEnrollments?.forEach(e => {
-                const d = new Date(e.enrollment_date)
-                // Only count if within last 6 months roughly
-                if ((now.getTime() - d.getTime()) < 180 * 24 * 60 * 60 * 1000) {
-                    const monthName = d.toLocaleString('default', { month: 'short' })
-                    if (months[monthName] !== undefined) {
-                        months[monthName]++
-                    }
+                if (data.debug?.role !== 'admin') {
+                    toast.error(`Warning: You are logged in as ${data.debug?.role}, not admin.`)
                 }
-            })
-
-            const growth = Object.keys(months).map(key => ({
-                name: key,
-                students: months[key]
-            }))
-
-            setStats({
-                instructors: instructorCount || 0,
-                activeClasses: classCount || 0,
-                todaySessions: sessionCount || 0,
-                totalStudents: totalStudents
-            })
-            setTodaysSessions(sessions || [])
-            setRecentActivity(recent)
-            setDistributionData(distData)
-            setGrowthData(growth)
-
+            } else {
+                toast.error("Failed to load dashboard data")
+            }
         } catch (error) {
             console.error("Error fetching stats:", error)
             toast.error("Failed to load dashboard data")
@@ -351,14 +285,14 @@ export default function AdminDashboard() {
                                                     <div className="flex items-center gap-3">
                                                         <Avatar className="h-8 w-8 border border-gray-100">
                                                             <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
-                                                                {session.profiles?.full_name?.charAt(0) || "S"}
+                                                                {session.student?.full_name?.charAt(0) || "S"}
                                                             </AvatarFallback>
                                                         </Avatar>
-                                                        <span className="font-medium text-gray-700">{session.profiles?.full_name || "Unknown"}</span>
+                                                        <span className="font-medium text-gray-700">{session.student?.full_name || "Unknown"}</span>
                                                     </div>
                                                 </TableCell>
                                                 <TableCell className="text-gray-500">
-                                                    {session.instructors?.full_name || "Unassigned"}
+                                                    {session.instructor?.full_name || "Unassigned"}
                                                 </TableCell>
                                                 <TableCell>
                                                     <StatusBadge status={session.status} />
@@ -413,7 +347,7 @@ export default function AdminDashboard() {
                                                     New Enrollment
                                                 </p>
                                                 <p className="text-xs text-gray-500 mt-0.5">
-                                                    <span className="font-medium text-gray-700">{activity.profiles?.full_name}</span> enrolled in <span className="font-medium text-gray-700">{activity.classes?.name}</span>
+                                                    <span className="font-medium text-gray-700">{activity.student?.full_name}</span> enrolled in <span className="font-medium text-gray-700">{activity.class?.name}</span>
                                                 </p>
                                                 <p className="text-xs text-gray-400 mt-1">
                                                     {new Date(activity.enrollment_date).toLocaleDateString()}

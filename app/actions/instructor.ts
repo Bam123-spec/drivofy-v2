@@ -355,12 +355,14 @@ export async function getInstructorCourses() {
             class_days (
                 id,
                 status,
-                start_datetime
+                date,
+                start_datetime,
+                end_datetime
             )
         `)
         .eq('instructor_id', instructor.id)
         .eq('is_archived', false)
-        .order('start_date', { ascending: false })
+        .order('start_date', { ascending: true })
 
     if (error) throw error
 
@@ -575,12 +577,55 @@ export async function updateStudentCertification(enrollmentId: string, status: s
     const instructor = await getCurrentInstructor()
     if (!instructor) throw new Error("Unauthorized")
 
+    // Fetch enrollment to get class_id and student_id
+    const { data: enrollment } = await supabase
+        .from('enrollments')
+        .select('class_id, student_id, certification_status')
+        .eq('id', enrollmentId)
+        .single()
+
+    if (!enrollment) throw new Error("Enrollment not found")
+
     const { error } = await supabase
         .from('enrollments')
         .update({ certification_status: status, updated_at: new Date().toISOString() })
         .eq('id', enrollmentId)
 
     if (error) throw error
+
+    // If becoming certified and wasn't before, apply package
+    if (status === 'certified' && enrollment.certification_status !== 'certified') {
+        // Fetch class package details
+        const { data: cls } = await supabase
+            .from('classes')
+            .select('package_hours, package_sessions')
+            .eq('id', enrollment.class_id)
+            .single()
+
+        if (cls && (cls.package_hours > 0 || cls.package_sessions > 0)) {
+            // Fetch current profile balance
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('driving_balance_hours, driving_balance_sessions')
+                .eq('id', enrollment.student_id)
+                .single()
+
+            if (profile) {
+                const newHours = (profile.driving_balance_hours || 0) + (cls.package_hours || 0)
+                const newSessions = (profile.driving_balance_sessions || 0) + (cls.package_sessions || 0)
+
+                await supabase
+                    .from('profiles')
+                    .update({
+                        driving_balance_hours: newHours,
+                        driving_balance_sessions: newSessions,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', enrollment.student_id)
+            }
+        }
+    }
+
     revalidatePath('/instructor/lessons/[classId]')
     return { success: true }
 }
@@ -599,7 +644,7 @@ export async function removeStudentFromCourse(enrollmentId: string) {
     return { success: true }
 }
 
-export async function updateBatchAttendance(updates: { classDayId: string, studentId: string, status: string }[]) {
+export async function updateBatchAttendance(classId: string, updates: { classDayId: string, studentId: string, status: string }[]) {
     const instructor = await getCurrentInstructor()
     if (!instructor) throw new Error("Unauthorized")
 
@@ -617,7 +662,7 @@ export async function updateBatchAttendance(updates: { classDayId: string, stude
         )
 
     if (error) throw error
-    revalidatePath('/instructor/lessons/[classId]')
+    revalidatePath(`/instructor/lessons/${classId}`)
     return { success: true }
 }
 

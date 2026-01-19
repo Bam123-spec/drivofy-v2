@@ -65,21 +65,61 @@ export default function ClassesPageClient({ initialClasses, instructors }: Class
     const handleCreate = async (data: ClassFormData) => {
         setIsSubmitting(true)
         try {
-            const { data: newClass, error } = await supabase
+            const classesToCreate = []
+            const { recurrence_enabled, recurrence_interval_value, recurrence_interval_unit, recurrence_count, ...baseData } = data
+
+            // 1. Prepare the first class
+            classesToCreate.push(baseData)
+
+            // 2. If recurrence is enabled, generate additional classes
+            if (recurrence_enabled && recurrence_count && recurrence_count > 1) {
+                const startDate = new Date(baseData.start_date)
+                const endDate = new Date(baseData.end_date)
+                const interval = recurrence_interval_value || 1
+                const unit = recurrence_interval_unit || 'weeks'
+
+                for (let i = 1; i < recurrence_count; i++) {
+                    // Calculate offset in days
+                    let daysToAdd = 0
+                    if (unit === 'weeks') {
+                        daysToAdd = i * interval * 7
+                    } else {
+                        daysToAdd = i * interval
+                    }
+
+                    // Create new dates
+                    const newStart = new Date(startDate)
+                    newStart.setDate(startDate.getDate() + daysToAdd)
+
+                    const newEnd = new Date(endDate)
+                    newEnd.setDate(endDate.getDate() + daysToAdd)
+
+                    classesToCreate.push({
+                        ...baseData,
+                        start_date: newStart.toISOString().split('T')[0], // YYYY-MM-DD
+                        end_date: newEnd.toISOString().split('T')[0],
+                        status: 'upcoming' as const
+                    })
+                }
+            }
+
+            // 3. Insert all classes
+            const { data: newClasses, error } = await supabase
                 .from('classes')
-                .insert([data])
+                .insert(classesToCreate)
                 .select('*, instructors(full_name)')
-                .single()
 
             if (error) throw error
 
-            setClasses([newClass, ...classes])
+            // 4. Update state
+            // @ts-ignore - Supabase types might be slightly off with joins
+            setClasses([...newClasses, ...classes])
             setIsCreateOpen(false)
-            toast.success("Class created successfully")
+            toast.success(`${newClasses.length} class(es) created successfully`)
             router.refresh()
         } catch (error) {
             console.error(error)
-            toast.error("Failed to create class")
+            toast.error("Failed to create class(es)")
         } finally {
             setIsSubmitting(false)
         }

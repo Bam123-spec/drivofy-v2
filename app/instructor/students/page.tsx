@@ -81,8 +81,8 @@ export default function MyStudentsPage() {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 tracking-tight">My Students</h1>
-                    <p className="text-gray-500 mt-1">Overview of students you're currently teaching.</p>
+                    <h1 className="text-3xl font-bold text-foreground tracking-tight">My Students</h1>
+                    <p className="text-muted-foreground mt-1">Overview of students you're currently teaching.</p>
                 </div>
                 <Button className="bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-600/20 rounded-full">
                     <User className="h-4 w-4 mr-2" /> Add Student
@@ -90,20 +90,20 @@ export default function MyStudentsPage() {
             </div>
 
             {/* Filters */}
-            <Card className="border-none shadow-sm bg-white">
+            <Card className="border-none shadow-sm bg-card">
                 <CardContent className="p-4 flex flex-col md:flex-row gap-4">
                     <div className="relative flex-1">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
                             placeholder="Search by name or email..."
-                            className="pl-10 bg-gray-50 border-transparent focus:bg-white transition-all"
+                            className="pl-10 bg-muted/30 border-transparent focus:bg-card transition-all"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
                     </div>
                     <div className="flex gap-4">
                         <Select value={programFilter} onValueChange={setProgramFilter}>
-                            <SelectTrigger className="w-[180px] bg-gray-50 border-transparent">
+                            <SelectTrigger className="w-[180px] bg-muted/30 border-transparent">
                                 <SelectValue placeholder="Program Type" />
                             </SelectTrigger>
                             <SelectContent>
@@ -113,7 +113,7 @@ export default function MyStudentsPage() {
                             </SelectContent>
                         </Select>
                         <Select value={statusFilter} onValueChange={setStatusFilter}>
-                            <SelectTrigger className="w-[180px] bg-gray-50 border-transparent">
+                            <SelectTrigger className="w-[180px] bg-muted/30 border-transparent">
                                 <SelectValue placeholder="Status" />
                             </SelectTrigger>
                             <SelectContent>
@@ -128,10 +128,10 @@ export default function MyStudentsPage() {
             </Card>
 
             {/* Students List */}
-            <Card className="border-gray-200 shadow-sm overflow-hidden">
-                <div className="divide-y divide-gray-100">
+            <Card className="border-border shadow-sm overflow-hidden">
+                <div className="divide-y divide-border">
                     {filteredStudents.length === 0 ? (
-                        <div className="p-12 text-center text-gray-500">
+                        <div className="p-12 text-center text-muted-foreground">
                             No students found matching your criteria.
                         </div>
                     ) : (
@@ -141,21 +141,21 @@ export default function MyStudentsPage() {
                                 : 0
 
                             return (
-                                <div key={student.id} className="p-6 hover:bg-gray-50 transition-colors group">
+                                <div key={student.id} className="p-6 hover:bg-muted/20 transition-colors group">
                                     <div className="flex flex-col md:flex-row md:items-center gap-6">
                                         {/* Student Info */}
                                         <div className="flex items-center gap-4 min-w-[250px]">
-                                            <Avatar className="h-12 w-12 border border-gray-200">
+                                            <Avatar className="h-12 w-12 border border-border">
                                                 <AvatarImage src={student.avatar_url} />
                                                 <AvatarFallback className="bg-purple-100 text-purple-600 text-lg">
                                                     {student.full_name?.[0]}
                                                 </AvatarFallback>
                                             </Avatar>
                                             <div>
-                                                <Link href={`/instructor/students/${student.id}`} className="font-semibold text-gray-900 hover:text-purple-600 transition-colors">
+                                                <Link href={`/instructor/students/${student.id}`} className="font-semibold text-foreground hover:text-purple-600 transition-colors">
                                                     {student.full_name}
                                                 </Link>
-                                                <div className="text-sm text-gray-500">{student.email}</div>
+                                                <div className="text-sm text-muted-foreground">{student.email}</div>
                                             </div>
                                         </div>
 
@@ -174,20 +174,20 @@ export default function MyStudentsPage() {
                                         {/* Progress */}
                                         <div className="flex-1 min-w-[200px]">
                                             <div className="flex justify-between text-sm mb-1.5">
-                                                <span className="text-gray-500">Progress</span>
-                                                <span className="font-medium text-gray-900">{progress}%</span>
+                                                <span className="text-muted-foreground">Progress</span>
+                                                <span className="font-medium text-foreground">{progress}%</span>
                                             </div>
                                             <Progress value={progress} className="h-2" indicatorClassName="bg-green-500" />
-                                            <div className="text-xs text-gray-400 mt-1">
+                                            <div className="text-xs text-muted-foreground mt-1">
                                                 {student.completedSessions} / {student.totalSessions} sessions completed
                                             </div>
                                         </div>
 
                                         {/* Next Session */}
                                         <div className="min-w-[180px]">
-                                            <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">Next Session</div>
+                                            <div className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Next Session</div>
                                             {student.nextSession ? (
-                                                <div className="text-sm font-medium text-gray-900">
+                                                <div className="text-sm font-medium text-foreground">
                                                     {format(parseISO(student.nextSession.date), "MMM d, h:mm a")}
                                                     <div className="text-xs text-blue-600 font-normal">{student.nextSession.type}</div>
                                                 </div>

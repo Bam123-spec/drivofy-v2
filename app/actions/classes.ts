@@ -3,6 +3,9 @@
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
+import { logAuditAction } from "@/app/actions/audit"
+
+import { cookies } from "next/headers"
 
 export type ClassType = 'DE' | 'RSEP' | 'DIP'
 
@@ -19,7 +22,8 @@ export interface CreateClassData {
 }
 
 export async function getClasses(type?: ClassType) {
-    const supabase = await createClient()
+    const cookieStore = await cookies()
+    const supabase = createClient(cookieStore)
 
     let query = supabase
         .from('classes')
@@ -45,7 +49,8 @@ export async function getClasses(type?: ClassType) {
 }
 
 export async function createClass(data: CreateClassData) {
-    const supabase = await createClient()
+    const cookieStore = await cookies()
+    const supabase = createClient(cookieStore)
 
     // 1. Check if user is admin
     const { data: { user } } = await supabase.auth.getUser()
@@ -73,12 +78,20 @@ export async function createClass(data: CreateClassData) {
         return { error: error.message }
     }
 
+    // Log Audit Action
+    await logAuditAction('create_class', {
+        className: data.name,
+        classType: data.class_type,
+        startDate: data.start_date
+    }, `Class: ${data.name}`)
+
     revalidatePath('/admin/classes')
     return { success: true }
 }
 
 export async function getClassById(id: string) {
-    const supabase = await createClient()
+    const cookieStore = await cookies()
+    const supabase = createClient(cookieStore)
 
     const { data, error } = await supabase
         .from('classes')

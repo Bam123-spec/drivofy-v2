@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
     Table,
@@ -19,120 +19,37 @@ import {
 } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { formatDistanceToNow } from "date-fns"
-import { ShieldAlert, User, Calendar, Activity } from "lucide-react"
-
-// Mock Data
-type AuditActionType =
-    | 'login'
-    | 'logout'
-    | 'create_class'
-    | 'update_class'
-    | 'delete_class'
-    | 'create_student'
-    | 'update_settings'
-    | 'billing_change'
-
-interface AuditLogEntry {
-    id: string
-    timestamp: string
-    userName: string
-    userEmail: string
-    role: string
-    actionType: AuditActionType
-    actionDescription: string
-    target: string
-    ipAddress: string
-}
-
-const MOCK_LOGS: AuditLogEntry[] = [
-    {
-        id: "LOG-001",
-        timestamp: new Date().toISOString(),
-        userName: "Sarah Connor",
-        userEmail: "sarah@drivofy.com",
-        role: "owner",
-        actionType: "update_settings",
-        actionDescription: "Updated organization profile",
-        target: "General Settings",
-        ipAddress: "192.168.1.1"
-    },
-    {
-        id: "LOG-002",
-        timestamp: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
-        userName: "John Wick",
-        userEmail: "john@drivofy.com",
-        role: "manager",
-        actionType: "create_class",
-        actionDescription: "Created new evening class",
-        target: "Class: Evening Zoom Session",
-        ipAddress: "10.0.0.42"
-    },
-    {
-        id: "LOG-003",
-        timestamp: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
-        userName: "John Wick",
-        userEmail: "john@drivofy.com",
-        role: "manager",
-        actionType: "create_student",
-        actionDescription: "Enrolled new student",
-        target: "Student: Michael Scott",
-        ipAddress: "10.0.0.42"
-    },
-    {
-        id: "LOG-004",
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-        userName: "Ellen Ripley",
-        userEmail: "ellen@drivofy.com",
-        role: "staff",
-        actionType: "login",
-        actionDescription: "User logged in",
-        target: "System",
-        ipAddress: "172.16.0.5"
-    },
-    {
-        id: "LOG-005",
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
-        userName: "Sarah Connor",
-        userEmail: "sarah@drivofy.com",
-        role: "owner",
-        actionType: "billing_change",
-        actionDescription: "Refunded invoice #INV-005",
-        target: "Invoice: INV-005",
-        ipAddress: "192.168.1.1"
-    },
-    {
-        id: "LOG-006",
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-        userName: "System",
-        userEmail: "system@drivofy.com",
-        role: "system",
-        actionType: "update_class",
-        actionDescription: "Auto-archived completed classes",
-        target: "Batch Job",
-        ipAddress: "localhost"
-    },
-]
+import { ShieldAlert, User, Calendar, Activity, Loader2 } from "lucide-react"
+import { getAuditLogs } from "@/app/actions/audit"
+import { toast } from "sonner"
 
 export default function AuditLogsPage() {
+    const [logs, setLogs] = useState<any[]>([])
+    const [loading, setLoading] = useState(true)
     const [dateFilter, setDateFilter] = useState<string>("24h")
     const [actionFilter, setActionFilter] = useState<string>("all")
     const [userFilter, setUserFilter] = useState<string>("all")
 
-    const filteredLogs = MOCK_LOGS.filter(log => {
-        // Date Filter (Simplified for mock)
-        if (dateFilter === "24h") {
-            const oneDayAgo = new Date(Date.now() - 1000 * 60 * 60 * 24)
-            if (new Date(log.timestamp) < oneDayAgo) return false
+    useEffect(() => {
+        const fetchLogs = async () => {
+            setLoading(true)
+            try {
+                const data = await getAuditLogs({
+                    dateRange: dateFilter,
+                    action: actionFilter,
+                    userId: userFilter
+                })
+                setLogs(data || [])
+            } catch (error) {
+                console.error("Error fetching logs:", error)
+                toast.error("Failed to load audit logs")
+            } finally {
+                setLoading(false)
+            }
         }
 
-        // Action Filter
-        if (actionFilter !== "all" && log.actionType !== actionFilter) return false
-
-        // User Filter
-        if (userFilter !== "all" && log.userEmail !== userFilter) return false
-
-        return true
-    })
+        fetchLogs()
+    }, [dateFilter, actionFilter, userFilter])
 
     return (
         <div className="space-y-8">
@@ -157,25 +74,22 @@ export default function AuditLogsPage() {
                                 <SelectItem value="all">All Time</SelectItem>
                             </SelectContent>
                         </Select>
-                        <Select value={userFilter} onValueChange={setUserFilter}>
+                        {/* User Filter - Simplified for now as we need to fetch users to populate this dynamically */}
+                        {/* <Select value={userFilter} onValueChange={setUserFilter}>
                             <SelectTrigger className="w-[180px] bg-gray-50 border-gray-200">
                                 <SelectValue placeholder="Filter by User" />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All Users</SelectItem>
-                                <SelectItem value="sarah@drivofy.com">Sarah Connor</SelectItem>
-                                <SelectItem value="john@drivofy.com">John Wick</SelectItem>
-                                <SelectItem value="ellen@drivofy.com">Ellen Ripley</SelectItem>
-                                <SelectItem value="system@drivofy.com">System</SelectItem>
                             </SelectContent>
-                        </Select>
+                        </Select> */}
                         <Select value={actionFilter} onValueChange={setActionFilter}>
                             <SelectTrigger className="w-[180px] bg-gray-50 border-gray-200">
                                 <SelectValue placeholder="Filter by Action" />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All Actions</SelectItem>
-                                <SelectItem value="login">Login / Logout</SelectItem>
+                                <SelectItem value="login">Login</SelectItem>
                                 <SelectItem value="create_class">Create Class</SelectItem>
                                 <SelectItem value="create_student">Create Student</SelectItem>
                                 <SelectItem value="update_settings">Settings Change</SelectItem>
@@ -196,34 +110,43 @@ export default function AuditLogsPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {filteredLogs.length > 0 ? (
-                                filteredLogs.map((log) => (
+                            {loading ? (
+                                <TableRow>
+                                    <TableCell colSpan={5} className="h-24 text-center">
+                                        <div className="flex justify-center items-center gap-2 text-gray-500">
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                            Loading logs...
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            ) : logs.length > 0 ? (
+                                logs.map((log) => (
                                     <TableRow key={log.id} className="hover:bg-gray-50/50">
                                         <TableCell className="text-gray-500 text-sm whitespace-nowrap">
-                                            {formatDistanceToNow(new Date(log.timestamp), { addSuffix: true })}
+                                            {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex items-center gap-2">
                                                 <div className="h-6 w-6 rounded-full bg-gray-100 flex items-center justify-center text-xs text-gray-500">
-                                                    {log.userName.charAt(0)}
+                                                    {log.user?.full_name?.charAt(0) || '?'}
                                                 </div>
                                                 <div>
-                                                    <div className="font-medium text-sm text-gray-900">{log.userName}</div>
-                                                    <div className="text-[10px] text-gray-500">{log.role}</div>
+                                                    <div className="font-medium text-sm text-gray-900">{log.user?.full_name || 'Unknown'}</div>
+                                                    <div className="text-[10px] text-gray-500">{log.user?.role || 'user'}</div>
                                                 </div>
                                             </div>
                                         </TableCell>
                                         <TableCell>
                                             <Badge variant="outline" className="bg-white font-normal text-gray-700 border-gray-200">
-                                                {log.actionType}
+                                                {log.action}
                                             </Badge>
-                                            <div className="text-xs text-gray-500 mt-0.5">{log.actionDescription}</div>
+                                            <div className="text-xs text-gray-500 mt-0.5">{log.details?.description || ''}</div>
                                         </TableCell>
                                         <TableCell className="text-sm text-gray-700 font-medium">
-                                            {log.target}
+                                            {log.target_resource || '-'}
                                         </TableCell>
                                         <TableCell className="text-right text-xs text-gray-400 font-mono">
-                                            {log.ipAddress}
+                                            {log.ip_address || 'unknown'}
                                         </TableCell>
                                     </TableRow>
                                 ))

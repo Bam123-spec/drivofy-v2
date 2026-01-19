@@ -2,6 +2,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
+import { logAuditAction } from "@/app/actions/audit"
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -97,6 +98,13 @@ export async function enrollStudent(classId: string, studentId: string) {
         return { error: "Failed to enroll student: " + error.message }
     }
 
+    // Log Audit Action
+    await logAuditAction('create_student', {
+        studentId: studentId,
+        classId: classId,
+        courseId: courseIdToUse
+    }, `Student Enrolled in Class: ${classId}`)
+
     console.log("Enrollment successful")
     revalidatePath('/admin/classes')
     return { success: true }
@@ -143,6 +151,11 @@ export async function removeStudentFromClass(enrollmentId: string) {
         console.error('Error removing student:', error)
         return { error: "Failed to remove student." }
     }
+
+    // Log Audit Action
+    await logAuditAction('delete_student', {
+        enrollmentId: enrollmentId
+    }, `Student Removed from Class (Enrollment ID: ${enrollmentId})`)
 
     revalidatePath('/admin/classes')
     return { success: true }

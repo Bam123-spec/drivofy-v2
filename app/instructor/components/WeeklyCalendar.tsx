@@ -40,14 +40,14 @@ export function WeeklyCalendar() {
     }
 
     return (
-        <div className="flex flex-col h-[calc(100vh-120px)] bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="flex flex-col h-[calc(100vh-120px)] bg-card rounded-xl border border-border shadow-sm overflow-hidden">
             {/* Calendar Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-white sticky top-0 z-20">
+            <div className="flex items-center justify-between p-4 border-b border-border bg-card sticky top-0 z-20">
                 <div className="flex items-center gap-4">
-                    <h2 className="text-xl font-bold text-gray-900">
+                    <h2 className="text-xl font-bold text-foreground">
                         {format(startDate, "MMMM yyyy")}
                     </h2>
-                    <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+                    <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setCurrentDate(subWeeks(currentDate, 1))}>
                             <ChevronLeft className="h-4 w-4" />
                         </Button>
@@ -59,7 +59,7 @@ export function WeeklyCalendar() {
                         </Button>
                     </div>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-gray-500">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-blue-100 border border-blue-200"></div> Scheduled</div>
                     <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-green-100 border border-green-200"></div> Completed</div>
                 </div>
@@ -69,10 +69,10 @@ export function WeeklyCalendar() {
             <div className="flex-1 overflow-auto relative">
                 <div className="grid grid-cols-8 min-w-[800px] h-full">
                     {/* Time Column */}
-                    <div className="border-r border-gray-100 bg-gray-50 sticky left-0 z-10">
-                        <div className="h-12 border-b border-gray-100 bg-gray-50 sticky top-0 z-20"></div> {/* Header spacer */}
+                    <div className="border-r border-border bg-muted/30 sticky left-0 z-10">
+                        <div className="h-12 border-b border-border bg-muted/30 sticky top-0 z-20"></div> {/* Header spacer */}
                         {hours.map(hour => (
-                            <div key={hour} className="h-20 border-b border-gray-100 text-xs text-gray-400 text-right pr-2 pt-2">
+                            <div key={hour} className="h-20 border-b border-border text-xs text-muted-foreground text-right pr-2 pt-2">
                                 {hour > 12 ? `${hour - 12} PM` : `${hour} AM`}
                             </div>
                         ))}
@@ -84,16 +84,16 @@ export function WeeklyCalendar() {
                         const isTodayCol = isSameDay(day, new Date())
 
                         return (
-                            <div key={dayIndex} className={`border-r border-gray-100 relative ${isTodayCol ? 'bg-blue-50/30' : ''}`}>
+                            <div key={dayIndex} className={`border-r border-border relative ${isTodayCol ? 'bg-blue-50/30' : ''}`}>
                                 {/* Day Header */}
-                                <div className={`h-12 border-b border-gray-100 flex flex-col items-center justify-center sticky top-0 z-10 bg-white ${isTodayCol ? 'bg-blue-50' : ''}`}>
-                                    <span className="text-xs font-medium text-gray-500 uppercase">{format(day, "EEE")}</span>
-                                    <span className={`text-sm font-bold ${isTodayCol ? 'text-blue-600' : 'text-gray-900'}`}>{format(day, "d")}</span>
+                                <div className={`h-12 border-b border-border flex flex-col items-center justify-center sticky top-0 z-10 bg-card ${isTodayCol ? 'bg-blue-50' : ''}`}>
+                                    <span className="text-xs font-medium text-muted-foreground uppercase">{format(day, "EEE")}</span>
+                                    <span className={`text-sm font-bold ${isTodayCol ? 'text-blue-600' : 'text-foreground'}`}>{format(day, "d")}</span>
                                 </div>
 
                                 {/* Time Slots Background */}
                                 {hours.map(hour => (
-                                    <div key={hour} className="h-20 border-b border-gray-100"></div>
+                                    <div key={hour} className="h-20 border-b border-border"></div>
                                 ))}
 
                                 {/* Sessions Overlay */}

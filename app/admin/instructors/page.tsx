@@ -41,6 +41,7 @@ import {
 } from "@/components/ui/table"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
+import { logAuditAction } from "@/app/actions/audit"
 
 export default function AdminInstructorsPage() {
     const [instructors, setInstructors] = useState<any[]>([])
@@ -106,6 +107,32 @@ export default function AdminInstructorsPage() {
             setTimeout(fetchInstructors, 1000)
         } catch (error: any) {
             toast.error(error.message)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const handleDeleteInstructor = async (id: string) => {
+        if (!confirm("Are you sure you want to delete this instructor? This action cannot be undone.")) return
+
+        try {
+            setLoading(true)
+            const { error } = await supabase
+                .from('instructors')
+                .delete()
+                .eq('id', id)
+
+            if (error) throw error
+
+            // Log Audit Action
+            await logAuditAction('delete_instructor', {
+                instructorId: id
+            }, `Deleted Instructor: ${id}`)
+
+            toast.success("Instructor deleted successfully")
+            fetchInstructors()
+        } catch (error: any) {
+            toast.error("Failed to delete instructor: " + error.message)
         } finally {
             setLoading(false)
         }
@@ -255,7 +282,11 @@ export default function AdminInstructorsPage() {
             {viewMode === 'grid' ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {filteredInstructors.map(instructor => (
-                        <InstructorCard key={instructor.id} instructor={instructor} />
+                        <InstructorCard
+                            key={instructor.id}
+                            instructor={instructor}
+                            onDelete={handleDeleteInstructor}
+                        />
                     ))}
                     {filteredInstructors.length === 0 && (
                         <div className="col-span-full text-center py-12 text-gray-500">
@@ -273,6 +304,7 @@ export default function AdminInstructorsPage() {
                                 <TableHead>Contact</TableHead>
                                 <TableHead>License</TableHead>
                                 <TableHead>Status</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -305,6 +337,16 @@ export default function AdminInstructorsPage() {
                                         <Badge variant={instructor.status === 'active' ? 'default' : 'secondary'} className={instructor.status === 'active' ? 'bg-green-100 text-green-800 hover:bg-green-200' : ''}>
                                             {instructor.status || 'Active'}
                                         </Badge>
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                            onClick={() => handleDeleteInstructor(instructor.id)}
+                                        >
+                                            Delete
+                                        </Button>
                                     </TableCell>
                                 </TableRow>
                             ))}

@@ -65,150 +65,168 @@ export default function AdminInstructorProfile() {
     }
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-500">
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-6xl mx-auto">
             {/* Header Section */}
-            <div className="relative bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                <div className="h-32 bg-gradient-to-r from-blue-600 to-indigo-600" />
+            <div className="relative bg-white rounded-2xl border border-gray-200 shadow-lg overflow-hidden group">
+                {/* Dynamic Banner */}
+                <div className="h-48 bg-gradient-to-r from-violet-600 via-indigo-600 to-blue-600 relative overflow-hidden">
+                    <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-20" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+                    <div className="absolute -right-20 -top-20 h-64 w-64 bg-white/10 rounded-full blur-3xl group-hover:bg-white/20 transition-colors duration-700" />
+                </div>
+
                 <div className="px-8 pb-8">
-                    <div className="relative flex justify-between items-end -mt-12 mb-6">
+                    <div className="relative flex flex-col md:flex-row justify-between items-end -mt-16 mb-8 gap-6">
                         <div className="flex items-end gap-6">
-                            <Avatar className="h-24 w-24 border-4 border-white shadow-md">
-                                <AvatarImage src={instructor.avatar_url} />
-                                <AvatarFallback className="text-3xl bg-blue-100 text-blue-600">
-                                    {instructor.full_name.charAt(0)}
-                                </AvatarFallback>
-                            </Avatar>
-                            <div className="mb-1">
-                                <h1 className="text-2xl font-bold text-gray-900">{instructor.full_name}</h1>
-                                <div className="flex items-center gap-2 mt-1">
-                                    <Badge variant="secondary" className="capitalize">
+                            <div className="relative">
+                                <Avatar className="h-32 w-32 border-[6px] border-white shadow-2xl bg-white ring-1 ring-gray-100">
+                                    <AvatarImage src={instructor.avatar_url} className="object-cover" />
+                                    <AvatarFallback className="text-4xl bg-gradient-to-br from-gray-100 to-gray-200 text-gray-600 font-medium">
+                                        {instructor.full_name.charAt(0)}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <div className={`absolute bottom-2 right-2 h-5 w-5 rounded-full border-[3px] border-white ${instructor.status === 'active' ? 'bg-emerald-500' : 'bg-gray-400'
+                                    } shadow-sm`} />
+                            </div>
+
+                            <div className="mb-2 space-y-1">
+                                <h1 className="text-3xl font-bold text-gray-900 tracking-tight">{instructor.full_name}</h1>
+                                <div className="flex items-center gap-3">
+                                    <Badge variant="secondary" className={`px-3 py-1 text-sm font-medium capitalize shadow-sm ${instructor.type === 'driving' ? 'bg-purple-50 text-purple-700 border-purple-100' :
+                                            instructor.type === 'theory' ? 'bg-indigo-50 text-indigo-700 border-indigo-100' :
+                                                'bg-blue-50 text-blue-700 border-blue-100'
+                                        }`}>
                                         {instructor.type} Instructor
                                     </Badge>
-                                    <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${instructor.status === 'active' ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'
-                                        }`}>
-                                        <span className={`h-1.5 w-1.5 rounded-full ${instructor.status === 'active' ? 'bg-green-500' : 'bg-gray-400'}`} />
+                                    <span className="text-sm text-gray-500 font-medium flex items-center gap-1.5">
+                                        <div className={`h-1.5 w-1.5 rounded-full ${instructor.status === 'active' ? 'bg-emerald-500' : 'bg-gray-400'}`} />
                                         {instructor.status}
                                     </span>
                                 </div>
                             </div>
                         </div>
-                        <div className="flex gap-3">
-                            <Button variant="outline">Edit Profile</Button>
-                            <Button className="bg-blue-600 hover:bg-blue-700">Contact</Button>
+
+                        <div className="flex gap-3 w-full md:w-auto">
+                            <Button variant="outline" className="flex-1 md:flex-none border-gray-200 hover:bg-gray-50 hover:text-gray-900 transition-colors">
+                                Edit Profile
+                            </Button>
+                            <Button className="flex-1 md:flex-none bg-gray-900 hover:bg-gray-800 text-white shadow-lg shadow-gray-900/20 transition-all hover:scale-[1.02] active:scale-[0.98]">
+                                Contact Instructor
+                            </Button>
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6 pt-6 border-t border-gray-100">
-                        <div className="flex items-center gap-3 text-sm text-gray-600">
-                            <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
+                        <div className="flex items-center gap-3 text-sm text-gray-600 group cursor-default">
+                            <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl group-hover:scale-110 transition-transform duration-300">
                                 <Mail className="h-4 w-4" />
                             </div>
-                            <div className="truncate">{instructor.email}</div>
+                            <div className="truncate font-medium">{instructor.email}</div>
                         </div>
-                        <div className="flex items-center gap-3 text-sm text-gray-600">
-                            <div className="p-2 bg-purple-50 text-purple-600 rounded-lg">
+                        <div className="flex items-center gap-3 text-sm text-gray-600 group cursor-default">
+                            <div className="p-2.5 bg-purple-50 text-purple-600 rounded-xl group-hover:scale-110 transition-transform duration-300">
                                 <Phone className="h-4 w-4" />
                             </div>
-                            <div>{instructor.phone || "No phone"}</div>
+                            <div className="font-medium">{instructor.phone || "No phone"}</div>
                         </div>
-                        <div className="flex items-center gap-3 text-sm text-gray-600">
-                            <div className="p-2 bg-orange-50 text-orange-600 rounded-lg">
+                        <div className="flex items-center gap-3 text-sm text-gray-600 group cursor-default">
+                            <div className="p-2.5 bg-orange-50 text-orange-600 rounded-xl group-hover:scale-110 transition-transform duration-300">
                                 <Shield className="h-4 w-4" />
                             </div>
-                            <div className="font-mono">{instructor.license_number || "N/A"}</div>
+                            <div className="font-mono font-medium">{instructor.license_number || "N/A"}</div>
                         </div>
-                        <div className="flex items-center gap-3 text-sm text-gray-600">
-                            <div className="p-2 bg-green-50 text-green-600 rounded-lg">
+                        <div className="flex items-center gap-3 text-sm text-gray-600 group cursor-default">
+                            <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl group-hover:scale-110 transition-transform duration-300">
                                 <Calendar className="h-4 w-4" />
                             </div>
-                            <div>Joined {new Date(instructor.created_at).toLocaleDateString()}</div>
+                            <div className="font-medium">Joined {new Date(instructor.created_at).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}</div>
                         </div>
                     </div>
                 </div>
             </div>
 
             {/* Main Content Tabs */}
-            <Tabs defaultValue="overview" className="space-y-6">
-                <TabsList className="bg-white border border-gray-200 p-1 h-12 w-full justify-start rounded-xl">
-                    <TabsTrigger value="overview" className="data-[state=active]:bg-gray-100 data-[state=active]:text-gray-900 h-10 px-6 rounded-lg">Overview</TabsTrigger>
-                    <TabsTrigger value="schedule" className="data-[state=active]:bg-gray-100 data-[state=active]:text-gray-900 h-10 px-6 rounded-lg">Schedule</TabsTrigger>
-                    <TabsTrigger value="students" className="data-[state=active]:bg-gray-100 data-[state=active]:text-gray-900 h-10 px-6 rounded-lg">Students</TabsTrigger>
-                    <TabsTrigger value="performance" className="data-[state=active]:bg-gray-100 data-[state=active]:text-gray-900 h-10 px-6 rounded-lg">Performance</TabsTrigger>
+            <Tabs defaultValue="overview" className="space-y-8">
+                <TabsList className="bg-white border border-gray-200 p-1.5 h-14 w-full justify-start rounded-2xl shadow-sm">
+                    <TabsTrigger value="overview" className="data-[state=active]:bg-gray-100 data-[state=active]:text-gray-900 data-[state=active]:shadow-none h-11 px-6 rounded-xl font-medium transition-all">Overview</TabsTrigger>
+                    <TabsTrigger value="schedule" className="data-[state=active]:bg-gray-100 data-[state=active]:text-gray-900 data-[state=active]:shadow-none h-11 px-6 rounded-xl font-medium transition-all">Schedule</TabsTrigger>
+                    <TabsTrigger value="students" className="data-[state=active]:bg-gray-100 data-[state=active]:text-gray-900 data-[state=active]:shadow-none h-11 px-6 rounded-xl font-medium transition-all">Students</TabsTrigger>
+                    <TabsTrigger value="performance" className="data-[state=active]:bg-gray-100 data-[state=active]:text-gray-900 data-[state=active]:shadow-none h-11 px-6 rounded-xl font-medium transition-all">Performance</TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="overview" className="space-y-6">
+                <TabsContent value="overview" className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
                     {/* Quick Stats */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <Card>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <Card className="border-none shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 bg-white/80 backdrop-blur-sm group">
                             <CardContent className="p-6 flex items-center gap-4">
-                                <div className="p-3 bg-amber-50 text-amber-600 rounded-xl">
+                                <div className="p-4 bg-amber-50 text-amber-600 rounded-2xl group-hover:bg-amber-100 transition-colors">
                                     <Star className="h-6 w-6 fill-current" />
                                 </div>
                                 <div>
                                     <p className="text-sm font-medium text-gray-500">Rating</p>
-                                    <h3 className="text-2xl font-bold text-gray-900">4.9</h3>
+                                    <h3 className="text-2xl font-bold text-gray-900 tracking-tight">4.9</h3>
                                 </div>
                             </CardContent>
                         </Card>
-                        <Card>
+                        <Card className="border-none shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 bg-white/80 backdrop-blur-sm group">
                             <CardContent className="p-6 flex items-center gap-4">
-                                <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
+                                <div className="p-4 bg-blue-50 text-blue-600 rounded-2xl group-hover:bg-blue-100 transition-colors">
                                     <Users className="h-6 w-6" />
                                 </div>
                                 <div>
                                     <p className="text-sm font-medium text-gray-500">Active Students</p>
-                                    <h3 className="text-2xl font-bold text-gray-900">12</h3>
+                                    <h3 className="text-2xl font-bold text-gray-900 tracking-tight">12</h3>
                                 </div>
                             </CardContent>
                         </Card>
-                        <Card>
+                        <Card className="border-none shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 bg-white/80 backdrop-blur-sm group">
                             <CardContent className="p-6 flex items-center gap-4">
-                                <div className="p-3 bg-green-50 text-green-600 rounded-xl">
+                                <div className="p-4 bg-emerald-50 text-emerald-600 rounded-2xl group-hover:bg-emerald-100 transition-colors">
                                     <Clock className="h-6 w-6" />
                                 </div>
                                 <div>
                                     <p className="text-sm font-medium text-gray-500">Hours Taught</p>
-                                    <h3 className="text-2xl font-bold text-gray-900">145</h3>
+                                    <h3 className="text-2xl font-bold text-gray-900 tracking-tight">145</h3>
                                 </div>
                             </CardContent>
                         </Card>
-                        <Card>
+                        <Card className="border-none shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 bg-white/80 backdrop-blur-sm group">
                             <CardContent className="p-6 flex items-center gap-4">
-                                <div className="p-3 bg-purple-50 text-purple-600 rounded-xl">
+                                <div className="p-4 bg-purple-50 text-purple-600 rounded-2xl group-hover:bg-purple-100 transition-colors">
                                     <Award className="h-6 w-6" />
                                 </div>
                                 <div>
                                     <p className="text-sm font-medium text-gray-500">Pass Rate</p>
-                                    <h3 className="text-2xl font-bold text-gray-900">92%</h3>
+                                    <h3 className="text-2xl font-bold text-gray-900 tracking-tight">92%</h3>
                                 </div>
                             </CardContent>
                         </Card>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <Card className="md:col-span-2">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <Card className="md:col-span-2 border-none shadow-md bg-white">
                             <CardHeader>
-                                <CardTitle>About</CardTitle>
+                                <CardTitle className="text-lg font-semibold text-gray-900">About Instructor</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <p className="text-gray-600 leading-relaxed">
+                                <p className="text-gray-600 leading-relaxed text-base">
                                     {instructor.bio || "No bio available for this instructor."}
                                 </p>
                             </CardContent>
                         </Card>
 
-                        <Card>
+                        <Card className="border-none shadow-md bg-white h-fit">
                             <CardHeader>
-                                <CardTitle>Assigned Vehicle</CardTitle>
+                                <CardTitle className="text-lg font-semibold text-gray-900">Assigned Vehicle</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg border border-gray-100">
-                                    <div className="h-12 w-12 bg-white rounded-full flex items-center justify-center shadow-sm">
-                                        <Car className="h-6 w-6 text-gray-600" />
+                                <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100 group hover:border-blue-200 hover:bg-blue-50/50 transition-all cursor-default">
+                                    <div className="h-14 w-14 bg-white rounded-full flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform duration-300">
+                                        <Car className="h-7 w-7 text-gray-700" />
                                     </div>
                                     <div>
-                                        <p className="font-medium text-gray-900">Toyota Corolla</p>
-                                        <p className="text-sm text-gray-500">License: ABC-123</p>
+                                        <p className="font-semibold text-gray-900">Toyota Corolla</p>
+                                        <p className="text-sm text-gray-500 font-mono">License: ABC-123</p>
                                     </div>
                                 </div>
                             </CardContent>
@@ -217,37 +235,46 @@ export default function AdminInstructorProfile() {
                 </TabsContent>
 
                 <TabsContent value="schedule">
-                    <Card>
+                    <Card className="border-none shadow-md">
                         <CardHeader>
                             <CardTitle>Weekly Schedule</CardTitle>
                             <CardDescription>Upcoming lessons and availability.</CardDescription>
                         </CardHeader>
-                        <CardContent className="h-96 flex items-center justify-center text-gray-500">
-                            Calendar view coming soon...
+                        <CardContent className="h-96 flex flex-col items-center justify-center text-gray-400 gap-4">
+                            <div className="h-16 w-16 bg-gray-50 rounded-full flex items-center justify-center">
+                                <Calendar className="h-8 w-8 text-gray-300" />
+                            </div>
+                            <p className="font-medium">Calendar view coming soon...</p>
                         </CardContent>
                     </Card>
                 </TabsContent>
 
                 <TabsContent value="students">
-                    <Card>
+                    <Card className="border-none shadow-md">
                         <CardHeader>
                             <CardTitle>Assigned Students</CardTitle>
                             <CardDescription>Students currently learning with this instructor.</CardDescription>
                         </CardHeader>
-                        <CardContent className="h-96 flex items-center justify-center text-gray-500">
-                            Student list coming soon...
+                        <CardContent className="h-96 flex flex-col items-center justify-center text-gray-400 gap-4">
+                            <div className="h-16 w-16 bg-gray-50 rounded-full flex items-center justify-center">
+                                <Users className="h-8 w-8 text-gray-300" />
+                            </div>
+                            <p className="font-medium">Student list coming soon...</p>
                         </CardContent>
                     </Card>
                 </TabsContent>
 
                 <TabsContent value="performance">
-                    <Card>
+                    <Card className="border-none shadow-md">
                         <CardHeader>
                             <CardTitle>Performance Metrics</CardTitle>
                             <CardDescription>Detailed analytics and feedback.</CardDescription>
                         </CardHeader>
-                        <CardContent className="h-96 flex items-center justify-center text-gray-500">
-                            Charts coming soon...
+                        <CardContent className="h-96 flex flex-col items-center justify-center text-gray-400 gap-4">
+                            <div className="h-16 w-16 bg-gray-50 rounded-full flex items-center justify-center">
+                                <Award className="h-8 w-8 text-gray-300" />
+                            </div>
+                            <p className="font-medium">Charts coming soon...</p>
                         </CardContent>
                     </Card>
                 </TabsContent>

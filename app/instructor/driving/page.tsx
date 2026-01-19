@@ -56,20 +56,20 @@ export default function DrivingPage() {
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Driving Sessions</h1>
-                    <p className="text-gray-500 mt-1">Manage your behind-the-wheel training sessions.</p>
+                    <h1 className="text-3xl font-bold text-foreground tracking-tight">Driving Sessions</h1>
+                    <p className="text-muted-foreground mt-1">Manage your behind-the-wheel training sessions.</p>
                 </div>
-                <div className="flex bg-gray-100 p-1 rounded-lg self-start sm:self-auto">
+                <div className="flex bg-muted p-1 rounded-lg self-start sm:self-auto">
                     <button
                         onClick={() => setFilter('upcoming')}
-                        className={`px-4 py-1.5 text-sm font-semibold rounded-md transition-all ${filter === 'upcoming' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-900'
+                        className={`px-4 py-1.5 text-sm font-semibold rounded-md transition-all ${filter === 'upcoming' ? 'bg-card text-blue-600 shadow-sm' : 'text-muted-foreground hover:text-foreground'
                             }`}
                     >
                         Upcoming
                     </button>
                     <button
                         onClick={() => setFilter('past')}
-                        className={`px-4 py-1.5 text-sm font-semibold rounded-md transition-all ${filter === 'past' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-900'
+                        className={`px-4 py-1.5 text-sm font-semibold rounded-md transition-all ${filter === 'past' ? 'bg-card text-blue-600 shadow-sm' : 'text-muted-foreground hover:text-foreground'
                             }`}
                     >
                         Past
@@ -80,7 +80,7 @@ export default function DrivingPage() {
             <div className="grid gap-4">
                 {filteredSessions.length > 0 ? (
                     filteredSessions.map((session) => (
-                        <Card key={session.id} className="group hover:shadow-md transition-all border-gray-100 rounded-xl overflow-hidden">
+                        <Card key={session.id} className="group hover:shadow-md transition-all border-border rounded-xl overflow-hidden">
                             <CardContent className="p-0 flex flex-col sm:flex-row">
                                 {/* Date Box */}
                                 <div className="bg-blue-50 w-full sm:w-32 p-6 flex flex-col items-center justify-center text-blue-700 border-b sm:border-b-0 sm:border-r border-blue-100">
@@ -99,10 +99,10 @@ export default function DrivingPage() {
                                         </Avatar>
                                         <div>
                                             <div className="flex items-center gap-2 mb-1">
-                                                <h3 className="text-lg font-bold text-gray-900">{session.studentName}</h3>
+                                                <h3 className="text-lg font-bold text-foreground">{session.studentName}</h3>
                                                 <Badge variant="outline" className={`text-xs border-0 ${session.status === 'completed' ? 'bg-green-100 text-green-700' :
-                                                        session.status === 'cancelled' ? 'bg-red-100 text-red-700' :
-                                                            'bg-blue-50 text-blue-700'
+                                                    session.status === 'cancelled' ? 'bg-red-100 text-red-700' :
+                                                        'bg-blue-50 text-blue-700'
                                                     }`}>
                                                     {session.status}
                                                 </Badge>
@@ -141,12 +141,12 @@ export default function DrivingPage() {
                         </Card>
                     ))
                 ) : (
-                    <div className="text-center py-12 bg-white rounded-2xl border border-gray-100">
+                    <div className="text-center py-12 bg-card rounded-2xl border border-border">
                         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-50 text-blue-600 mb-4">
                             <Car className="h-8 w-8" />
                         </div>
-                        <h3 className="text-lg font-bold text-gray-900">No {filter} Sessions</h3>
-                        <p className="text-gray-500 mt-1">You don't have any {filter} driving sessions.</p>
+                        <h3 className="text-lg font-bold text-foreground">No {filter} Sessions</h3>
+                        <p className="text-muted-foreground mt-1">You don't have any {filter} driving sessions.</p>
                     </div>
                 )}
             </div>
