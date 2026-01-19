@@ -13,7 +13,7 @@ import { cookies } from "next/headers"
 
 export default async function DIPPage() {
     const classes = await getClasses('DIP')
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
     const supabase = createClient(cookieStore)
     const { data: { user } } = await supabase.auth.getUser()
 

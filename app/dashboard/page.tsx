@@ -12,6 +12,8 @@ import { Badge } from "@/components/ui/badge"
 
 import { cookies } from "next/headers"
 
+export const dynamic = 'force-dynamic'
+
 export default async function DashboardPage() {
   const cookieStore = await cookies()
   const supabase = createClient(cookieStore)
@@ -73,7 +75,7 @@ export default async function DashboardPage() {
                         <Badge variant={enrollment.class.class_type === 'DE' ? 'default' : 'secondary'}>
                           {enrollment.class.class_type}
                         </Badge>
-                        <Badge variant={enrollment.status === 'completed' ? 'success' : 'outline'}>
+                        <Badge variant="outline" className={enrollment.status === 'completed' ? "bg-green-100 text-green-800 hover:bg-green-100" : ""}>
                           {enrollment.status}
                         </Badge>
                       </div>
