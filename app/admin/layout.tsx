@@ -30,7 +30,9 @@ import {
     UserCog,
     History,
     Truck,
-    Puzzle
+    Puzzle,
+    Server,
+    LayoutTemplate
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { supabase } from "@/lib/supabaseClient"
@@ -95,10 +97,10 @@ export default function AdminLayout({
             ]
         },
         {
-            label: "Financial",
+            label: "Website",
             items: [
-                { href: "/admin/revenue", label: "Revenue Reports", icon: BarChart3, placeholder: false },
-                { href: "/admin/payments", label: "Billing", icon: CreditCard, placeholder: false },
+                { href: "/admin/hosting", label: "Hosting", icon: Server, placeholder: false },
+                { href: "/admin/editor", label: "Edit Site", icon: LayoutTemplate, placeholder: false },
             ]
         },
         {
@@ -107,6 +109,7 @@ export default function AdminLayout({
                 { href: "/admin/settings", label: "General Settings", icon: Settings, placeholder: false },
                 { href: "/admin/users", label: "Admin Users", icon: UserCog, placeholder: false },
                 { href: "/admin/audit", label: "Audit Logs", icon: History, placeholder: false },
+                { href: "/admin/payments", label: "Billing", icon: CreditCard, placeholder: false },
             ]
         }
     ]
