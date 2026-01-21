@@ -133,7 +133,11 @@ export default function AdminLayout({
                     <div className="flex items-center gap-2.5">
                         {/* Logo Image */}
                         <div className="relative h-8 w-auto flex items-center justify-center">
-                            <img src="/logo.jpg" alt="Drivofy" className="h-8 w-auto object-contain" />
+                            {collapsed ? (
+                                <img src="/sidebar-logo-dark.png" alt="Drivofy" className="h-8 w-8 object-contain rounded-md" />
+                            ) : (
+                                <img src="/logo.jpg" alt="Drivofy" className="h-8 w-auto object-contain" />
+                            )}
                         </div>
                     </div>
                     <button

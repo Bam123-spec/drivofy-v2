@@ -4,6 +4,7 @@ import { createServerClient } from '@supabase/ssr'
 import { createClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
 import { cookies } from 'next/headers'
+import { logAuditAction } from "@/app/actions/audit"
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -288,6 +289,13 @@ export async function updateSessionStatus(sessionId: string, status: string) {
         .eq('id', sessionId)
 
     if (error) throw error
+    if (error) throw error
+
+    await logAuditAction('update_session', {
+        sessionId,
+        status
+    }, `Session Status Updated: ${status}`)
+
     revalidatePath('/instructor')
     revalidatePath('/instructor/schedule')
     return { success: true }
@@ -331,6 +339,12 @@ export async function saveSessionReport(sessionId: string, reportData: {
         .eq('id', sessionId)
 
     revalidatePath('/instructor/schedule')
+
+    await logAuditAction('update_session', {
+        sessionId,
+        reportData
+    }, `Session Report Saved`)
+
     return { success: true }
 }
 
@@ -569,6 +583,12 @@ export async function updateStudentGrade(enrollmentId: string, grade: string) {
         .eq('id', enrollmentId)
 
     if (error) throw error
+
+    await logAuditAction('update_student', {
+        enrollmentId,
+        grade
+    }, `Student Grade Updated: ${grade}`)
+
     revalidatePath('/instructor/lessons/[classId]')
     return { success: true }
 }
@@ -627,6 +647,12 @@ export async function updateStudentCertification(enrollmentId: string, status: s
     }
 
     revalidatePath('/instructor/lessons/[classId]')
+
+    await logAuditAction('update_student', {
+        enrollmentId,
+        status
+    }, `Student Certification Updated: ${status}`)
+
     return { success: true }
 }
 
@@ -640,6 +666,11 @@ export async function removeStudentFromCourse(enrollmentId: string) {
         .eq('id', enrollmentId)
 
     if (error) throw error
+
+    await logAuditAction('delete_student', {
+        enrollmentId
+    }, `Student Removed from Course`)
+
     revalidatePath('/instructor/lessons/[classId]')
     return { success: true }
 }
@@ -662,6 +693,13 @@ export async function updateBatchAttendance(classId: string, updates: { classDay
         )
 
     if (error) throw error
+    if (error) throw error
+
+    await logAuditAction('update_class', {
+        classId,
+        updatesCount: updates.length
+    }, `Batch Attendance Updated`)
+
     revalidatePath(`/instructor/lessons/${classId}`)
     return { success: true }
 }
@@ -762,6 +800,13 @@ export async function updateAttendance(classDayId: string, studentId: string, st
         }, { onConflict: 'class_day_id, student_id' })
 
     if (error) throw error
+
+    await logAuditAction('update_class', {
+        classDayId,
+        studentId,
+        status
+    }, `Attendance Updated: ${status}`)
+
     revalidatePath(`/instructor/lessons`)
     return { success: true }
 }
@@ -796,6 +841,11 @@ export async function saveLessonNote(classDayId: string, content: string) {
     }
 
     revalidatePath(`/instructor/lessons`)
+
+    await logAuditAction('update_class', {
+        classDayId
+    }, `Lesson Note Saved`)
+
     return { success: true }
 }
 

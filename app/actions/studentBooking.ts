@@ -5,6 +5,7 @@ import { createCalendarEvent, getInstructorBusyTimes } from '@/lib/googleCalenda
 import { revalidatePath } from 'next/cache'
 
 import { cookies } from "next/headers"
+import { logAuditAction } from "@/app/actions/audit"
 
 export async function bookStudentLesson(data: {
     instructorId: string,
@@ -136,6 +137,14 @@ export async function bookStudentLesson(data: {
         }
 
         revalidatePath('/dashboard')
+
+        await logAuditAction('create_session', {
+            instructorId: data.instructorId,
+            date: data.date,
+            time: data.time,
+            duration: data.duration
+        }, `Student Booked Driving Lesson`)
+
         return { success: true }
 
     } catch (error: any) {

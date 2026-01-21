@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 import { cookies } from "next/headers"
+import { logAuditAction } from "@/app/actions/audit"
 
 export async function enrollStudent(classId: string, studentId: string, paymentStatus: 'paid' | 'pending' = 'pending') {
     const cookieStore = await cookies()
@@ -38,6 +39,19 @@ export async function enrollStudent(classId: string, studentId: string, paymentS
 
     revalidatePath('/dashboard')
     revalidatePath(`/services`)
+
+    // Log Audit Action
+    // We need to import logAuditAction first. I will add the import in a separate block or assume it's there? 
+    // Wait, I need to add the import too.
+    // I'll do it in two steps or one big replace if I can see the imports.
+    // I can see imports at the top.
+
+    await logAuditAction('create_student', {
+        studentId: studentId,
+        classId: classId,
+        paymentStatus
+    }, `Student Self-Enrolled in Class: ${classId}`)
+
     return { success: true }
 }
 

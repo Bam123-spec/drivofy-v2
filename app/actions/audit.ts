@@ -17,6 +17,9 @@ export type AuditAction =
     | 'delete_instructor'
     | 'update_settings'
     | 'billing_change'
+    | 'create_session'
+    | 'update_session'
+    | 'delete_session'
     | 'other'
 
 export async function logAuditAction(
