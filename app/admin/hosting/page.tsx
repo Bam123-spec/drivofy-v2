@@ -79,14 +79,14 @@ export default function HostingPage() {
                             <div className="space-y-1">
                                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Deployment</p>
                                 <a href="#" className="text-sm text-gray-900 hover:underline hover:text-blue-600 truncate block font-mono">
-                                    drivofy-v2-akr78okos-bam123.vercel.app
+                                    portifol-v2-akr78okos.vercel.app
                                 </a>
                             </div>
                             <div className="space-y-1">
                                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Domains</p>
                                 <div className="flex items-center gap-2">
                                     <a href="#" className="text-sm text-gray-900 hover:underline hover:text-blue-600 font-medium">
-                                        selamdrivingschool.com
+                                        portifol.com
                                     </a>
                                     <Badge variant="secondary" className="text-[10px] h-5 px-1.5">Primary</Badge>
                                 </div>
