@@ -79,14 +79,14 @@ export default function HostingPage() {
                             <div className="space-y-1">
                                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Deployment</p>
                                 <a href="#" className="text-sm text-gray-900 hover:underline hover:text-blue-600 truncate block font-mono">
-                                    portifol-v2-akr78okos.vercel.app
+                                    selamdriving-v2-akr78okos.vercel.app
                                 </a>
                             </div>
                             <div className="space-y-1">
                                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Domains</p>
                                 <div className="flex items-center gap-2">
                                     <a href="#" className="text-sm text-gray-900 hover:underline hover:text-blue-600 font-medium">
-                                        portifol.com
+                                        selamdriving.drivofy.com
                                     </a>
                                     <Badge variant="secondary" className="text-[10px] h-5 px-1.5">Primary</Badge>
                                 </div>
@@ -106,7 +106,7 @@ export default function HostingPage() {
                                     <GitBranch className="h-4 w-4 text-gray-400" />
                                     <span className="font-mono text-xs">main</span>
                                     <span className="text-gray-400 px-1"></span>
-                                    <span className="truncate max-w-[150px] text-gray-500">fix: update favicon to use user-provided source</span>
+                                    <span className="truncate max-w-[150px] text-gray-500">fix: update configuration for selamdriving</span>
                                 </div>
                             </div>
                         </div>
