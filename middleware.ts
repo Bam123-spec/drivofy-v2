@@ -101,6 +101,26 @@ export async function middleware(request: NextRequest) {
         }
     }
 
+    // 4. Subdomain Routing
+    const hostname = request.headers.get('host') || ''
+    const currentHost = process.env.NODE_ENV === 'production' && process.env.VERCEL === '1'
+        ? hostname.replace(`.drivofy.com`, '') // Replace with your actual domain
+        : hostname.replace(`.localhost:3000`, '')
+
+    // If it's a subdomain (not www, not localhost, not the main domain)
+    if (currentHost !== 'drivofy.com' && currentHost !== 'www' && currentHost !== 'localhost:3000') {
+        // Rewrite to /site/[subdomain]
+        // We need to make sure we don't rewrite if it's already an API route or static file (handled by matcher config mostly)
+        // Also need to handle if the user is visiting the root of the subdomain
+
+        // If path is just /, rewrite to /site/[subdomain]
+        // If path is /about, rewrite to /site/[subdomain]/about
+
+        const url = request.nextUrl.clone()
+        url.pathname = `/site/${currentHost}${path}`
+        return NextResponse.rewrite(url)
+    }
+
     return response
 }
 
