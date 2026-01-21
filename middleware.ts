@@ -109,11 +109,13 @@ export async function middleware(request: NextRequest) {
 
     // If it's a subdomain (not www, not localhost, not the main domain)
     if (currentHost !== 'drivofy.com' && currentHost !== 'www' && currentHost !== 'localhost:3000') {
-        // User Request: "go straight to thier loging and no other page just login"
+        // User Request: "go straight to thier loging and no other page just login" AND "remove the header"
 
-        // If they visit the root '/', show them the Login page immediately.
+        // We rewrite to /site/[domain] which will hold the Header-less Login Page
         if (path === '/') {
-            return NextResponse.rewrite(new URL('/login', request.url))
+            const url = request.nextUrl.clone()
+            url.pathname = `/site/${currentHost}`
+            return NextResponse.rewrite(url)
         }
 
         // Optional: If you want to strictly block marketing pages on subdomains, 
