@@ -350,7 +350,7 @@ export default function AdminDashboard() {
                                                     <span className="font-medium text-gray-700">{activity.student?.full_name}</span> enrolled in <span className="font-medium text-gray-700">{activity.class?.name}</span>
                                                 </p>
                                                 <p className="text-xs text-gray-400 mt-1">
-                                                    {new Date(activity.enrollment_date).toLocaleDateString()}
+                                                    {new Date(activity.enrolled_at).toLocaleDateString()}
                                                 </p>
                                             </div>
                                         </div>

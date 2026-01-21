@@ -59,12 +59,12 @@ export async function getDashboardStats() {
             .from('enrollments')
             .select(`
                 id,
-                enrollment_date,
+                enrolled_at,
                 status,
                 student:student_id(full_name),
                 class:class_id(name)
             `)
-            .order('enrollment_date', { ascending: false })
+            .order('enrolled_at', { ascending: false })
             .limit(10)
 
         if (enrollmentError) console.error("Error fetching enrollments:", enrollmentError)
@@ -76,8 +76,8 @@ export async function getDashboardStats() {
 
         const { data: growthRaw, error: growthError } = await supabase
             .from('enrollments')
-            .select('enrollment_date')
-            .gte('enrollment_date', sixMonthsAgo.toISOString())
+            .select('enrolled_at')
+            .gte('enrolled_at', sixMonthsAgo.toISOString())
 
         if (growthError) console.error("Error fetching growth data:", growthError)
 
@@ -94,7 +94,7 @@ export async function getDashboardStats() {
         }
 
         growthRaw?.forEach(e => {
-            const d = new Date(e.enrollment_date)
+            const d = new Date(e.enrolled_at)
             const key = `${monthNames[d.getMonth()]}`
             if (months[key] !== undefined) {
                 months[key]++
