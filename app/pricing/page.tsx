@@ -30,27 +30,73 @@ export default function Pricing() {
         {/* Pricing Cards */}
         <section className="py-20">
           <div className="container mx-auto px-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-              {/* Standard Plan */}
-              <Card className="relative">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-7xl mx-auto items-start">
+              {/* Core Plan */}
+              <Card className="relative border-border/50 shadow-none hover:border-border transition-colors">
                 <CardHeader>
-                  <CardTitle className="text-2xl">Standard</CardTitle>
+                  <CardTitle className="text-2xl">Core</CardTitle>
                   <CardDescription className="leading-relaxed">
-                    Everything you need to manage your driving school
+                    Basic presence for new driving schools
                   </CardDescription>
                   <div className="mt-4">
-                    <span className="text-5xl font-bold">$55</span>
+                    <span className="text-4xl font-bold">$29</span>
                     <span className="text-muted-foreground">/month</span>
                     <p className="text-sm text-muted-foreground mt-2">per location</p>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <Button size="lg" className="w-full" asChild>
-                    <Link href="/contact">Start 30-Day Free Trial</Link>
+                  <Button size="lg" variant="outline" className="w-full" asChild>
+                    <Link href="/contact">Start Free Trial</Link>
                   </Button>
 
                   <div>
                     <p className="font-semibold mb-3">Includes:</p>
+                    <ul className="space-y-3 text-sm text-muted-foreground">
+                      <li className="flex items-start gap-3">
+                        <CheckCircle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                        <span className="leading-relaxed">Web hosting & domain</span>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <CheckCircle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                        <span className="leading-relaxed">Basic student inquiry form</span>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <CheckCircle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                        <span className="leading-relaxed">Admin dashboard (Lite)</span>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <CheckCircle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                        <span className="leading-relaxed">Email support</span>
+                      </li>
+                    </ul>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Standard Plan */}
+              <Card className="relative border-primary shadow-2xl scale-105 z-10 bg-card">
+                <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-primary text-primary-foreground text-sm font-semibold rounded-full flex items-center gap-1 shadow-lg">
+                  <Sparkles className="w-3 h-3" />
+                  Most Popular
+                </div>
+                <CardHeader>
+                  <CardTitle className="text-2xl text-primary">Standard</CardTitle>
+                  <CardDescription className="leading-relaxed">
+                    Everything you need to manage your driving school
+                  </CardDescription>
+                  <div className="mt-4">
+                    <span className="text-5xl font-bold">$59</span>
+                    <span className="text-muted-foreground">/month</span>
+                    <p className="text-sm text-muted-foreground mt-2">per location</p>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <Button size="lg" className="w-full shadow-lg shadow-primary/20" asChild>
+                    <Link href="/contact">Start 30-Day Free Trial</Link>
+                  </Button>
+
+                  <div>
+                    <p className="font-semibold mb-3">Everything in Core, plus:</p>
                     <ul className="space-y-3">
                       <li className="flex items-start gap-3">
                         <CheckCircle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
@@ -84,40 +130,32 @@ export default function Pricing() {
                         <CheckCircle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                         <span className="leading-relaxed">Unlimited students and instructors</span>
                       </li>
-                      <li className="flex items-start gap-3">
-                        <CheckCircle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                        <span className="leading-relaxed">Email support</span>
-                      </li>
                     </ul>
                   </div>
                 </CardContent>
               </Card>
 
               {/* Pro Plan */}
-              <Card className="relative border-primary shadow-lg">
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-primary text-primary-foreground text-sm font-semibold rounded-full flex items-center gap-1">
-                  <Sparkles className="w-3 h-3" />
-                  Most Popular
-                </div>
+              <Card className="relative border-border/50 shadow-none hover:border-border transition-colors">
                 <CardHeader>
                   <CardTitle className="text-2xl">Pro</CardTitle>
                   <CardDescription className="leading-relaxed">
                     Advanced features for growing driving schools
                   </CardDescription>
                   <div className="mt-4">
-                    <span className="text-5xl font-bold">$89</span>
+                    <span className="text-4xl font-bold">$89</span>
                     <span className="text-muted-foreground">/month</span>
                     <p className="text-sm text-muted-foreground mt-2">per location</p>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <Button size="lg" className="w-full" asChild>
-                    <Link href="/contact">Start 30-Day Free Trial</Link>
+                  <Button size="lg" variant="outline" className="w-full" asChild>
+                    <Link href="/contact">Start Free Trial</Link>
                   </Button>
 
                   <div>
                     <p className="font-semibold mb-3">Everything in Standard, plus:</p>
-                    <ul className="space-y-3">
+                    <ul className="space-y-3 text-sm text-muted-foreground">
                       <li className="flex items-start gap-3">
                         <CheckCircle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                         <span className="leading-relaxed">AI chatbot for your website and portal</span>
@@ -192,13 +230,29 @@ export default function Pricing() {
                   <thead>
                     <tr className="border-b border-border">
                       <th className="text-left py-4 px-4 font-semibold">Feature</th>
+                      <th className="text-center py-4 px-4 font-semibold">Core</th>
                       <th className="text-center py-4 px-4 font-semibold">Standard</th>
                       <th className="text-center py-4 px-4 font-semibold">Pro</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr className="border-b border-border">
+                      <td className="py-4 px-4">Web Hosting & Domain</td>
+                      <td className="text-center py-4 px-4">
+                        <CheckCircle className="w-5 h-5 text-primary mx-auto" />
+                      </td>
+                      <td className="text-center py-4 px-4">
+                        <CheckCircle className="w-5 h-5 text-primary mx-auto" />
+                      </td>
+                      <td className="text-center py-4 px-4">
+                        <CheckCircle className="w-5 h-5 text-primary mx-auto" />
+                      </td>
+                    </tr>
+                    <tr className="border-b border-border">
                       <td className="py-4 px-4">Student Portal</td>
+                      <td className="text-center py-4 px-4">
+                        <span className="text-muted-foreground">Basic</span>
+                      </td>
                       <td className="text-center py-4 px-4">
                         <CheckCircle className="w-5 h-5 text-primary mx-auto" />
                       </td>
@@ -209,6 +263,9 @@ export default function Pricing() {
                     <tr className="border-b border-border">
                       <td className="py-4 px-4">Instructor Portal</td>
                       <td className="text-center py-4 px-4">
+                        <span className="text-muted-foreground">—</span>
+                      </td>
+                      <td className="text-center py-4 px-4">
                         <CheckCircle className="w-5 h-5 text-primary mx-auto" />
                       </td>
                       <td className="text-center py-4 px-4">
@@ -218,6 +275,9 @@ export default function Pricing() {
                     <tr className="border-b border-border">
                       <td className="py-4 px-4">Admin Dashboard</td>
                       <td className="text-center py-4 px-4">
+                        <span className="text-muted-foreground">Lite</span>
+                      </td>
+                      <td className="text-center py-4 px-4">
                         <CheckCircle className="w-5 h-5 text-primary mx-auto" />
                       </td>
                       <td className="text-center py-4 px-4">
@@ -226,6 +286,9 @@ export default function Pricing() {
                     </tr>
                     <tr className="border-b border-border">
                       <td className="py-4 px-4">Google Calendar Sync</td>
+                      <td className="text-center py-4 px-4">
+                        <span className="text-muted-foreground">—</span>
+                      </td>
                       <td className="text-center py-4 px-4">
                         <CheckCircle className="w-5 h-5 text-primary mx-auto" />
                       </td>
@@ -241,9 +304,15 @@ export default function Pricing() {
                       <td className="text-center py-4 px-4">
                         <CheckCircle className="w-5 h-5 text-primary mx-auto" />
                       </td>
+                      <td className="text-center py-4 px-4">
+                        <CheckCircle className="w-5 h-5 text-primary mx-auto" />
+                      </td>
                     </tr>
                     <tr className="border-b border-border">
                       <td className="py-4 px-4">SMS Notifications</td>
+                      <td className="text-center py-4 px-4">
+                        <span className="text-muted-foreground">—</span>
+                      </td>
                       <td className="text-center py-4 px-4">
                         <span className="text-muted-foreground">—</span>
                       </td>
@@ -257,11 +326,17 @@ export default function Pricing() {
                         <span className="text-muted-foreground">—</span>
                       </td>
                       <td className="text-center py-4 px-4">
+                        <span className="text-muted-foreground">—</span>
+                      </td>
+                      <td className="text-center py-4 px-4">
                         <CheckCircle className="w-5 h-5 text-primary mx-auto" />
                       </td>
                     </tr>
                     <tr className="border-b border-border">
                       <td className="py-4 px-4">Review Automation</td>
+                      <td className="text-center py-4 px-4">
+                        <span className="text-muted-foreground">—</span>
+                      </td>
                       <td className="text-center py-4 px-4">
                         <span className="text-muted-foreground">—</span>
                       </td>
@@ -275,11 +350,17 @@ export default function Pricing() {
                         <span className="text-muted-foreground">—</span>
                       </td>
                       <td className="text-center py-4 px-4">
+                        <span className="text-muted-foreground">—</span>
+                      </td>
+                      <td className="text-center py-4 px-4">
                         <CheckCircle className="w-5 h-5 text-primary mx-auto" />
                       </td>
                     </tr>
                     <tr className="border-b border-border">
                       <td className="py-4 px-4">Priority Support</td>
+                      <td className="text-center py-4 px-4">
+                        <span className="text-muted-foreground">—</span>
+                      </td>
                       <td className="text-center py-4 px-4">
                         <span className="text-muted-foreground">—</span>
                       </td>
@@ -357,7 +438,7 @@ export default function Pricing() {
                 <AccordionItem value="item-7">
                   <AccordionTrigger>Do you offer annual billing?</AccordionTrigger>
                   <AccordionContent className="leading-relaxed">
-                    Yes! Pay annually and save 15%. That brings Standard to $561/year ($46.75/month) and Pro to
+                    Yes! Pay annually and save 15%. That brings Standard to $602/year ($50.15/month) and Pro to
                     $908/year ($75.67/month). You can switch to annual billing from your dashboard or contact us during
                     signup.
                   </AccordionContent>
