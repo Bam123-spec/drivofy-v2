@@ -89,7 +89,7 @@ export function Header() {
                   Logout
                 </Button>
                 <Button asChild className="bg-white text-black hover:bg-white/90 shadow-[0_0_20px_-5px_rgba(255,255,255,0.3)]">
-                  <Link href="/dashboard">Dashboard</Link>
+                  <Link href="/admin">Dashboard</Link>
                 </Button>
               </>
             ) : (
@@ -146,7 +146,7 @@ export function Header() {
                     <span>{user.name}</span>
                   </div>
                   <Button className="w-full bg-white text-black hover:bg-white/90" asChild>
-                    <Link href="/dashboard">Dashboard</Link>
+                    <Link href="/admin">Dashboard</Link>
                   </Button>
                   <Button variant="ghost" className="w-full text-white/70 hover:text-white hover:bg-white/10" onClick={handleLogout}>
                     <LogOut className="h-4 w-4 mr-2" />
