@@ -13,9 +13,9 @@ export const metadata: Metadata = {
     "Streamline your driving school with automated scheduling, student portals, instructor management, and Google Calendar sync. Start your 30-day free trial today.",
   generator: "v0.app",
   icons: {
-    icon: "/logo.png",
-    shortcut: "/logo.png",
-    apple: "/logo.png",
+    icon: "/favicon.jpg",
+    shortcut: "/favicon.jpg",
+    apple: "/favicon.jpg",
   },
 }
 

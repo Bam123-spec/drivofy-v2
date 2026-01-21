@@ -43,63 +43,64 @@ export function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="fixed top-0 z-50 w-full border-b border-white/5 bg-black/50 backdrop-blur-xl supports-[backdrop-filter]:bg-black/20">
       <div className="container mx-auto px-4">
-        <div className="flex min-h-20 items-center justify-between py-2">
-          <Link href="/" className="flex items-center">
+        <div className="flex h-16 items-center justify-between">
+          <Link href="/" className="flex items-center gap-2 transition-opacity hover:opacity-80">
             <Image
-              src="/images/drivofy-logo.png"
+              src="/logo.jpg"
               alt="Drivofy"
-              width={200}
-              height={55}
-              className="h-11 w-auto md:h-12"
+              width={140}
+              height={40}
+              className="h-9 w-auto"
               priority
             />
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-8">
-            <Link href="/" className="text-sm font-medium hover:text-primary transition-colors">
-              Home
-            </Link>
-            <Link href="/features" className="text-sm font-medium hover:text-primary transition-colors">
-              Features
-            </Link>
-            <Link href="/pricing" className="text-sm font-medium hover:text-primary transition-colors">
-              Pricing
-            </Link>
-            <Link href="/how-it-works" className="text-sm font-medium hover:text-primary transition-colors">
-              How It Works
-            </Link>
-            <Link href="/resources" className="text-sm font-medium hover:text-primary transition-colors">
-              Resources
-            </Link>
-            <Link href="/contact" className="text-sm font-medium hover:text-primary transition-colors">
-              Contact
-            </Link>
+          <nav className="hidden md:flex items-center gap-1">
+            {[
+              { name: "Home", href: "/" },
+              { name: "Features", href: "/features" },
+              { name: "Pricing", href: "/pricing" },
+              { name: "How It Works", href: "/how-it-works" },
+              { name: "Resources", href: "/resources" },
+              { name: "Contact", href: "/contact" },
+            ].map((item) => (
+              <Link
+                key={item.name}
+                href={item.href}
+                className="px-4 py-2 text-sm font-medium text-white/70 transition-all hover:text-white hover:bg-white/5 rounded-full"
+              >
+                {item.name}
+              </Link>
+            ))}
           </nav>
 
-          <div className="hidden md:flex items-center space-x-4">
+          <div className="hidden md:flex items-center gap-4">
             {user ? (
               <>
-                <div className="flex items-center space-x-2 text-sm">
+                <div className="flex items-center gap-2 text-sm text-white/80 pr-2 border-r border-white/10">
                   <UserIcon className="h-4 w-4" />
                   <span>{user.name}</span>
                 </div>
-                <Button variant="outline" onClick={handleLogout}>
+                <Button variant="ghost" className="text-white/70 hover:text-white hover:bg-white/10" onClick={handleLogout}>
                   <LogOut className="h-4 w-4 mr-2" />
                   Logout
                 </Button>
-                <Button asChild>
+                <Button asChild className="bg-white text-black hover:bg-white/90 shadow-[0_0_20px_-5px_rgba(255,255,255,0.3)]">
                   <Link href="/dashboard">Dashboard</Link>
                 </Button>
               </>
             ) : (
               <>
-                <Button variant="outline" asChild>
-                  <Link href="/login">Login</Link>
-                </Button>
-                <Button asChild>
+                <Link
+                  href="/login"
+                  className="text-sm font-medium text-white/70 hover:text-white transition-colors px-4"
+                >
+                  Login
+                </Link>
+                <Button asChild className="bg-white text-black hover:bg-white/90 shadow-[0_0_20px_-5px_rgba(255,255,255,0.3)] rounded-full px-6">
                   <Link href="/signup">Sign Up</Link>
                 </Button>
               </>
@@ -107,83 +108,63 @@ export function Header() {
           </div>
 
           {/* Mobile Menu Button */}
-          <button className="md:hidden" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} aria-label="Toggle menu">
+          <button
+            className="md:hidden p-2 text-white/70 hover:text-white transition-colors"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label="Toggle menu"
+          >
             {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>
         </div>
 
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
-          <nav className="md:hidden py-4 space-y-4">
-            <Link
-              href="/"
-              className="block py-2 text-sm font-medium hover:text-primary transition-colors"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Home
-            </Link>
-            <Link
-              href="/features"
-              className="block py-2 text-sm font-medium hover:text-primary transition-colors"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Features
-            </Link>
-            <Link
-              href="/pricing"
-              className="block py-2 text-sm font-medium hover:text-primary transition-colors"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Pricing
-            </Link>
-            <Link
-              href="/how-it-works"
-              className="block py-2 text-sm font-medium hover:text-primary transition-colors"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              How It Works
-            </Link>
-            <Link
-              href="/resources"
-              className="block py-2 text-sm font-medium hover:text-primary transition-colors"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Resources
-            </Link>
-            <Link
-              href="/contact"
-              className="block py-2 text-sm font-medium hover:text-primary transition-colors"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Contact
-            </Link>
-            <div className="pt-4 space-y-2">
+          <div className="md:hidden py-4 space-y-2 bg-black/95 border-t border-white/10 absolute left-0 right-0 px-4 shadow-2xl backdrop-blur-xl">
+            {[
+              { name: "Home", href: "/" },
+              { name: "Features", href: "/features" },
+              { name: "Pricing", href: "/pricing" },
+              { name: "How It Works", href: "/how-it-works" },
+              { name: "Resources", href: "/resources" },
+              { name: "Contact", href: "/contact" },
+            ].map((item) => (
+              <Link
+                key={item.name}
+                href={item.href}
+                className="block px-4 py-3 text-sm font-medium text-white/70 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                {item.name}
+              </Link>
+            ))}
+
+            <div className="pt-4 mt-4 border-t border-white/10 space-y-3">
               {user ? (
                 <>
-                  <div className="flex items-center space-x-2 text-sm px-4 py-2">
+                  <div className="flex items-center gap-2 text-sm text-white/60 px-4">
                     <UserIcon className="h-4 w-4" />
                     <span>{user.name}</span>
                   </div>
-                  <Button variant="outline" className="w-full bg-transparent" asChild>
+                  <Button className="w-full bg-white text-black hover:bg-white/90" asChild>
                     <Link href="/dashboard">Dashboard</Link>
                   </Button>
-                  <Button variant="outline" className="w-full bg-transparent" onClick={handleLogout}>
+                  <Button variant="ghost" className="w-full text-white/70 hover:text-white hover:bg-white/10" onClick={handleLogout}>
                     <LogOut className="h-4 w-4 mr-2" />
                     Logout
                   </Button>
                 </>
               ) : (
                 <>
-                  <Button variant="outline" className="w-full bg-transparent" asChild>
+                  <Button variant="ghost" className="w-full text-white/70 hover:text-white hover:bg-white/10" asChild>
                     <Link href="/login">Login</Link>
                   </Button>
-                  <Button className="w-full" asChild>
+                  <Button className="w-full bg-white text-black hover:bg-white/90" asChild>
                     <Link href="/signup">Sign Up</Link>
                   </Button>
                 </>
               )}
             </div>
-          </nav>
+          </div>
         )}
       </div>
     </header>

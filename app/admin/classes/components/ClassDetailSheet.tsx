@@ -32,7 +32,7 @@ export function ClassDetailSheet({
 }: ClassDetailSheetProps) {
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
-            <SheetContent className="sm:max-w-[600px] overflow-y-auto">
+            <SheetContent className="sm:max-w-[600px] overflow-y-auto bg-white text-gray-900">
                 <SheetHeader className="mb-6">
                     <SheetTitle>Edit Class</SheetTitle>
                     <SheetDescription>
@@ -51,6 +51,7 @@ export function ClassDetailSheet({
                             <ClassForm
                                 initialData={{
                                     name: classData.name,
+                                    class_type: classData.class_type,
                                     start_date: classData.start_date,
                                     end_date: classData.end_date,
                                     time_slot: classData.time_slot,

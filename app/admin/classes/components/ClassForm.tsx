@@ -74,6 +74,13 @@ export function ClassForm({ initialData, instructors, onSubmit, isSubmitting = f
         },
     })
 
+    // Reset form when initialData changes (for editing different classes)
+    useEffect(() => {
+        if (initialData) {
+            form.reset(initialData)
+        }
+    }, [initialData, form])
+
     // Watch start_date and class_type to auto-calculate end_date
     const startDate = form.watch("start_date")
     const classType = form.watch("class_type")
@@ -189,6 +196,13 @@ export function ClassForm({ initialData, instructors, onSubmit, isSubmitting = f
                                     <SelectItem value="10:00 AM - 12:00 PM">10:00 AM - 12:00 PM</SelectItem>
                                     <SelectItem value="2:00 PM - 4:00 PM">2:00 PM - 4:00 PM</SelectItem>
                                     <SelectItem value="6:00 PM - 8:00 PM">6:00 PM - 8:00 PM</SelectItem>
+                                    {/* Add the current value if it's not in the standard list */}
+                                    {initialData?.time_slot &&
+                                        !["10:00 AM - 12:00 PM", "2:00 PM - 4:00 PM", "6:00 PM - 8:00 PM"].includes(initialData.time_slot) && (
+                                            <SelectItem value={initialData.time_slot}>
+                                                {initialData.time_slot}
+                                            </SelectItem>
+                                        )}
                                 </SelectContent>
                             </Select>
                             <FormMessage />

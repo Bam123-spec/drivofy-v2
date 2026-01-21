@@ -81,7 +81,7 @@ export default function AdminLayout({
         {
             label: "Main Menu",
             items: [
-                { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+                { href: "/admin", label: "Dashboard", icon: LayoutDashboard, placeholder: false },
             ]
         },
         {
@@ -131,14 +131,10 @@ export default function AdminLayout({
                 {/* Logo Area */}
                 <div className={`h-16 flex items-center ${collapsed ? "justify-center px-0" : "px-6"} border-b border-sidebar-border shrink-0 transition-all duration-300`}>
                     <div className="flex items-center gap-2.5">
-                        <div className="h-8 w-8 bg-sidebar-primary rounded-lg flex items-center justify-center text-sidebar-primary-foreground shadow-md shadow-sidebar-primary/20">
-                            <Car className="h-4 w-4 fill-current" />
+                        {/* Logo Image */}
+                        <div className="relative h-8 w-auto flex items-center justify-center">
+                            <img src="/logo.jpg" alt="Drivofy" className="h-8 w-auto object-contain" />
                         </div>
-                        {!collapsed && (
-                            <span className="text-lg font-bold tracking-tight text-sidebar-foreground animate-in fade-in duration-300">
-                                Drivofy<span className="text-sidebar-primary">.</span>
-                            </span>
-                        )}
                     </div>
                     <button
                         className="ml-auto lg:hidden text-sidebar-foreground/50 hover:text-sidebar-foreground"
