@@ -5,6 +5,9 @@ import { stripe } from '@/lib/stripe';
 
 export async function POST(req: Request) {
     try {
+        const body = await req.json().catch(() => ({}));
+        const returnPath = body.returnPath || '/billing';
+
         if (!process.env.STRIPE_SECRET_KEY) {
             return NextResponse.json({ error: 'Stripe is not configured (Missing STRIPE_SECRET_KEY)' }, { status: 503 });
         }
@@ -69,6 +72,8 @@ export async function POST(req: Request) {
             org = newOrg;
         }
 
+        if (!org) throw new Error('Organization not found');
+
         // Create Stripe Customer if needed
         let customerId = org.stripe_customer_id;
 
@@ -120,8 +125,8 @@ export async function POST(req: Request) {
             ],
             mode: 'subscription',
             allow_promotion_codes: true,
-            success_url: `${baseUrl}/billing?success=1`,
-            cancel_url: `${baseUrl}/billing?canceled=1`,
+            success_url: `${baseUrl}${returnPath}?success=1`,
+            cancel_url: `${baseUrl}${returnPath}?canceled=1`,
             metadata: {
                 orgId: org.id,
             },
