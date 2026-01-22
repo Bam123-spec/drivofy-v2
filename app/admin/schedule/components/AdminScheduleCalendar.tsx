@@ -114,7 +114,7 @@ export function AdminScheduleCalendar() {
     }
 
     return (
-        <div className="flex flex-col h-[calc(100vh-160px)] bg-white rounded-3xl border border-gray-100 shadow-2xl shadow-gray-200/50 overflow-hidden animate-in fade-in duration-700">
+        <div className="flex flex-col min-h-[1000px] bg-white rounded-3xl border border-gray-100 shadow-2xl shadow-gray-200/50 overflow-visible animate-in fade-in duration-700 mb-10">
             {/* Calendar Controls */}
             <div className="flex flex-col md:flex-row items-center justify-between p-3 border-b border-gray-50 bg-white/80 backdrop-blur-xl sticky top-0 z-40 gap-4">
                 <div className="flex items-center gap-6">
@@ -150,7 +150,7 @@ export function AdminScheduleCalendar() {
             </div>
 
             {/* Grid Container */}
-            <div className="flex-1 overflow-auto relative scrollbar-hide bg-gray-50/30">
+            <div className="flex-1 relative bg-gray-50/30">
                 {loading && (
                     <div className="absolute inset-0 bg-white/40 backdrop-blur-sm z-50 flex items-center justify-center">
                         <div className="bg-white p-6 rounded-3xl shadow-2xl border border-gray-100 flex items-center gap-4 animate-in zoom-in-95 duration-300">

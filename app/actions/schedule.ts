@@ -70,34 +70,50 @@ export async function getAdminSchedule(timeMin: string, timeMax: string) {
 
     if (classError) throw classError
 
-    // 4. Fetch Google Calendar Events (if connected)
-    let googleEvents: any[] = []
-    try {
-        const accessToken = await getGoogleAccessToken(user.id)
-        if (accessToken) {
-            const response = await fetch(
-                `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime`,
-                {
-                    headers: {
-                        'Authorization': `Bearer ${accessToken}`,
-                        'Content-Type': 'application/json',
-                    },
-                    cache: 'no-store'
-                })
+    // 4. Fetch Google Calendar Events for ALL connected profiles (Instructors + Admins)
+    const { data: tokens } = await supabase
+        .from('user_google_tokens')
+        .select('profile_id, email')
 
-            if (response.ok) {
-                const data = await response.json()
-                googleEvents = data.items.map((item: any) => ({
-                    id: item.id,
-                    title: item.summary || 'Busy',
-                    start: item.start.dateTime || item.start.date,
-                    end: item.end.dateTime || item.end.date,
-                    type: 'google'
-                }))
+    let googleEvents: any[] = []
+
+    if (tokens && tokens.length > 0) {
+        // Fetch events for each connected account in parallel
+        const eventPromises = tokens.map(async (token) => {
+            try {
+                const accessToken = await getGoogleAccessToken(token.profile_id)
+                if (!accessToken) return []
+
+                const response = await fetch(
+                    `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime`,
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${accessToken}`,
+                            'Content-Type': 'application/json',
+                        },
+                        cache: 'no-store'
+                    })
+
+                if (response.ok) {
+                    const data = await response.json()
+                    // Map items and include instructor hint if possible
+                    return data.items.map((item: any) => ({
+                        id: `${token.profile_id}-${item.id}`,
+                        title: `${item.summary || 'Busy'} (${token.email?.split('@')[0]})`,
+                        start: item.start.dateTime || item.start.date,
+                        end: item.end.dateTime || item.end.date,
+                        type: 'google',
+                        instructorEmail: token.email
+                    }))
+                }
+            } catch (e) {
+                console.error(`Error fetching Google events for ${token.email}:`, e)
             }
-        }
-    } catch (e) {
-        console.error("Error fetching Google events:", e)
+            return []
+        })
+
+        const results = await Promise.all(eventPromises)
+        googleEvents = results.flat()
     }
 
     return {
