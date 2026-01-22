@@ -98,34 +98,35 @@ export async function GET(request: Request) {
             return NextResponse.redirect(new URL('/login?error=unauthorized', request.url))
         }
 
-        // Get Instructor ID
-        const { data: instructor } = await supabaseAdmin
-            .from('instructors')
-            .select('id')
-            .eq('profile_id', user.id)
+        // Get User Role for redirection
+        const { data: profile } = await supabaseAdmin
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
             .single()
 
-        if (!instructor) {
-            return NextResponse.redirect(new URL('/instructor/profile?error=not_instructor', request.url))
-        }
-
-        // 4. Store Tokens
+        // 4. Store Tokens in the new generalized table
         const expiryDate = new Date(Date.now() + tokens.expires_in * 1000).toISOString()
 
         const { error: upsertError } = await supabaseAdmin
-            .from('instructor_google_tokens')
+            .from('user_google_tokens')
             .upsert({
-                instructor_id: instructor.id,
+                profile_id: user.id,
                 access_token: tokens.access_token,
                 refresh_token: tokens.refresh_token, // Note: Might be undefined on re-auth if prompt wasn't 'consent'
                 expiry_timestamp: expiryDate,
                 email: userData.email,
                 updated_at: new Date().toISOString()
-            }, { onConflict: 'instructor_id' })
+            }, { onConflict: 'profile_id' })
 
         if (upsertError) throw upsertError
 
-        return NextResponse.redirect(new URL('/instructor/profile?success=google_connected', request.url))
+        // Redirect based on role
+        if (profile?.role === 'admin') {
+            return NextResponse.redirect(new URL('/admin/classes?success=google_connected', request.url))
+        } else {
+            return NextResponse.redirect(new URL('/instructor/profile?success=google_connected', request.url))
+        }
 
     } catch (error) {
         console.error("Callback error:", error)

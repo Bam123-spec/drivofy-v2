@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
 import { useSearchParams } from "next/navigation"
 
-export function GoogleCalendarConnect({ instructorId }: { instructorId: string }) {
+export function GoogleCalendarConnect({ instructorId }: { instructorId?: string }) {
     const [loading, setLoading] = useState(true)
     const [connected, setConnected] = useState(false)
     const [email, setEmail] = useState<string | null>(null)
@@ -35,10 +35,13 @@ export function GoogleCalendarConnect({ instructorId }: { instructorId: string }
 
     const checkConnection = async () => {
         try {
+            const { data: { user } } = await supabase.auth.getUser()
+            if (!user) return
+
             const { data, error } = await supabase
-                .from('instructor_google_tokens')
+                .from('user_google_tokens')
                 .select('email')
-                .eq('instructor_id', instructorId)
+                .eq('profile_id', user.id)
                 .single()
 
             if (data) {
@@ -60,10 +63,13 @@ export function GoogleCalendarConnect({ instructorId }: { instructorId: string }
         if (!confirm("Are you sure you want to disconnect Google Calendar?")) return
 
         try {
+            const { data: { user } } = await supabase.auth.getUser()
+            if (!user) return
+
             const { error } = await supabase
-                .from('instructor_google_tokens')
+                .from('user_google_tokens')
                 .delete()
-                .eq('instructor_id', instructorId)
+                .eq('profile_id', user.id)
 
             if (error) throw error
             setConnected(false)

@@ -24,15 +24,15 @@ const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET!
 const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI!
 
 /**
- * Retrieves a valid Google Access Token for the instructor.
+ * Retrieves a valid Google Access Token for the user profile.
  * Automatically refreshes if expired.
  */
-export async function getGoogleAccessToken(instructorId: string): Promise<string | null> {
+export async function getGoogleAccessToken(profileId: string): Promise<string | null> {
     // 1. Get token from DB
     const { data: tokenRecord, error } = await supabaseAdmin
-        .from('instructor_google_tokens')
+        .from('user_google_tokens')
         .select('*')
-        .eq('instructor_id', instructorId)
+        .eq('profile_id', profileId)
         .single()
 
     if (error || !tokenRecord) {
@@ -84,7 +84,7 @@ export async function getGoogleAccessToken(instructorId: string): Promise<string
 
         // 4. Update DB
         await supabaseAdmin
-            .from('instructor_google_tokens')
+            .from('user_google_tokens')
             .update({
                 access_token: newAccessToken,
                 expiry_timestamp: newExpiry,
@@ -101,19 +101,19 @@ export async function getGoogleAccessToken(instructorId: string): Promise<string
 }
 
 /**
- * Creates a calendar event in the instructor's primary calendar.
+ * Creates a calendar event in the user's primary calendar.
  */
-export async function createCalendarEvent(instructorId: string, eventData: {
+export async function createCalendarEvent(profileId: string, eventData: {
     studentName: string,
     startTime: string, // ISO string
     endTime: string,   // ISO string
     description?: string,
     location?: string
 }) {
-    console.log("📅 Creating Calendar Event for:", instructorId)
-    const accessToken = await getGoogleAccessToken(instructorId)
+    console.log("📅 Creating Calendar Event for:", profileId)
+    const accessToken = await getGoogleAccessToken(profileId)
     if (!accessToken) {
-        console.error("❌ No access token found for instructor:", instructorId)
+        console.error("❌ No access token found for user:", profileId)
         throw new Error("Could not get access token")
     }
 
@@ -123,7 +123,7 @@ export async function createCalendarEvent(instructorId: string, eventData: {
         description: eventData.description || "Driving lesson booked via Drivofy.",
         start: {
             dateTime: eventData.startTime,
-            timeZone: 'UTC', // Or instructor's timezone
+            timeZone: 'UTC', // Or user's timezone
         },
         end: {
             dateTime: eventData.endTime,
@@ -159,10 +159,10 @@ export async function createCalendarEvent(instructorId: string, eventData: {
 }
 
 /**
- * Fetches busy times from the instructor's calendar.
+ * Fetches busy times from the user's calendar.
  */
-export async function getInstructorBusyTimes(instructorId: string, timeMin: string, timeMax: string) {
-    const accessToken = await getGoogleAccessToken(instructorId)
+export async function getInstructorBusyTimes(profileId: string, timeMin: string, timeMax: string) {
+    const accessToken = await getGoogleAccessToken(profileId)
     if (!accessToken) return [] // Or throw error
 
     const body = {
