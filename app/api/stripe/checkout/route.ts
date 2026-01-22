@@ -65,44 +65,6 @@ export async function POST(req: Request) {
 
         // Create Stripe Customer if needed
         let customerId = org.stripe_customer_id;
-        if (!customerId) {
-            const customer = await stripe.customers.create({
-                email: user.email,
-                metadata: {
-                    userId: user.id,
-                    orgId: org.id
-                }
-            });
-            customerId = customer.id;
-
-            // We need to update the organization with the new customer ID
-            // Note: Using the same user-scoped client might fail if RLS prevents update?
-            // But owner should be able to update their own org. 
-            // If RLS is strict on UPDATE, we might need service role here too.
-            // Assuming "Owners can read their own org" implies they can write too? 
-            // The prompt only specified "Owners can read". 
-            // I should probably add an UPDATE policy or use service role here.
-            // For safety/speed, I'll use service role for this update to ensure it works.
-
-            // Actually, I can't easily get service role client here without re-initializing.
-            // Let's assume for now I can update. If not, I'll fix it.
-            // Wait, the prompt said "Owners can read their own org". It didn't explicitly say write.
-            // But usually owners can manage. 
-            // Let's stick to the prompt's explicit instructions: "Owners can read their own org".
-            // It didn't say write. So I should use service role for updates to be safe.
-
-            // Re-init supabase with service role for admin operations
-            // But wait, I don't want to expose service key in client code, but this is a server route.
-            // So it's fine.
-        }
-
-        // Actually, let's use a service client for the update to be safe.
-        // But I'll try with the user client first to keep it simple, 
-        // if it fails I'll switch. 
-        // Wait, I should probably just do it right.
-
-        // Let's just create the session. If customerId is null, Stripe creates a new one if we don't pass it?
-        // No, we want to track it.
 
         if (!customerId) {
             // Create customer
@@ -123,8 +85,7 @@ export async function POST(req: Request) {
 
             if (updateError) {
                 console.error('Error updating organization with stripe_customer_id:', updateError);
-                // Continue anyway, as the session will still work, but next time we might create a duplicate customer
-                // unless we fix the lookup logic.
+                // Continue anyway, as the session will still work
             }
         }
 
