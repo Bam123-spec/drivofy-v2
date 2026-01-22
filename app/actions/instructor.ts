@@ -5,6 +5,7 @@ import { createClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
 import { cookies } from 'next/headers'
 import { logAuditAction } from "@/app/actions/audit"
+import { getGoogleAccessToken } from '@/lib/googleCalendar'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -266,7 +267,42 @@ export async function getSchedule(startDate: string, endDate: string) {
         .gte('end_date', startDate)
         .lte('start_date', endDate)
 
-    return { sessions: allEvents, timeOff: timeOff || [], instructor }
+    // 4. Google Calendar Events
+    let googleEvents: any[] = []
+    try {
+        const accessToken = await getGoogleAccessToken(instructor.profile_id)
+        if (accessToken) {
+            const response = await fetch(
+                `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${startDate}&timeMax=${endDate}&singleEvents=true&orderBy=startTime`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json',
+                    },
+                    cache: 'no-store'
+                })
+
+            if (response.ok) {
+                const data = await response.json()
+                googleEvents = data.items.map((item: any) => ({
+                    id: item.id,
+                    title: item.summary || 'Google: Busy',
+                    start_time: item.start.dateTime || item.start.date,
+                    end_time: item.end.dateTime || item.end.date,
+                    type: 'google'
+                }))
+            }
+        }
+    } catch (e) {
+        console.error("Error fetching Google events for instructor:", e)
+    }
+
+    return {
+        sessions: allEvents,
+        googleEvents,
+        timeOff: timeOff || [],
+        instructor
+    }
 }
 
 export async function updateSessionStatus(sessionId: string, status: string) {
