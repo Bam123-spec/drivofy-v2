@@ -66,12 +66,15 @@ export async function POST(req: Request) {
             periodEnd = null;
         }
 
+        // If it's set to cancel at period end, we treat it as canceled immediately in our DB
+        const status = sub.cancel_at_period_end ? 'canceled' : sub.status;
+
         // Update DB
         const { error: updateError } = await supabase
             .from('organizations')
             .update({
                 stripe_subscription_id: sub.id,
-                billing_status: sub.status,
+                billing_status: status,
                 current_period_end: periodEnd ? periodEnd.toISOString() : null,
             })
             .eq('id', org.id);
