@@ -8,6 +8,8 @@ import { getAdminSchedule } from "@/app/actions/schedule"
 import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Suspense } from "react"
+import { GoogleCalendarConnect } from "@/app/instructor/profile/components/GoogleCalendarConnect"
 
 export function AdminScheduleCalendar() {
     const [currentDate, setCurrentDate] = useState(new Date())
@@ -135,17 +137,25 @@ export function AdminScheduleCalendar() {
                     </h2>
                 </div>
 
-                <div className="flex items-center gap-4 bg-gray-50/50 p-2 rounded-2xl border border-gray-100/50">
-                    {[
-                        { label: 'Driving', color: 'bg-blue-500 shadow-blue-200' },
-                        { label: 'Theory', color: 'bg-purple-500 shadow-purple-200' },
-                        { label: 'Google', color: 'bg-slate-900 shadow-gray-200' }
-                    ].map((item) => (
-                        <div key={item.label} className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white shadow-sm border border-gray-100">
-                            <div className={`w-2.5 h-2.5 rounded-full ${item.color} shadow-lg`}></div>
-                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">{item.label}</span>
-                        </div>
-                    ))}
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-4 bg-gray-50/50 p-2 rounded-2xl border border-gray-100/50">
+                        {[
+                            { label: 'Driving', color: 'bg-blue-500 shadow-blue-200' },
+                            { label: 'Theory', color: 'bg-purple-500 shadow-purple-200' },
+                            { label: 'Google', color: 'bg-slate-900 shadow-gray-200' }
+                        ].map((item) => (
+                            <div key={item.label} className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white shadow-sm border border-gray-100">
+                                <div className={`w-2.5 h-2.5 rounded-full ${item.color} shadow-lg`}></div>
+                                <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">{item.label}</span>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="h-10 w-[1px] bg-gray-100 hidden md:block" />
+
+                    <Suspense fallback={<div className="h-10 w-32 animate-pulse bg-gray-50 rounded-2xl" />}>
+                        <GoogleCalendarConnect variant="compact" />
+                    </Suspense>
                 </div>
             </div>
 

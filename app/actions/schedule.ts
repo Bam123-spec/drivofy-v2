@@ -77,12 +77,23 @@ export async function getAdminSchedule(timeMin: string, timeMax: string) {
 
     let googleEvents: any[] = []
 
-    if (tokens && tokens.length > 0) {
+    // Add current user to potential tokens if not already there (to ensure admin sync)
+    const allTokens = tokens || []
+    if (user.id && !allTokens.some(t => t.profile_id === user.id)) {
+        allTokens.push({ profile_id: user.id, email: user.email || 'Admin' })
+    }
+
+    if (allTokens.length > 0) {
+        console.log(`🔍 Unified Sync: Fetching for ${allTokens.length} accounts`)
+
         // Fetch events for each connected account in parallel
-        const eventPromises = tokens.map(async (token) => {
+        const eventPromises = allTokens.map(async (token) => {
             try {
                 const accessToken = await getGoogleAccessToken(token.profile_id)
-                if (!accessToken) return []
+                if (!accessToken) {
+                    console.log(`⏳ No token record for ${token.email}`)
+                    return []
+                }
 
                 const response = await fetch(
                     `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime`,
@@ -96,8 +107,9 @@ export async function getAdminSchedule(timeMin: string, timeMax: string) {
 
                 if (response.ok) {
                     const data = await response.json()
+                    console.log(`✅ Fetched ${data.items?.length || 0} events for ${token.email}`)
                     // Map items and include instructor hint if possible
-                    return data.items.map((item: any) => ({
+                    return (data.items || []).map((item: any) => ({
                         id: `${token.profile_id}-${item.id}`,
                         title: `${item.summary || 'Busy'} (${token.email?.split('@')[0]})`,
                         start: item.start.dateTime || item.start.date,
@@ -105,15 +117,19 @@ export async function getAdminSchedule(timeMin: string, timeMax: string) {
                         type: 'google',
                         instructorEmail: token.email
                     }))
+                } else {
+                    const err = await response.json()
+                    console.error(`❌ GCal API Error for ${token.email}:`, err)
                 }
             } catch (e) {
-                console.error(`Error fetching Google events for ${token.email}:`, e)
+                console.error(`💥 Exception fetching Google events for ${token.email}:`, e)
             }
             return []
         })
 
         const results = await Promise.all(eventPromises)
         googleEvents = results.flat()
+        console.log(`✨ Total Google events found: ${googleEvents.length}`)
     }
 
     return {
