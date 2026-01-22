@@ -108,9 +108,10 @@ export default function AdminLayout({
             label: "System",
             items: [
                 { href: "/admin/settings", label: "General Settings", icon: Settings, placeholder: false },
+                { href: "/admin/settings/payments", label: "Payments Settings", icon: CreditCard, placeholder: false },
                 { href: "/admin/users", label: "Admin Users", icon: UserCog, placeholder: false },
                 { href: "/admin/audit", label: "Audit Logs", icon: History, placeholder: false },
-                { href: "/admin/payments", label: "Billing", icon: CreditCard, placeholder: false },
+                { href: "/admin/payments", label: "Drivofy Billing", icon: CreditCard, placeholder: false },
             ]
         }
     ]
