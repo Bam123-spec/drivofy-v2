@@ -43,12 +43,14 @@ export async function POST(req: Request) {
             return NextResponse.json({ status: 'no_subscription' });
         }
 
-        const sub = subscriptions.data[0];
+        const sub = subscriptions.data[0] as any;
         console.log('Sync: Selected sub:', sub.id, 'Status:', sub.status, 'Period End:', sub.current_period_end);
 
-        if (!sub.current_period_end) {
-            console.error('Sync: Missing current_period_end for sub:', sub.id);
-            return NextResponse.json({ error: 'Subscription missing period end date' }, { status: 400 });
+        const periodEnd = sub.current_period_end ? new Date(sub.current_period_end * 1000) : null;
+
+        if (periodEnd && isNaN(periodEnd.getTime())) {
+            console.error('Sync: Invalid period end date for sub:', sub.id, sub.current_period_end);
+            return NextResponse.json({ error: 'Invalid date received from Stripe' }, { status: 400 });
         }
 
         // Update DB
@@ -57,7 +59,7 @@ export async function POST(req: Request) {
             .update({
                 stripe_subscription_id: sub.id,
                 billing_status: sub.status,
-                current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
+                current_period_end: periodEnd ? periodEnd.toISOString() : null,
             })
             .eq('id', org.id);
 
