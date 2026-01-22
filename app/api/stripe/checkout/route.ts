@@ -54,6 +54,9 @@ export async function POST(req: Request) {
             org = newOrg;
         }
 
+        // TypeScript check
+        if (!org) throw new Error('Organization not found');
+
         // Create Stripe Customer if needed
         let customerId = org.stripe_customer_id;
         if (!customerId) {
@@ -106,22 +109,17 @@ export async function POST(req: Request) {
             });
             customerId = customer.id;
 
-            // Update DB with service role to bypass RLS
-            const supabaseAdmin = createServerClient(
-                process.env.NEXT_PUBLIC_SUPABASE_URL!,
-                process.env.SUPABASE_SERVICE_ROLE_KEY!,
-                {
-                    cookies: {
-                        getAll() { return [] },
-                        setAll() { }
-                    }
-                }
-            );
-
-            await supabaseAdmin
+            // Update DB with user client (requires RLS policy "Owners can update their own organization")
+            const { error: updateError } = await supabase
                 .from('organizations')
                 .update({ stripe_customer_id: customerId })
                 .eq('id', org.id);
+
+            if (updateError) {
+                console.error('Error updating organization with stripe_customer_id:', updateError);
+                // Continue anyway, as the session will still work, but next time we might create a duplicate customer
+                // unless we fix the lookup logic.
+            }
         }
 
         const session = await stripe.checkout.sessions.create({
