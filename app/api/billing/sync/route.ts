@@ -44,13 +44,26 @@ export async function POST(req: Request) {
         }
 
         const sub = subscriptions.data[0] as any;
-        console.log('Sync: Selected sub:', sub.id, 'Status:', sub.status, 'Period End:', sub.current_period_end);
+        console.log('Sync: Selected sub:', sub.id, 'Status:', sub.status, 'Raw Period End:', sub.current_period_end);
 
-        const periodEnd = sub.current_period_end ? new Date(sub.current_period_end * 1000) : null;
+        let periodEnd: Date | null = null;
+        try {
+            if (sub.current_period_end) {
+                // Stripe timestamps are in seconds
+                const timestamp = Number(sub.current_period_end);
+                if (!isNaN(timestamp)) {
+                    periodEnd = new Date(timestamp * 1000);
+                } else {
+                    console.error('Sync: current_period_end is not a number:', sub.current_period_end);
+                }
+            }
+        } catch (e) {
+            console.error('Sync: Error parsing date:', e);
+        }
 
         if (periodEnd && isNaN(periodEnd.getTime())) {
-            console.error('Sync: Invalid period end date for sub:', sub.id, sub.current_period_end);
-            return NextResponse.json({ error: 'Invalid date received from Stripe' }, { status: 400 });
+            console.error('Sync: Invalid period end date object created');
+            periodEnd = null;
         }
 
         // Update DB
