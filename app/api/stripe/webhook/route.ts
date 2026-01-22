@@ -21,6 +21,8 @@ export async function POST(req: Request) {
         return new NextResponse(`Webhook Error: ${error.message}`, { status: 400 });
     }
 
+    console.log('Webhook received! Type:', event.type);
+
     const supabaseAdmin = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -37,15 +39,18 @@ export async function POST(req: Request) {
 
     try {
         if (event.type === 'checkout.session.completed') {
+            console.log('Checkout session completed. Metadata:', session.metadata);
             if (!session?.metadata?.orgId) {
                 console.error('Org ID is missing from metadata');
                 return new NextResponse('Org ID missing', { status: 400 });
             }
 
             const subscriptionId = session.subscription as string;
+            console.log('Retrieving subscription:', subscriptionId);
 
             // Fetch subscription details to get status and period end
             const sub = await stripe.subscriptions.retrieve(subscriptionId);
+            console.log('Subscription status:', sub.status);
 
             const { error } = await supabaseAdmin
                 .from('organizations')
@@ -57,10 +62,15 @@ export async function POST(req: Request) {
                 })
                 .eq('id', session.metadata.orgId);
 
-            if (error) throw error;
+            if (error) {
+                console.error('Database update error:', error);
+                throw error;
+            }
+            console.log('Database updated successfully for org:', session.metadata.orgId);
         }
 
         if (event.type === 'customer.subscription.updated') {
+            console.log('Subscription updated:', subscription.id, 'Status:', subscription.status);
             const { error } = await supabaseAdmin
                 .from('organizations')
                 .update({
@@ -69,10 +79,14 @@ export async function POST(req: Request) {
                 })
                 .eq('stripe_subscription_id', subscription.id);
 
-            if (error) throw error;
+            if (error) {
+                console.error('Database update error (updated):', error);
+                throw error;
+            }
         }
 
         if (event.type === 'customer.subscription.deleted') {
+            console.log('Subscription deleted:', subscription.id);
             const { error } = await supabaseAdmin
                 .from('organizations')
                 .update({
@@ -81,7 +95,10 @@ export async function POST(req: Request) {
                 })
                 .eq('stripe_subscription_id', subscription.id);
 
-            if (error) throw error;
+            if (error) {
+                console.error('Database update error (deleted):', error);
+                throw error;
+            }
         }
     } catch (error) {
         console.error('Error handling webhook:', error);
