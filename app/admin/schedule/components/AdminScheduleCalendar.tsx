@@ -163,7 +163,7 @@ export function AdminScheduleCalendar() {
                 <div className="grid grid-cols-8 min-w-[1200px] h-full">
                     {/* Time Scale */}
                     <div className="border-r border-gray-100 bg-white/50 sticky left-0 z-30 backdrop-blur-md">
-                        <div className="h-16 border-b border-gray-100 flex items-center justify-center text-[9px] font-black text-gray-400 uppercase tracking-[0.2em]">
+                        <div className="h-12 border-b border-gray-100 flex items-center justify-center text-[9px] font-black text-gray-400 uppercase tracking-[0.2em]">
                             Time
                         </div>
                         {hours.map(hour => (
