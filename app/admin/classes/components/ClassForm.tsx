@@ -43,6 +43,7 @@ const formSchema = z.object({
     time_slot: z.string().min(1, "Please select a time slot"),
     instructor_id: z.string().min(1, "Please select an instructor"),
     status: z.enum(["upcoming", "active", "completed", "cancelled"]),
+    classification: z.string().optional(),
     recurrence_enabled: z.boolean().optional(),
     recurrence_interval_value: z.coerce.number().min(1).optional(),
     recurrence_interval_unit: z.enum(["days", "weeks"]).optional(),
@@ -67,6 +68,7 @@ export function ClassForm({ initialData, instructors, onSubmit, isSubmitting = f
             time_slot: "",
             instructor_id: "",
             status: "upcoming",
+            classification: "",
             recurrence_enabled: false,
             recurrence_interval_value: 1,
             recurrence_interval_unit: "weeks",
@@ -143,6 +145,31 @@ export function ClassForm({ initialData, instructors, onSubmit, isSubmitting = f
                         )}
                     />
                 </div>
+
+                {classType === 'DE' && (
+                    <FormField
+                        control={form.control}
+                        name="classification"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Classification</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select classification..." />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="Morning">Morning</SelectItem>
+                                        <SelectItem value="Evening">Evening</SelectItem>
+                                        <SelectItem value="Weekend">Weekend</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                )}
 
                 <div className="grid grid-cols-2 gap-4">
                     <FormField

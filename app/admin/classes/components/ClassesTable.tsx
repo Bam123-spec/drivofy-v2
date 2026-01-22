@@ -89,9 +89,16 @@ export function ClassesTable({
                                     </div>
                                 </TableCell>
                                 <TableCell>
-                                    <Badge variant="secondary" className="text-[10px] px-2 py-0.5 h-6 font-medium">
-                                        {cls.class_type}
-                                    </Badge>
+                                    <div className="flex flex-col gap-1">
+                                        <Badge variant="secondary" className="text-[10px] px-2 py-0.5 h-6 font-medium w-fit">
+                                            {cls.class_type}
+                                        </Badge>
+                                        {cls.classification && (
+                                            <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-5 font-normal w-fit border-gray-200 text-gray-600">
+                                                {cls.classification}
+                                            </Badge>
+                                        )}
+                                    </div>
                                 </TableCell>
                                 <TableCell>
                                     <div className="text-sm text-gray-600 flex items-center gap-2">

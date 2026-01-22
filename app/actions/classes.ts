@@ -12,6 +12,7 @@ export type ClassType = 'DE' | 'RSEP' | 'DIP'
 export interface CreateClassData {
     name: string
     class_type: ClassType
+    classification?: string // Morning, Evening, Weekend
     start_date: string
     end_date: string
     daily_start_time: string
@@ -21,7 +22,7 @@ export interface CreateClassData {
     price?: number // Optional, if we store price in DB or handle it elsewhere
 }
 
-export async function getClasses(type?: ClassType) {
+export async function getClasses(type?: ClassType, classification?: string, categoryId?: string) {
     const cookieStore = await cookies()
     const supabase = createClient(cookieStore)
 
@@ -36,6 +37,14 @@ export async function getClasses(type?: ClassType) {
 
     if (type) {
         query = query.eq('class_type', type)
+    }
+
+    if (classification) {
+        query = query.eq('classification', classification)
+    }
+
+    if (categoryId) {
+        query = query.eq('category_id', categoryId)
     }
 
     const { data, error } = await query
@@ -64,6 +73,7 @@ export async function createClass(data: CreateClassData) {
         .insert([{
             name: data.name,
             class_type: data.class_type,
+            classification: data.classification || null,
             start_date: data.start_date,
             end_date: data.end_date,
             daily_start_time: data.daily_start_time,

@@ -11,7 +11,8 @@ import {
     Phone,
     User,
     FileText,
-    Trash2
+    Trash2,
+    Pencil
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -43,15 +44,27 @@ import {
 import { Label } from "@/components/ui/label"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { toast } from "sonner"
+import { updateStudent, deleteStudent } from "@/app/actions/student"
 
 export default function AdminStudentsPage() {
     const [students, setStudents] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
     const [searchQuery, setSearchQuery] = useState("")
+
+    // Add Student State
     const [isAddOpen, setIsAddOpen] = useState(false)
     const [newStudent, setNewStudent] = useState({
         email: "",
         full_name: "",
+        phone: ""
+    })
+
+    // Edit Student State
+    const [isEditOpen, setIsEditOpen] = useState(false)
+    const [editingStudent, setEditingStudent] = useState<any>(null)
+    const [editForm, setEditForm] = useState({
+        full_name: "",
+        email: "",
         phone: ""
     })
 
@@ -61,22 +74,11 @@ export default function AdminStudentsPage() {
 
     const fetchStudents = async () => {
         try {
-            const { data: { user } } = await supabase.auth.getUser()
-            console.log("Current User:", user)
-
-            if (user) {
-                const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-                console.log("Current Profile Role:", profile?.role)
-            }
-
             const { data, error } = await supabase
                 .from('profiles')
                 .select('*')
                 .eq('role', 'student')
                 .order('created_at', { ascending: false })
-
-            console.log("Fetch Students Result:", data)
-            console.log("Fetch Students Error:", error)
 
             if (error) throw error
             setStudents(data || [])
@@ -90,7 +92,7 @@ export default function AdminStudentsPage() {
 
     const handleAddStudent = async () => {
         try {
-            setLoading(true) // Re-use loading state or add a new one
+            setLoading(true)
             const response = await fetch('/api/invite', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -103,17 +105,62 @@ export default function AdminStudentsPage() {
             })
 
             const result = await response.json()
-            console.log("Invite API Result:", result)
 
             if (!response.ok) {
-                throw new Error(result.error || 'Failed to invite student')
+                throw new Error(result.error || 'Failed to add student')
             }
 
-            toast.success("Student invited successfully! Check email.")
+            toast.success("Student added successfully!")
             setIsAddOpen(false)
             setNewStudent({ email: "", full_name: "", phone: "" })
-            // Refresh list after a short delay to allow trigger to run
-            setTimeout(fetchStudents, 1000)
+            fetchStudents()
+        } catch (error: any) {
+            toast.error(error.message)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const openEditDialog = (student: any) => {
+        setEditingStudent(student)
+        setEditForm({
+            full_name: student.full_name || "",
+            email: student.email || "",
+            phone: student.phone || ""
+        })
+        setIsEditOpen(true)
+    }
+
+    const handleUpdateStudent = async () => {
+        if (!editingStudent) return
+
+        try {
+            setLoading(true)
+            const result = await updateStudent(editingStudent.id, editForm)
+
+            if (result.error) throw new Error(result.error)
+
+            toast.success("Student updated successfully")
+            setIsEditOpen(false)
+            fetchStudents()
+        } catch (error: any) {
+            toast.error(error.message)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const handleDeleteStudent = async (studentId: string) => {
+        if (!confirm("Are you sure you want to delete this student? This action cannot be undone.")) return
+
+        try {
+            setLoading(true)
+            const result = await deleteStudent(studentId)
+
+            if (result.error) throw new Error(result.error)
+
+            toast.success("Student deleted successfully")
+            fetchStudents()
         } catch (error: any) {
             toast.error(error.message)
         } finally {
@@ -141,55 +188,98 @@ export default function AdminStudentsPage() {
                     <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Students</h1>
                     <p className="text-gray-500 mt-1">Manage all registered students.</p>
                 </div>
-                <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-                    <DialogTrigger asChild>
-                        <Button className="shadow-lg shadow-primary/25">
-                            <Plus className="mr-2 h-4 w-4" />
-                            Add Student
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Add New Student</DialogTitle>
-                            <DialogDescription>
-                                Invite a new student via email. They will receive a link to set their password.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-4 py-4">
-                            <div className="space-y-2">
-                                <Label>Full Name</Label>
-                                <Input
-                                    placeholder="John Doe"
-                                    value={newStudent.full_name}
-                                    onChange={(e) => setNewStudent({ ...newStudent, full_name: e.target.value })}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Email</Label>
-                                <Input
-                                    placeholder="john@example.com"
-                                    value={newStudent.email}
-                                    onChange={(e) => setNewStudent({ ...newStudent, email: e.target.value })}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Phone</Label>
-                                <Input
-                                    placeholder="(555) 123-4567"
-                                    value={newStudent.phone}
-                                    onChange={(e) => setNewStudent({ ...newStudent, phone: e.target.value })}
-                                />
-                            </div>
-                        </div>
-                        <DialogFooter>
-                            <Button variant="outline" onClick={() => setIsAddOpen(false)}>Cancel</Button>
-                            <Button onClick={handleAddStudent} disabled={loading}>
-                                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                                Send Invite
+                <div className="flex gap-2">
+                    <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+                        <DialogTrigger asChild>
+                            <Button className="shadow-lg shadow-primary/25">
+                                <Plus className="mr-2 h-4 w-4" />
+                                Add Student
                             </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Add New Student</DialogTitle>
+                                <DialogDescription>
+                                    Add a new student to the system. No email will be sent automatically.
+                                </DialogDescription>
+                            </DialogHeader>
+                            <div className="space-y-4 py-4">
+                                <div className="space-y-2">
+                                    <Label>Full Name</Label>
+                                    <Input
+                                        placeholder="John Doe"
+                                        value={newStudent.full_name}
+                                        onChange={(e) => setNewStudent({ ...newStudent, full_name: e.target.value })}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Email</Label>
+                                    <Input
+                                        placeholder="john@example.com"
+                                        value={newStudent.email}
+                                        onChange={(e) => setNewStudent({ ...newStudent, email: e.target.value })}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Phone</Label>
+                                    <Input
+                                        placeholder="(555) 123-4567"
+                                        value={newStudent.phone}
+                                        onChange={(e) => setNewStudent({ ...newStudent, phone: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+                            <DialogFooter>
+                                <Button variant="outline" onClick={() => setIsAddOpen(false)}>Cancel</Button>
+                                <Button onClick={handleAddStudent} disabled={loading}>
+                                    {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                    Add Student
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+
+                    <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Edit Student</DialogTitle>
+                                <DialogDescription>
+                                    Update student information.
+                                </DialogDescription>
+                            </DialogHeader>
+                            <div className="space-y-4 py-4">
+                                <div className="space-y-2">
+                                    <Label>Full Name</Label>
+                                    <Input
+                                        value={editForm.full_name}
+                                        onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Email</Label>
+                                    <Input
+                                        value={editForm.email}
+                                        onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Phone</Label>
+                                    <Input
+                                        value={editForm.phone}
+                                        onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+                            <DialogFooter>
+                                <Button variant="outline" onClick={() => setIsEditOpen(false)}>Cancel</Button>
+                                <Button onClick={handleUpdateStudent} disabled={loading}>
+                                    {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                    Save Changes
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+                </div>
             </div>
 
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
@@ -257,21 +347,24 @@ export default function AdminStudentsPage() {
                                     <TableCell className="text-right">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <Button variant="ghost" size="icon">
                                                     <MoreHorizontal className="h-4 w-4 text-gray-400" />
                                                 </Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
                                                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                                 <DropdownMenuSeparator />
-                                                <DropdownMenuItem>
-                                                    <FileText className="mr-2 h-4 w-4" /> View Details
+                                                <DropdownMenuItem onClick={() => openEditDialog(student)}>
+                                                    <Pencil className="mr-2 h-4 w-4" /> Edit Student
                                                 </DropdownMenuItem>
                                                 <DropdownMenuItem>
                                                     <Mail className="mr-2 h-4 w-4" /> Send Email
                                                 </DropdownMenuItem>
                                                 <DropdownMenuSeparator />
-                                                <DropdownMenuItem className="text-red-600">
+                                                <DropdownMenuItem
+                                                    className="text-red-600"
+                                                    onClick={() => handleDeleteStudent(student.id)}
+                                                >
                                                     <Trash2 className="mr-2 h-4 w-4" /> Delete Student
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>

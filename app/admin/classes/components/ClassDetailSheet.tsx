@@ -56,7 +56,8 @@ export function ClassDetailSheet({
                                     end_date: classData.end_date,
                                     time_slot: classData.time_slot,
                                     instructor_id: classData.instructor_id || "",
-                                    status: classData.status
+                                    status: classData.status,
+                                    classification: classData.classification
                                 }}
                                 instructors={instructors}
                                 onSubmit={onUpdate}

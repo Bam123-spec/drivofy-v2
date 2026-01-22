@@ -1,6 +1,6 @@
-import { createClient } from '@supabase/supabase-js'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
-export const runtime = 'edge';
+
 
 export async function POST(request: Request) {
     try {
@@ -15,58 +15,39 @@ export async function POST(request: Request) {
             )
         }
 
-        // Initialize Supabase Admin Client
-        const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+        const supabaseAdmin = createAdminClient()
 
-        if (!serviceRoleKey) {
-            console.error("CRITICAL: SUPABASE_SERVICE_ROLE_KEY is missing")
-            return NextResponse.json(
-                { error: 'Server misconfiguration: Missing Service Role Key' },
-                { status: 500 }
-            )
-        }
+        console.log(`[API] Creating user: ${email} as ${role}`)
 
-        const supabaseAdmin = createClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            serviceRoleKey,
-            {
-                auth: {
-                    autoRefreshToken: false,
-                    persistSession: false
-                }
-            }
-        )
-
-        console.log(`[API] Inviting user: ${email} as ${role}`)
-
-        // 1. Invite User via Auth Admin
-        const { data: authData, error: authError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
+        // 1. Create User (skip invite email)
+        // We use createUser with email_confirm: true to auto-confirm them.
+        // We set a temporary password or leave it. If we don't set a password, they can't login with password until they reset it.
+        // Since the user wants to manage comms via Brevo, they probably will send a "Set Password" link or similar.
+        // Or we can set a random password.
+        // Let's set email_confirm: true.
+        const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
             email,
-            {
-                data: {
-                    role: role,
-                    name: full_name,
-                    full_name: full_name, // Redundant but safe
-                    phone: phone
-                }
+            email_confirm: true,
+            user_metadata: {
+                full_name: full_name,
+                phone: phone,
+                role: role
             }
-        )
+        })
 
         if (authError) {
-            console.error('Auth Invite Error:', authError)
+            console.error('Auth Create Error:', authError)
             return NextResponse.json(
                 { error: authError.message },
                 { status: 500 }
             )
         }
 
-        console.log('[API] Auth invite successful, user ID:', authData.user.id)
+        console.log('[API] Auth create successful, user ID:', authData.user.id)
 
         const userId = authData.user.id
 
-        // 2. Ensure Profile Exists (Fix for Race Condition)
-        // The trigger *should* do this, but sometimes it's slow or fails. 
-        // We explicitly upsert here to guarantee the FK constraint for 'instructors' will be met.
+        // 2. Ensure Profile Exists
         const { error: profileError } = await supabaseAdmin
             .from('profiles')
             .upsert({
@@ -114,29 +95,25 @@ export async function POST(request: Request) {
         }
 
         // 4. Log Audit Action
-        // We try to get the current user (admin) who initiated this request
-        // Since we are in Edge runtime, we can't easily use 'next/headers' cookies() with supabase-js in the same way sometimes,
-        // but we can try to parse cookies from request headers manually or just log as 'system' if failing.
-        // For now, let's try to just log it. If we had the admin's ID, we'd use it.
-        // To keep it simple and robust in this existing file structure:
+        // We can't import logAuditAction here easily because it's a server action file (usually not for edge routes or mixed usage).
+        // And this is an API route.
+        // We'll just insert directly since we have admin client.
         await supabaseAdmin.from('audit_logs').insert({
-            action: 'create_instructor',
+            action: role === 'instructor' ? 'create_instructor' : 'create_student',
             details: {
                 email,
                 role,
                 name: full_name
             },
-            target_resource: `Instructor: ${full_name}`,
+            target_resource: `${role === 'instructor' ? 'Instructor' : 'Student'}: ${full_name}`,
             ip_address: 'api_route',
-            // user_id: ... // We skip user_id for now as fetching it requires parsing cookies which is extra code here.
-            // Ideally we should protect this route and get the user.
         })
 
         return NextResponse.json({ success: true, user: authData.user })
-    } catch (error) {
+    } catch (error: any) {
         console.error('API Error:', error)
         return NextResponse.json(
-            { error: 'Internal Server Error' },
+            { error: error.message || 'Internal Server Error' },
             { status: 500 }
         )
     }
