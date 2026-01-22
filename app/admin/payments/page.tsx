@@ -130,7 +130,7 @@ export default async function BillingPage() {
                                     <span className="text-sm font-medium text-blue-700">USD</span>
                                 </div>
                                 <div className="text-sm text-blue-800 mb-4">
-                                    Due on {org?.current_period_end ? new Date(org.current_period_end).toLocaleDateString() : 'Next Cycle'}
+                                    Due on {org?.current_period_end ? new Date(org.current_period_end).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'Next Cycle'}
                                 </div>
 
                                 <div className="space-y-3 pt-4 border-t border-blue-200/60">
