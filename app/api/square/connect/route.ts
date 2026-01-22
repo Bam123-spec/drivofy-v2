@@ -38,7 +38,7 @@ export async function GET(request: Request) {
     }
 
     // 3. Build the authorize URL
-    const scopes = ["PAYMENTS_WRITE", "PAYMENTS_READ", "PAYMENTS_WRITE_ADDITIONAL_RECIPIENTS"].join(" ");
+    const scopes = ["PAYMENTS_WRITE", "PAYMENTS_READ", "MERCHANT_PROFILE_READ"].join(" ");
 
     const baseUrl = SQUARE_ENV === "production"
         ? "https://connect.squareup.com/oauth2/authorize"
@@ -52,5 +52,9 @@ export async function GET(request: Request) {
         redirect_uri: REDIRECT_URI
     });
 
-    return NextResponse.redirect(`${baseUrl}?${params.toString()}`);
+    // Square is sensitive to '+' encoding in the scope parameter.
+    // We force %20 encoding for the final redirect URL for both sandbox and production safety.
+    const finalUrl = `${baseUrl}?${params.toString().replace(/\+/g, "%20")}`;
+
+    return NextResponse.redirect(finalUrl);
 }

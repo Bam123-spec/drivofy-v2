@@ -10,8 +10,9 @@ import { CheckCircle2, AlertCircle, CreditCard, ExternalLink, ShieldCheck } from
 export default async function PaymentsSettingsPage({
     searchParams
 }: {
-    searchParams: { connected?: string, error?: string }
+    searchParams: Promise<{ connected?: string, error?: string }>
 }) {
+    const resolvedSearchParams = await searchParams
     const cookieStore = await cookies()
     const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -56,19 +57,19 @@ export default async function PaymentsSettingsPage({
                 </div>
             </div>
 
-            {searchParams.connected && (
+            {resolvedSearchParams.connected && (
                 <div className="mb-8 p-4 bg-green-50 border border-green-100 rounded-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-500">
                     <CheckCircle2 className="h-5 w-5 text-green-600" />
                     <span className="font-bold text-green-900 text-sm">Square account connected successfully!</span>
                 </div>
             )}
 
-            {searchParams.error && (
+            {resolvedSearchParams.error && (
                 <div className="mb-8 p-4 bg-red-50 border border-red-100 rounded-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-500">
                     <AlertCircle className="h-5 w-5 text-red-600" />
                     <span className="font-bold text-red-900 text-sm">
-                        {searchParams.error === 'invalid_state' ? 'Security validation failed. Please try again.' :
-                            searchParams.error === 'square_denied' ? 'Connection was canceled or denied.' :
+                        {resolvedSearchParams.error === 'invalid_state' ? 'Security validation failed. Please try again.' :
+                            resolvedSearchParams.error === 'square_denied' ? 'Connection was canceled or denied.' :
                                 'Failed to connect Square account. Please try again.'}
                     </span>
                 </div>

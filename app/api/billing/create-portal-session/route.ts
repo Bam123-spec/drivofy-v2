@@ -26,7 +26,7 @@ export async function POST(request: Request) {
         // Option A: Look up from Database (Organizations table)
         const { data: org } = await supabase
             .from('organizations')
-            .select('stripe_customer_id')
+            .select('id, stripe_customer_id')
             .eq('owner_user_id', user.id)
             .single();
 
