@@ -70,10 +70,11 @@ export async function POST(req: Request) {
         }
 
         if (event.type === 'customer.subscription.updated') {
-            console.log('Subscription updated:', subscription.id, 'Status:', subscription.status, 'Cancel at period end:', subscription.cancel_at_period_end);
+            console.log('Subscription updated:', subscription.id, 'Status:', subscription.status, 'Cancel at period end:', subscription.cancel_at_period_end, 'Cancel at:', (subscription as any).cancel_at);
 
             // If it's set to cancel at period end, we treat it as canceled immediately in our DB
-            const status = subscription.cancel_at_period_end ? 'canceled' : subscription.status;
+            const isCanceling = subscription.cancel_at_period_end === true || !!(subscription as any).cancel_at;
+            const status = isCanceling ? 'canceled' : subscription.status;
 
             const { error } = await supabaseAdmin
                 .from('organizations')

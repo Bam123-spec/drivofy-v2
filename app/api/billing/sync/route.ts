@@ -67,7 +67,10 @@ export async function POST(req: Request) {
         }
 
         // If it's set to cancel at period end, we treat it as canceled immediately in our DB
-        const status = sub.cancel_at_period_end ? 'canceled' : sub.status;
+        const isCanceling = sub.cancel_at_period_end === true || !!sub.cancel_at;
+        const status = isCanceling ? 'canceled' : sub.status;
+
+        console.log('Sync: Final status determined:', status, 'isCanceling:', isCanceling);
 
         // Update DB
         const { error: updateError } = await supabase
