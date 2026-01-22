@@ -2,7 +2,9 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
+import { format } from 'date-fns'
 import { getInstructorBusyTimes, createCalendarEvent } from '@/lib/googleCalendar'
+import { sendTransactionalEmail } from '@/lib/brevo'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -127,20 +129,46 @@ export async function createDrivingSession(data: {
 
         if (error) throw error
 
-        // 4. Sync to Google Calendar
-        if (instructor?.profile_id) {
-            try {
-                await createCalendarEvent(instructor.profile_id, {
-                    studentName: session.profiles?.full_name || "Student",
-                    title: `Lesson: ${session.profiles?.full_name || "Student"}`,
-                    startTime: startDateTime.toISOString(),
-                    endTime: endDateTime.toISOString(),
-                    description: `Driving Lesson (Drivofy: ${session.profiles?.full_name})`,
-                    location: "Drivofy Driving School"
-                })
-            } catch (e) {
-                console.error("GCal Sync Failed", e)
+        // 5. Send Email Notification to Instructor
+        try {
+            const { data: instrProfile } = await supabase
+                .from('profiles')
+                .select('email')
+                .eq('id', instructor?.profile_id)
+                .single()
+
+            if (instrProfile?.email && instructor) {
+                await sendTransactionalEmail({
+                    to: [{ email: instrProfile.email, name: instructor.full_name }],
+                    subject: `New Driving Session Assigned: ${session.profiles?.full_name}`,
+                    htmlContent: `
+                        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px;">
+                            <h2 style="color: #1e293b; margin-bottom: 16px;">New Driving Session</h2>
+                            <p style="color: #475569; font-size: 16px; line-height: 1.6;">
+                                Hi ${instructor.full_name}, a new driving session has been booked for you.
+                            </p>
+                            <div style="background-color: #f8fafc; padding: 16px; border-radius: 8px; margin: 24px 0;">
+                                <p style="margin: 0; color: #64748b; font-size: 14px;">Student</p>
+                                <p style="margin: 4px 0 12px 0; color: #1e293b; font-weight: bold;">${session.profiles?.full_name}</p>
+                                
+                                <p style="margin: 0; color: #64748b; font-size: 14px;">Date & Time</p>
+                                <p style="margin: 4px 0 12px 0; color: #1e293b; font-weight: bold;">
+                                    ${format(startDateTime, 'EEEE, MMMM do')} at ${format(startDateTime, 'h:mm a')}
+                                </p>
+                                
+                                <p style="margin: 0; color: #64748b; font-size: 14px;">Duration</p>
+                                <p style="margin: 4px 0 0 0; color: #1e293b; font-weight: bold;">${data.duration} hour(s)</p>
+                            </div>
+                            <p style="color: #64748b; font-size: 14px; margin-top: 32px; border-top: 1px solid #e2e8f0; padding-top: 16px;">
+                                You can view your full schedule in the <a href="https://selamdriving.drivofy.com/instructor/schedule" style="color: #2563eb; text-decoration: none;">Instructor Portal</a>.
+                            </p>
+                        </div>
+                    `
+                });
+                console.log('✅ Instructor notification sent')
             }
+        } catch (e) {
+            console.error("Instructor Email Notification Failed", e)
         }
 
         revalidatePath('/admin/driving')

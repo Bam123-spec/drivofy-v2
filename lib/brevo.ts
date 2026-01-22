@@ -31,7 +31,7 @@ export async function sendTransactionalEmail({ to, subject, htmlContent, sender 
     sendSmtpEmail.subject = subject;
     sendSmtpEmail.htmlContent = htmlContent;
     sendSmtpEmail.sender = sender || {
-        email: process.env.BREVO_SENDER_EMAIL || 'noreply@portifol.com',
+        email: process.env.BREVO_SENDER_EMAIL || 'noreply@drivofy.com',
         name: process.env.BREVO_SENDER_NAME || 'Drivofy',
     };
     sendSmtpEmail.to = to;
