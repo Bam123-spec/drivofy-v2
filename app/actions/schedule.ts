@@ -70,36 +70,38 @@ export async function getAdminSchedule(timeMin: string, timeMax: string) {
 
     if (classError) throw classError
 
-    // 4. Fetch Google Calendar Busy Times (if connected)
-    let googleBusy: any[] = []
+    // 4. Fetch Google Calendar Events (if connected)
+    let googleEvents: any[] = []
     try {
         const accessToken = await getGoogleAccessToken(user.id)
         if (accessToken) {
-            const response = await fetch('https://www.googleapis.com/calendar/v3/freeBusy', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    timeMin,
-                    timeMax,
-                    items: [{ id: 'primary' }],
-                }),
-            })
+            const response = await fetch(
+                `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json',
+                    }
+                })
 
             if (response.ok) {
                 const data = await response.json()
-                googleBusy = data.calendars.primary.busy || []
+                googleEvents = data.items.map((item: any) => ({
+                    id: item.id,
+                    title: item.summary || 'Busy',
+                    start: item.start.dateTime || item.start.date,
+                    end: item.end.dateTime || item.end.date,
+                    type: 'google'
+                }))
             }
         }
     } catch (e) {
-        console.error("Error fetching Google busy times:", e)
+        console.error("Error fetching Google events:", e)
     }
 
     return {
         drivingSessions,
         classes,
-        googleBusy
+        googleEvents
     }
 }

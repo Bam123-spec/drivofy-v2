@@ -2,22 +2,23 @@
 
 import { useState, useEffect } from "react"
 import { format, startOfWeek, addDays, isSameDay, parseISO, addWeeks, subWeeks, startOfDay, endOfDay } from "date-fns"
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Loader2, AlertTriangle, ExternalLink } from "lucide-react"
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Loader2, AlertTriangle, ExternalLink, Info } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { getAdminSchedule } from "@/app/actions/schedule"
 import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 export function AdminScheduleCalendar() {
     const [currentDate, setCurrentDate] = useState(new Date())
     const [data, setData] = useState<{
         drivingSessions: any[],
         classes: any[],
-        googleBusy: any[]
+        googleEvents: any[]
     }>({
         drivingSessions: [],
         classes: [],
-        googleBusy: []
+        googleEvents: []
     })
     const [loading, setLoading] = useState(true)
 
@@ -33,7 +34,6 @@ export function AdminScheduleCalendar() {
     const fetchSchedule = async () => {
         setLoading(true)
         try {
-            // Fetch for the whole week
             const res = await getAdminSchedule(
                 startOfDay(startDate).toISOString(),
                 endOfDay(endDate).toISOString()
@@ -66,15 +66,12 @@ export function AdminScheduleCalendar() {
 
         // 2. Classes (Theory)
         data.classes.forEach(c => {
-            // Simple check: is date within class range?
             const classStart = parseISO(c.start_date)
             const classEnd = parseISO(c.end_date)
 
             if (date >= startOfDay(classStart) && date <= endOfDay(classEnd)) {
-                // Now check if it's a weekday (Theory often M-F)
                 const dayOfWeek = date.getDay()
                 if (dayOfWeek >= 1 && dayOfWeek <= 5) {
-                    // Combine date with daily times
                     const [sh, sm] = (c.daily_start_time || "00:00:00").split(':').map(Number)
                     const [eh, em] = (c.daily_end_time || "00:00:00").split(':').map(Number)
 
@@ -97,15 +94,18 @@ export function AdminScheduleCalendar() {
             }
         })
 
-        // 3. Google Calendar Busy
-        data.googleBusy.forEach((b, idx) => {
-            if (isSameDay(parseISO(b.start), date)) {
+        // 3. Google Calendar Events
+        data.googleEvents.forEach((b) => {
+            const start = parseISO(b.start)
+            const end = parseISO(b.end)
+            if (isSameDay(start, date)) {
                 events.push({
-                    id: `google-${idx}-${date.toISOString()}`,
+                    id: b.id,
                     type: 'google',
-                    title: 'Google: Busy',
-                    start: parseISO(b.start),
-                    end: parseISO(b.end),
+                    title: b.title || 'Unknown Event',
+                    start,
+                    end,
+                    isGoogle: true
                 })
             }
         })
@@ -114,137 +114,167 @@ export function AdminScheduleCalendar() {
     }
 
     return (
-        <div className="flex flex-col h-[calc(100vh-200px)] bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden animate-in fade-in duration-500">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row items-center justify-between p-6 border-b border-gray-100 bg-white sticky top-0 z-30 gap-4">
+        <div className="flex flex-col h-[calc(100vh-160px)] bg-white rounded-3xl border border-gray-100 shadow-2xl shadow-gray-200/50 overflow-hidden animate-in fade-in duration-700">
+            {/* Calendar Controls */}
+            <div className="flex flex-col md:flex-row items-center justify-between p-6 border-b border-gray-50 bg-white/80 backdrop-blur-xl sticky top-0 z-40 gap-6">
                 <div className="flex items-center gap-6">
-                    <div>
-                        <h2 className="text-2xl font-bold text-gray-900 tracking-tight">
-                            {format(startDate, "MMMM yyyy")}
-                        </h2>
-                        <p className="text-sm text-gray-500">Weekly operational overview</p>
-                    </div>
-                    <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl">
-                        <Button variant="ghost" size="icon" className="h-9 w-9 hover:bg-white hover:shadow-sm" onClick={() => setCurrentDate(subWeeks(currentDate, 1))}>
-                            <ChevronLeft className="h-5 w-5" />
+                    <div className="flex items-center gap-2 bg-gray-50 p-1.5 rounded-2xl border border-gray-100">
+                        <Button variant="ghost" size="icon" className="h-10 w-10 hover:bg-white hover:shadow-md rounded-xl transition-all" onClick={() => setCurrentDate(subWeeks(currentDate, 1))}>
+                            <ChevronLeft className="h-5 w-5 text-gray-600" />
                         </Button>
-                        <Button variant="ghost" size="sm" className="h-9 px-4 text-sm font-semibold hover:bg-white hover:shadow-sm" onClick={() => setCurrentDate(new Date())}>
+                        <Button variant="ghost" size="sm" className="h-10 px-6 text-sm font-bold hover:bg-white hover:shadow-md rounded-xl transition-all text-gray-900" onClick={() => setCurrentDate(new Date())}>
                             Today
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-9 w-9 hover:bg-white hover:shadow-sm" onClick={() => setCurrentDate(addWeeks(currentDate, 1))}>
-                            <ChevronRight className="h-5 w-5" />
+                        <Button variant="ghost" size="icon" className="h-10 w-10 hover:bg-white hover:shadow-md rounded-xl transition-all" onClick={() => setCurrentDate(addWeeks(currentDate, 1))}>
+                            <ChevronRight className="h-5 w-5 text-gray-600" />
                         </Button>
                     </div>
+                    <div className="h-10 w-[1px] bg-gray-100 hidden md:block" />
+                    <h2 className="text-2xl font-black text-gray-900 tracking-tight">
+                        {format(startDate, "MMMM yyyy")}
+                    </h2>
                 </div>
 
-                <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-md bg-blue-500 shadow-sm shadow-blue-200"></div>
-                        <span className="text-xs font-medium text-gray-600">Driving</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-md bg-purple-500 shadow-sm shadow-purple-200"></div>
-                        <span className="text-xs font-medium text-gray-600">Theory</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-md bg-amber-500 shadow-sm shadow-amber-200"></div>
-                        <span className="text-xs font-medium text-gray-600">Google</span>
-                    </div>
+                <div className="flex items-center gap-4 bg-gray-50/50 p-2 rounded-2xl border border-gray-100/50">
+                    {[
+                        { label: 'Driving', color: 'bg-blue-500 shadow-blue-200' },
+                        { label: 'Theory', color: 'bg-purple-500 shadow-purple-200' },
+                        { label: 'Google', color: 'bg-slate-900 shadow-gray-200' }
+                    ].map((item) => (
+                        <div key={item.label} className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white shadow-sm border border-gray-100">
+                            <div className={`w-2.5 h-2.5 rounded-full ${item.color} shadow-lg`}></div>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">{item.label}</span>
+                        </div>
+                    ))}
                 </div>
             </div>
 
-            {/* Grid */}
-            <div className="flex-1 overflow-auto relative scrollbar-hide">
+            {/* Grid Container */}
+            <div className="flex-1 overflow-auto relative scrollbar-hide bg-gray-50/30">
                 {loading && (
-                    <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] z-40 flex items-center justify-center">
-                        <div className="bg-white p-4 rounded-xl shadow-xl border border-gray-100 flex items-center gap-3">
-                            <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                            <span className="font-medium text-sm text-gray-700">Syncing schedule...</span>
+                    <div className="absolute inset-0 bg-white/40 backdrop-blur-sm z-50 flex items-center justify-center">
+                        <div className="bg-white p-6 rounded-3xl shadow-2xl border border-gray-100 flex items-center gap-4 animate-in zoom-in-95 duration-300">
+                            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                            <span className="font-bold text-gray-900">Syncing Intelligence...</span>
                         </div>
                     </div>
                 )}
 
-                <div className="grid grid-cols-8 min-w-[1000px] h-full">
-                    {/* Time Column */}
-                    <div className="border-r border-gray-100 bg-gray-50/50 sticky left-0 z-20">
-                        <div className="h-14 border-b border-gray-100 bg-gray-50/50 flex items-center justify-center text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                <div className="grid grid-cols-8 min-w-[1200px] h-full">
+                    {/* Time Scale */}
+                    <div className="border-r border-gray-100 bg-white/50 sticky left-0 z-30 backdrop-blur-md">
+                        <div className="h-16 border-b border-gray-100 flex items-center justify-center text-[9px] font-black text-gray-400 uppercase tracking-[0.2em]">
                             Time
                         </div>
                         {hours.map(hour => (
-                            <div key={hour} className="h-24 border-b border-gray-100 text-[11px] font-semibold text-gray-400 text-right pr-4 pt-4">
+                            <div key={hour} className="h-28 border-b border-gray-50/50 text-[11px] font-bold text-gray-400 text-right pr-6 pt-4 italic">
                                 {hour > 12 ? `${hour - 12} PM` : hour === 12 ? '12 PM' : `${hour} AM`}
                             </div>
                         ))}
                     </div>
 
-                    {/* Days */}
+                    {/* Day Columns */}
                     {weekDays.map((day, dayIndex) => {
                         const dayEvents = getEventsForDay(day)
                         const isToday = isSameDay(day, new Date())
 
                         return (
-                            <div key={dayIndex} className={`border-r border-gray-100 relative ${isToday ? 'bg-blue-50/10' : ''}`}>
+                            <div key={dayIndex} className={`border-r border-gray-100 relative ${isToday ? 'bg-blue-50/5' : ''}`}>
                                 {/* Day Header */}
-                                <div className={`h-14 border-b border-gray-100 flex flex-col items-center justify-center sticky top-0 z-10 bg-white/95 backdrop-blur-md ${isToday ? 'bg-blue-50/50' : ''}`}>
-                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{format(day, "EEE")}</span>
-                                    <span className={`text-lg font-bold ${isToday ? 'text-primary' : 'text-gray-900'}`}>{format(day, "d")}</span>
-                                    {isToday && <div className="absolute bottom-1 w-1 h-1 rounded-full bg-primary ring-4 ring-primary/10"></div>}
+                                <div className={`h-16 border-b border-gray-100 flex flex-col items-center justify-center sticky top-0 z-20 bg-white/90 backdrop-blur-xl ${isToday ? 'bg-blue-50/30' : ''}`}>
+                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">{format(day, "EEE")}</span>
+                                    <span className={`text-xl font-black ${isToday ? 'text-blue-600' : 'text-gray-900'}`}>{format(day, "d")}</span>
+                                    {isToday && <div className="absolute bottom-2 w-1.5 h-1.5 rounded-full bg-blue-600 shadow-[0_0_10px_rgba(37,99,235,0.5)]"></div>}
                                 </div>
 
-                                {/* Slots */}
+                                {/* Slot BG */}
                                 {hours.map(hour => (
-                                    <div key={hour} className="h-24 border-b border-gray-50/60 transition-colors hover:bg-gray-50/40"></div>
+                                    <div key={hour} className="h-28 border-b border-gray-50/40 transition-colors hover:bg-white/50"></div>
                                 ))}
 
-                                {/* Events */}
-                                {dayEvents.map((event, eventIdx) => {
+                                {/* Interactive Events Overlay */}
+                                {dayEvents.map((event) => {
                                     const start = event.start
                                     const end = event.end
                                     const startHr = start.getHours() + start.getMinutes() / 60
                                     const endHr = end.getHours() + end.getMinutes() / 60
                                     const duration = endHr - startHr
 
-                                    const top = (startHr - 7) * 96 // 96px per hour (h-24)
-                                    const height = duration * 96
+                                    const top = (startHr - 7) * 112 // 112px per hour (h-28)
+                                    const height = duration * 112
 
                                     if (startHr < 7 || startHr >= 22) return null
 
-                                    let bgClass = "bg-blue-500"
-                                    let borderClass = "border-blue-600"
+                                    let bgClass = "bg-blue-600 shadow-blue-200"
+                                    let borderClass = "border-blue-700"
                                     let textClass = "text-white"
 
                                     if (event.type === 'class') {
-                                        bgClass = "bg-purple-500"
-                                        borderClass = "border-purple-600"
+                                        bgClass = "bg-purple-600 shadow-purple-200"
+                                        borderClass = "border-purple-700"
                                     } else if (event.type === 'google') {
-                                        bgClass = "bg-amber-500"
-                                        borderClass = "border-amber-600"
+                                        bgClass = "bg-slate-900 shadow-slate-200"
+                                        borderClass = "border-black"
                                     }
 
-                                    // Check for conflicts with Google
+                                    // Conflict Detection Logic
                                     const hasConflict = event.type !== 'google' && dayEvents.some(other =>
                                         other.type === 'google' &&
-                                        ((start >= other.start && start < other.end) || (end > other.start && end <= other.end))
+                                        ((start >= other.start && start < other.end) || (end > other.start && end <= other.end) || (start <= other.start && end >= other.end))
                                     )
 
                                     return (
                                         <div
                                             key={event.id}
-                                            className={`absolute left-1 right-1 rounded-xl px-3 py-2 text-[11px] font-medium border shadow-sm overflow-hidden transition-all hover:z-20 hover:scale-[1.02] hover:shadow-lg flex flex-col justify-between
+                                            className={`absolute left-1 right-1 rounded-2xl px-4 py-3 text-[11px] font-bold border-2 shadow-xl overflow-hidden transition-all hover:z-50 hover:scale-[1.02] hover:shadow-2xl flex flex-col justify-between group cursor-default
                                                 ${bgClass} ${borderClass} ${textClass}
+                                                ${event.type === 'google' ? 'opacity-90 grayscale-[0.2] hover:grayscale-0' : ''}
                                             `}
-                                            style={{ top: `${top + 56 + 2}px`, height: `${height - 4}px` }}
+                                            style={{ top: `${top + 64 + 4}px`, height: `${height - 8}px` }}
                                         >
-                                            <div className="space-y-0.5">
-                                                <div className="font-bold leading-tight flex items-center justify-between gap-1">
-                                                    <span className="truncate">{event.title}</span>
-                                                    {hasConflict && <AlertTriangle className="h-3 w-3 text-white animate-pulse shrink-0" />}
+                                            <div className="space-y-1">
+                                                <div className="flex items-start justify-between gap-2">
+                                                    <span className="leading-tight line-clamp-2">{event.title}</span>
+                                                    {hasConflict && (
+                                                        <TooltipProvider>
+                                                            <Tooltip>
+                                                                <TooltipTrigger>
+                                                                    <div className="bg-red-500 p-1.5 rounded-lg animate-pulse ring-4 ring-red-500/20">
+                                                                        <AlertTriangle className="h-3 w-3 text-white" />
+                                                                    </div>
+                                                                </TooltipTrigger>
+                                                                <TooltipContent className="bg-slate-900 text-white border-0 rounded-xl p-3 shadow-2xl">
+                                                                    <p className="font-bold flex items-center gap-2">
+                                                                        <ShieldAlert className="h-4 w-4 text-red-400" />
+                                                                        Schedule Conflict Detected
+                                                                    </p>
+                                                                    <p className="text-[10px] text-gray-400 mt-1">This slot overlaps with an external Google Calendar event.</p>
+                                                                </TooltipContent>
+                                                            </Tooltip>
+                                                        </TooltipProvider>
+                                                    )}
+                                                    {event.type === 'google' && (
+                                                        <div className="bg-white/10 p-1 rounded-md opacity-50 group-hover:opacity-100 transition-opacity">
+                                                            <ExternalLink className="h-3 w-3" />
+                                                        </div>
+                                                    )}
                                                 </div>
-                                                {event.subtitle && <div className="truncate opacity-90 text-[10px] font-normal">{event.subtitle}</div>}
+                                                {event.subtitle && <div className="text-[9px] font-medium text-white/70 tracking-wide uppercase">{event.subtitle}</div>}
                                             </div>
-                                            <div className="text-[10px] font-bold opacity-80 mt-auto">
-                                                {format(start, "h:mm")} - {format(end, "h:mm a")}
+
+                                            <div className="flex items-center justify-between mt-2">
+                                                <div className="px-2 py-1 rounded-lg bg-black/20 backdrop-blur-md text-[9px] font-black tracking-widest uppercase">
+                                                    {format(start, "h:mm")} - {format(end, "h:mm a")}
+                                                </div>
+                                                {event.status && (
+                                                    <div className="text-[8px] font-black uppercase tracking-widest opacity-60">
+                                                        {event.status}
+                                                    </div>
+                                                )}
                                             </div>
+
+                                            {/* Design Accent */}
+                                            <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 group-hover:bg-white/10 transition-colors"></div>
                                         </div>
                                     )
                                 })}
@@ -254,5 +284,26 @@ export function AdminScheduleCalendar() {
                 </div>
             </div>
         </div>
+    )
+}
+
+function ShieldAlert(props: any) {
+    return (
+        <svg
+            {...props}
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        >
+            <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.5 3.8 17 5 19 5a1 1 0 0 1 1 1z" />
+            <path d="M12 8v4" />
+            <path d="M12 16h.01" />
+        </svg>
     )
 }

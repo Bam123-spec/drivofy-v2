@@ -118,6 +118,7 @@ export async function createDrivingSession(data: {
         try {
             await createCalendarEvent(data.instructorId, {
                 studentName: session.profiles?.full_name || "Student",
+                title: session.profiles?.full_name || "Unassigned Session",
                 startTime: startDateTime.toISOString(),
                 endTime: endDateTime.toISOString(),
                 description: `Driving Lesson (Admin Booked)`,

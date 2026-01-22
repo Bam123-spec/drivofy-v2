@@ -107,6 +107,7 @@ export async function createCalendarEvent(profileId: string, eventData: {
     studentName: string,
     startTime: string, // ISO string
     endTime: string,   // ISO string
+    title?: string,
     description?: string,
     location?: string
 }) {
@@ -118,12 +119,13 @@ export async function createCalendarEvent(profileId: string, eventData: {
     }
 
     const event = {
-        summary: `Driving Lesson - ${eventData.studentName}`,
+        summary: eventData.title || `Unassigned - ${eventData.studentName}`,
         location: eventData.location || "Driving School",
         description: eventData.description || "Driving lesson booked via Drivofy.",
+        colorId: '8', // Graphite (Best for 'Black' requirement)
         start: {
             dateTime: eventData.startTime,
-            timeZone: 'UTC', // Or user's timezone
+            timeZone: 'UTC',
         },
         end: {
             dateTime: eventData.endTime,

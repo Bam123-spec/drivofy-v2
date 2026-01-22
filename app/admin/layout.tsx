@@ -84,12 +84,12 @@ export default function AdminLayout({
             label: "Main Menu",
             items: [
                 { href: "/admin", label: "Dashboard", icon: LayoutDashboard, placeholder: false },
+                { href: "/admin/schedule", label: "Schedule", icon: CalendarDays, placeholder: false },
             ]
         },
         {
             label: "Operations",
             items: [
-                { href: "/admin/schedule", label: "Schedule", icon: CalendarDays, placeholder: false },
                 { href: "/admin/students", label: "Students", icon: GraduationCap, placeholder: false },
                 { href: "/admin/classes", label: "Classes", icon: BookOpen, placeholder: false },
                 { href: "/admin/driving", label: "Driving Sessions", icon: Car, placeholder: false },
