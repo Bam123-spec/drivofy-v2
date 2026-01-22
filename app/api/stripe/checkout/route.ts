@@ -119,6 +119,7 @@ export async function POST(req: Request) {
                 },
             ],
             mode: 'subscription',
+            allow_promotion_codes: true,
             success_url: `${baseUrl}/billing?success=1`,
             cancel_url: `${baseUrl}/billing?canceled=1`,
             metadata: {
