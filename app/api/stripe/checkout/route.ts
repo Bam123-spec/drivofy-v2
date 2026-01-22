@@ -42,53 +42,64 @@ export async function POST(req: Request) {
         }
 
         // Fetch or create organization
-        let { data: org } = await supabase
+        let { data: org, error: fetchError } = await supabase
             .from('organizations')
             .select('id, stripe_customer_id')
             .eq('owner_user_id', user.id)
-            .single();
+            .maybeSingle();
+
+        if (fetchError) {
+            console.error('Error fetching organization:', fetchError);
+            throw new Error(`Database error: ${fetchError.message}`);
+        }
 
         if (!org) {
-            const { data: newOrg, error } = await supabase
+            console.log('No organization found, creating one for user:', user.id);
+            const { data: newOrg, error: insertError } = await supabase
                 .from('organizations')
                 .insert({ owner_user_id: user.id })
                 .select()
-                .single();
+                .maybeSingle();
 
-            if (error) throw error;
-            if (!newOrg) throw new Error('Failed to create organization');
+            if (insertError) {
+                console.error('Error creating organization:', insertError);
+                throw new Error(`Failed to create organization: ${insertError.message}`);
+            }
+            if (!newOrg) throw new Error('Failed to create organization (no data returned)');
             org = newOrg;
         }
-
-        // TypeScript check
-        if (!org) throw new Error('Organization not found');
 
         // Create Stripe Customer if needed
         let customerId = org.stripe_customer_id;
 
         if (!customerId) {
-            // Create customer
-            const customer = await stripe.customers.create({
-                email: user.email,
-                metadata: {
-                    userId: user.id,
-                    orgId: org.id
+            console.log('Creating Stripe customer for user:', user.email);
+            try {
+                const customer = await stripe.customers.create({
+                    email: user.email || undefined,
+                    metadata: {
+                        userId: user.id,
+                        orgId: org.id
+                    }
+                });
+                customerId = customer.id;
+
+                // Update DB with user client
+                const { error: updateError } = await supabase
+                    .from('organizations')
+                    .update({ stripe_customer_id: customerId })
+                    .eq('id', org.id);
+
+                if (updateError) {
+                    console.error('Error updating organization with stripe_customer_id:', updateError);
                 }
-            });
-            customerId = customer.id;
-
-            // Update DB with user client (requires RLS policy "Owners can update their own organization")
-            const { error: updateError } = await supabase
-                .from('organizations')
-                .update({ stripe_customer_id: customerId })
-                .eq('id', org.id);
-
-            if (updateError) {
-                console.error('Error updating organization with stripe_customer_id:', updateError);
-                // Continue anyway, as the session will still work
+            } catch (stripeErr: any) {
+                console.error('Stripe Customer Creation Error:', stripeErr);
+                throw new Error(`Stripe error: ${stripeErr.message}`);
             }
         }
 
+        console.log('Creating Stripe checkout session for customer:', customerId);
         const session = await stripe.checkout.sessions.create({
             customer: customerId,
             line_items: [
@@ -106,10 +117,13 @@ export async function POST(req: Request) {
         });
 
         return NextResponse.json({ url: session.url });
-    } catch (error) {
-        console.error('Error creating checkout session:', error);
+    } catch (error: any) {
+        console.error('CRITICAL ERROR in checkout session:', error);
         return NextResponse.json(
-            { error: error instanceof Error ? error.message : 'Internal Server Error' },
+            {
+                error: error.message || 'Internal Server Error',
+                details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+            },
             { status: 500 }
         );
     }
