@@ -32,7 +32,7 @@ export async function POST(req: Request) {
         const { data: { user } } = await supabase.auth.getUser();
 
         if (!user) {
-            return new NextResponse('Unauthorized', { status: 401 });
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         // Fetch or create organization
@@ -141,6 +141,9 @@ export async function POST(req: Request) {
         return NextResponse.json({ url: session.url });
     } catch (error) {
         console.error('Error creating checkout session:', error);
-        return new NextResponse('Internal Error', { status: 500 });
+        return NextResponse.json(
+            { error: error instanceof Error ? error.message : 'Internal Server Error' },
+            { status: 500 }
+        );
     }
 }
