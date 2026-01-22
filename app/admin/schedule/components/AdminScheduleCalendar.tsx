@@ -25,7 +25,7 @@ export function AdminScheduleCalendar() {
     const startDate = startOfWeek(currentDate, { weekStartsOn: 0 })
     const endDate = addDays(startDate, 6)
     const weekDays = Array.from({ length: 7 }).map((_, i) => addDays(startDate, i))
-    const hours = Array.from({ length: 15 }).map((_, i) => i + 7) // 7 AM to 10 PM
+    const hours = Array.from({ length: 19 }).map((_, i) => i + 5) // 5 AM to 11 PM
 
     useEffect(() => {
         fetchSchedule()
@@ -116,7 +116,7 @@ export function AdminScheduleCalendar() {
     return (
         <div className="flex flex-col h-[calc(100vh-160px)] bg-white rounded-3xl border border-gray-100 shadow-2xl shadow-gray-200/50 overflow-hidden animate-in fade-in duration-700">
             {/* Calendar Controls */}
-            <div className="flex flex-col md:flex-row items-center justify-between p-6 border-b border-gray-50 bg-white/80 backdrop-blur-xl sticky top-0 z-40 gap-6">
+            <div className="flex flex-col md:flex-row items-center justify-between p-3 border-b border-gray-50 bg-white/80 backdrop-blur-xl sticky top-0 z-40 gap-4">
                 <div className="flex items-center gap-6">
                     <div className="flex items-center gap-2 bg-gray-50 p-1.5 rounded-2xl border border-gray-100">
                         <Button variant="ghost" size="icon" className="h-10 w-10 hover:bg-white hover:shadow-md rounded-xl transition-all" onClick={() => setCurrentDate(subWeeks(currentDate, 1))}>
@@ -130,7 +130,7 @@ export function AdminScheduleCalendar() {
                         </Button>
                     </div>
                     <div className="h-10 w-[1px] bg-gray-100 hidden md:block" />
-                    <h2 className="text-2xl font-black text-gray-900 tracking-tight">
+                    <h2 className="text-xl font-black text-gray-900 tracking-tight">
                         {format(startDate, "MMMM yyyy")}
                     </h2>
                 </div>
@@ -167,7 +167,7 @@ export function AdminScheduleCalendar() {
                             Time
                         </div>
                         {hours.map(hour => (
-                            <div key={hour} className="h-28 border-b border-gray-50/50 text-[11px] font-bold text-gray-400 text-right pr-6 pt-4 italic">
+                            <div key={hour} className="h-14 border-b border-gray-50/50 text-[9px] font-bold text-gray-400 text-right pr-4 pt-1.5 italic">
                                 {hour > 12 ? `${hour - 12} PM` : hour === 12 ? '12 PM' : `${hour} AM`}
                             </div>
                         ))}
@@ -181,15 +181,15 @@ export function AdminScheduleCalendar() {
                         return (
                             <div key={dayIndex} className={`border-r border-gray-100 relative ${isToday ? 'bg-blue-50/5' : ''}`}>
                                 {/* Day Header */}
-                                <div className={`h-16 border-b border-gray-100 flex flex-col items-center justify-center sticky top-0 z-20 bg-white/90 backdrop-blur-xl ${isToday ? 'bg-blue-50/30' : ''}`}>
-                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">{format(day, "EEE")}</span>
-                                    <span className={`text-xl font-black ${isToday ? 'text-blue-600' : 'text-gray-900'}`}>{format(day, "d")}</span>
+                                <div className={`h-12 border-b border-gray-100 flex flex-col items-center justify-center sticky top-0 z-20 bg-white/90 backdrop-blur-xl ${isToday ? 'bg-blue-50/30' : ''}`}>
+                                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.1em]">{format(day, "EEE")}</span>
+                                    <span className={`text-lg font-black ${isToday ? 'text-blue-600' : 'text-gray-900'}`}>{format(day, "d")}</span>
                                     {isToday && <div className="absolute bottom-2 w-1.5 h-1.5 rounded-full bg-blue-600 shadow-[0_0_10px_rgba(37,99,235,0.5)]"></div>}
                                 </div>
 
                                 {/* Slot BG */}
                                 {hours.map(hour => (
-                                    <div key={hour} className="h-28 border-b border-gray-50/40 transition-colors hover:bg-white/50"></div>
+                                    <div key={hour} className="h-14 border-b border-gray-50/40 transition-colors hover:bg-white/50"></div>
                                 ))}
 
                                 {/* Interactive Events Overlay */}
@@ -200,10 +200,10 @@ export function AdminScheduleCalendar() {
                                     const endHr = end.getHours() + end.getMinutes() / 60
                                     const duration = endHr - startHr
 
-                                    const top = (startHr - 7) * 112 // 112px per hour (h-28)
-                                    const height = duration * 112
+                                    const top = (startHr - 5) * 56 // 56px per hour (h-14)
+                                    const height = duration * 56
 
-                                    if (startHr < 7 || startHr >= 22) return null
+                                    if (startHr < 5 || startHr >= 24) return null
 
                                     let bgClass = "bg-blue-600 shadow-blue-200"
                                     let borderClass = "border-blue-700"
@@ -230,7 +230,7 @@ export function AdminScheduleCalendar() {
                                                 ${bgClass} ${borderClass} ${textClass}
                                                 ${event.type === 'google' ? 'opacity-90 grayscale-[0.2] hover:grayscale-0' : ''}
                                             `}
-                                            style={{ top: `${top + 64 + 4}px`, height: `${height - 8}px` }}
+                                            style={{ top: `${top + 48 + 2}px`, height: `${height - 2}px` }}
                                         >
                                             <div className="space-y-1">
                                                 <div className="flex items-start justify-between gap-2">

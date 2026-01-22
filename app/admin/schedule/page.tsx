@@ -15,9 +15,9 @@ export default function AdminSchedulePage() {
                     <p className="text-gray-500">Manage all sessions and view external conflicts in one place.</p>
                 </div>
 
-                <div className="w-full lg:w-72">
-                    <Suspense fallback={<div className="h-12 animate-pulse bg-gray-100 rounded-xl" />}>
-                        <GoogleCalendarConnect instructorId="" />
+                <div className="w-auto">
+                    <Suspense fallback={<div className="h-10 w-48 animate-pulse bg-gray-100 rounded-xl" />}>
+                        <GoogleCalendarConnect instructorId="" variant="compact" />
                     </Suspense>
                 </div>
             </div>
