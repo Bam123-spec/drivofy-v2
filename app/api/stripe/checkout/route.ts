@@ -99,6 +99,16 @@ export async function POST(req: Request) {
             }
         }
 
+        // Robust URL construction
+        let baseUrl = process.env.NEXT_PUBLIC_APP_URL;
+        if (!baseUrl) {
+            const url = new URL(req.url);
+            baseUrl = `${url.protocol}//${url.host}`;
+        }
+        if (baseUrl && !baseUrl.startsWith('http')) {
+            baseUrl = `https://${baseUrl}`;
+        }
+
         console.log('Creating Stripe checkout session for customer:', customerId);
         const session = await stripe.checkout.sessions.create({
             customer: customerId,
@@ -109,8 +119,8 @@ export async function POST(req: Request) {
                 },
             ],
             mode: 'subscription',
-            success_url: `${process.env.NEXT_PUBLIC_APP_URL}/billing?success=1`,
-            cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/billing?canceled=1`,
+            success_url: `${baseUrl}/billing?success=1`,
+            cancel_url: `${baseUrl}/billing?canceled=1`,
             metadata: {
                 orgId: org.id,
             },
