@@ -98,7 +98,19 @@ export async function POST(request: Request) {
         }
 
         // 3. Create Portal Session using fetch
-        const returnUrl = process.env.NEXT_PUBLIC_APP_URL + '/admin/payments';
+        let baseUrl = process.env.NEXT_PUBLIC_APP_URL;
+
+        if (!baseUrl) {
+            // Fallback to request origin if available
+            const url = new URL(request.url);
+            baseUrl = `${url.protocol}//${url.host}`;
+        }
+
+        if (baseUrl && !baseUrl.startsWith('http')) {
+            baseUrl = `https://${baseUrl}`;
+        }
+
+        const returnUrl = `${baseUrl}/admin/payments`;
 
         const body = new URLSearchParams();
         body.append('customer', stripeCustomerId);
