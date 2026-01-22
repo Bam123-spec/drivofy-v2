@@ -5,6 +5,12 @@ import { stripe } from '@/lib/stripe';
 
 export async function POST(req: Request) {
     try {
+        if (!process.env.STRIPE_SECRET_KEY) {
+            return NextResponse.json({ error: 'Stripe is not configured (Missing STRIPE_SECRET_KEY)' }, { status: 503 });
+        }
+
+        const priceId = process.env.STRIPE_PRICE_ID || 'price_1Sr2BhD0SlycNJKi6Czvb2tk'; // Fallback for dev
+
         const cookieStore = await cookies();
         const supabase = createServerClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -126,7 +132,7 @@ export async function POST(req: Request) {
             customer: customerId,
             line_items: [
                 {
-                    price: 'price_1Sr2BhD0SlycNJKi6Czvb2tk',
+                    price: priceId,
                     quantity: 1,
                 },
             ],
