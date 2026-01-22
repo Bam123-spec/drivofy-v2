@@ -75,9 +75,12 @@ export default async function BillingPage() {
                                     <CardTitle className="text-lg font-bold text-gray-900">Current Plan</CardTitle>
                                     <CardDescription>Your subscription details.</CardDescription>
                                 </div>
-                                <Badge className={`${isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'} border-0 px-3 py-1 text-xs font-semibold uppercase tracking-wide`}>
-                                    {isActive ? 'Active' : 'Inactive'}
-                                </Badge>
+                                <div className="flex items-center gap-3">
+                                    <SyncBillingButton />
+                                    <Badge className={`${isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'} border-0 px-3 py-1 text-xs font-semibold uppercase tracking-wide`}>
+                                        {isActive ? 'Active' : 'Inactive'}
+                                    </Badge>
+                                </div>
                             </div>
                         </CardHeader>
                         <CardContent className="space-y-6">
@@ -117,7 +120,6 @@ export default async function BillingPage() {
                             </CardHeader>
                             <CardContent>
                                 <div className="flex items-center gap-4">
-                                    <SyncBillingButton />
                                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
                                         {org?.billing_status ? org.billing_status.toUpperCase() : 'INACTIVE'}
                                     </span>
