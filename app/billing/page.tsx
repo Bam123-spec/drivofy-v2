@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle2, AlertCircle } from 'lucide-react';
 import SubscribeButton from './SubscribeButton';
+import SyncBillingButton from './SyncBillingButton';
 
 export default async function BillingPage({ searchParams }: { searchParams: { success?: string, canceled?: string } }) {
     const cookieStore = await cookies();
@@ -62,7 +63,8 @@ export default async function BillingPage({ searchParams }: { searchParams: { su
                             <p className="font-medium text-gray-900">Current Plan</p>
                             <p className="text-sm text-gray-500">Drivofy Pro</p>
                         </div>
-                        <div className="flex items-center">
+                        <div className="flex items-center gap-4">
+                            <SyncBillingButton />
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
                                 {org?.billing_status ? org.billing_status.toUpperCase() : 'INACTIVE'}
                             </span>

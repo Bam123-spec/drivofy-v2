@@ -59,6 +59,11 @@ export async function middleware(request: NextRequest) {
     // Protected Routes Logic
     const path = request.nextUrl.pathname
 
+    // Skip auth check for Stripe webhook
+    if (path === '/api/stripe/webhook') {
+        return response
+    }
+
     // Helper to get role from DB
     const getRole = async (userId: string) => {
         const { data } = await supabase

@@ -15,6 +15,7 @@ import {
 import { Download, CheckCircle2, AlertCircle, Calendar } from "lucide-react"
 import ManageBillingButton from "./components/ManageBillingButton"
 import PaymentMethodCard from "./components/PaymentMethodCard"
+import SyncBillingButton from '@/app/billing/SyncBillingButton';
 
 // Mock Data for History (since we don't fetch invoices yet)
 interface BillingInvoice {
@@ -115,6 +116,12 @@ export default async function BillingPage() {
                                 <CardTitle className="text-sm font-bold text-blue-900 uppercase tracking-wider">Upcoming Charge</CardTitle>
                             </CardHeader>
                             <CardContent>
+                                <div className="flex items-center gap-4">
+                                    <SyncBillingButton />
+                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                                        {org?.billing_status ? org.billing_status.toUpperCase() : 'INACTIVE'}
+                                    </span>
+                                </div>
                                 <div className="flex items-baseline gap-1 mb-1">
                                     <span className="text-3xl font-bold text-blue-900">$59</span>
                                     <span className="text-sm font-medium text-blue-700">USD</span>
