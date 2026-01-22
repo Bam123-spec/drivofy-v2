@@ -34,14 +34,16 @@ export default function SyncBillingButton() {
 
     return (
         <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
             onClick={handleSync}
             disabled={isLoading}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-xl px-4 transition-all active:scale-95"
         >
-            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-            {isLoading ? 'Syncing...' : 'Sync Status'}
+            <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+            <span className="text-xs font-bold uppercase tracking-widest">
+                {isLoading ? 'Syncing...' : 'Sync Status'}
+            </span>
         </Button>
     );
 }

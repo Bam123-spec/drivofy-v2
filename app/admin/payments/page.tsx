@@ -13,7 +13,7 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table"
-import { Download, CheckCircle2, AlertCircle, Calendar } from "lucide-react"
+import { Download, CheckCircle2, AlertCircle, Calendar, ShieldCheck, Zap, CreditCard as CardIcon } from "lucide-react"
 import ManageBillingButton from "./components/ManageBillingButton"
 import PaymentMethodCard from "./components/PaymentMethodCard"
 import SyncBillingButton from '@/app/billing/SyncBillingButton';
@@ -58,148 +58,203 @@ export default async function BillingPage() {
     const isCanceled = org?.billing_status === 'canceled'
 
     return (
-        <div className="space-y-8 max-w-5xl mx-auto pb-10">
-            {/* Header */}
-            <div>
-                <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Billing & Subscription</h1>
-                <p className="text-gray-500 mt-1">Manage your Drivofy subscription and payment methods.</p>
+        <div className="max-w-6xl mx-auto pb-20 px-4 sm:px-6">
+            {/* Premium Header Section */}
+            <div className="relative py-12 mb-12 overflow-hidden rounded-[2.5rem] bg-slate-950 text-white shadow-2xl shadow-blue-900/20">
+                {/* Background Glows */}
+                <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-[500px] h-[500px] bg-blue-600/20 blur-[120px] rounded-full" />
+                <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/4 w-[400px] h-[400px] bg-indigo-600/10 blur-[100px] rounded-full" />
+
+                <div className="relative z-10 px-8 sm:px-12 flex flex-col md:flex-row md:items-center justify-between gap-8">
+                    <div className="max-w-2xl">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-bold uppercase tracking-widest mb-6">
+                            <ShieldCheck className="h-3.5 w-3.5" />
+                            Billing & Security
+                        </div>
+                        <h1 className="text-4xl sm:text-5xl font-black tracking-tight mb-4 bg-gradient-to-r from-white via-white to-white/60 bg-clip-text text-transparent">
+                            Subscription Center
+                        </h1>
+                        <p className="text-slate-400 text-lg sm:text-xl font-medium max-w-lg leading-relaxed">
+                            Manage your premium access, billing cycles, and secure payment methods in one place.
+                        </p>
+                    </div>
+
+                    <div className="flex flex-col items-end gap-4">
+                        <SyncBillingButton />
+                        <div className="flex items-center gap-3 bg-white/5 backdrop-blur-md border border-white/10 p-2 rounded-2xl">
+                            <div className={`h-3 w-3 rounded-full animate-pulse ${isActive ? 'bg-green-500 shadow-[0_0_12px_rgba(34,197,94,0.5)]' : 'bg-slate-500'}`} />
+                            <span className="text-sm font-bold uppercase tracking-wider pr-2">
+                                {isActive ? 'Active Plan' : 'Account Inactive'}
+                            </span>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Left Column: Plan & Payment Method */}
-                <div className="lg:col-span-2 space-y-8">
-                    {/* Plan Summary */}
-                    <Card className="border-gray-200 shadow-sm">
-                        <CardHeader>
-                            <div className="flex items-center justify-between">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
+                {/* Main Content Area */}
+                <div className="lg:col-span-8 space-y-10">
+
+                    {/* The "Out of the Box" Plan Card */}
+                    <div className="relative group">
+                        <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-[2rem] blur opacity-20 group-hover:opacity-40 transition duration-1000 group-hover:duration-200" />
+                        <div className="relative bg-white border border-slate-100 rounded-[2rem] p-8 sm:p-10 shadow-xl shadow-slate-200/50">
+                            <div className="flex flex-col sm:flex-row justify-between items-start gap-6 mb-10">
                                 <div>
-                                    <CardTitle className="text-lg font-bold text-gray-900">Current Plan</CardTitle>
-                                    <CardDescription>Your subscription details.</CardDescription>
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <div className="p-2 rounded-xl bg-blue-50 text-blue-600">
+                                            <Zap className="h-6 w-6 fill-current" />
+                                        </div>
+                                        <h2 className="text-2xl font-black text-slate-900 tracking-tight">Drivofy Standard</h2>
+                                    </div>
+                                    <p className="text-slate-500 font-medium leading-relaxed max-w-md">
+                                        Full access to the admin dashboard, instructor portals, and student management tools.
+                                    </p>
                                 </div>
-                                <div className="flex items-center gap-3">
-                                    <SyncBillingButton />
-                                    <Badge className={`${isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'} border-0 px-3 py-1 text-xs font-semibold uppercase tracking-wide`}>
-                                        {isActive ? 'Active' : 'Inactive'}
-                                    </Badge>
+                                <div className="text-left sm:text-right">
+                                    <div className="text-4xl font-black text-slate-900 tracking-tight">$59<span className="text-lg font-bold text-slate-400 ml-1">/mo</span></div>
+                                    <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Billed Monthly</div>
                                 </div>
                             </div>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
-                            <div className="flex items-baseline justify-between">
-                                <div>
-                                    <div className="text-2xl font-bold text-gray-900">Drivofy Standard</div>
-                                    <div className="text-sm text-gray-500 mt-1">
-                                        Your Drivofy subscription controls access for this driving school’s admin and instructor portals.
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
+                                <div className="flex items-center gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-100 group/item hover:bg-white hover:shadow-lg hover:shadow-slate-200/50 transition-all">
+                                    <div className="h-10 w-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 group-hover/item:text-blue-600 transition-colors">
+                                        <Calendar className="h-5 w-5" />
+                                    </div>
+                                    <div>
+                                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Next Billing</div>
+                                        <div className="text-sm font-bold text-slate-900">
+                                            {isActive && org?.current_period_end
+                                                ? new Date(org.current_period_end).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+                                                : 'N/A'}
+                                        </div>
                                     </div>
                                 </div>
-                                <div className="text-right">
-                                    <div className="text-2xl font-bold text-gray-900">$59<span className="text-sm font-normal text-gray-500">/mo</span></div>
+                                <div className="flex items-center gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-100 group/item hover:bg-white hover:shadow-lg hover:shadow-slate-200/50 transition-all">
+                                    <div className="h-10 w-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 group-hover/item:text-green-600 transition-colors">
+                                        <ShieldCheck className="h-5 w-5" />
+                                    </div>
+                                    <div>
+                                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Status</div>
+                                        <div className={`text-sm font-bold ${isActive ? 'text-green-600' : 'text-slate-500'}`}>
+                                            {isActive ? 'Active & Protected' : 'Inactive'}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                            {isActive && org?.current_period_end && (
-                                <div className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 p-3 rounded-lg border border-gray-100">
-                                    <Calendar className="h-4 w-4 text-blue-600" />
-                                    <span>Renews on <strong>{new Date(org.current_period_end).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</strong></span>
-                                </div>
-                            )}
-                        </CardContent>
-                        <CardFooter className="bg-gray-50/50 border-t border-gray-100 flex gap-3 px-6 py-4">
-                            <ManageBillingButton mode={isActive ? 'portal' : 'checkout'} />
-                        </CardFooter>
-                    </Card>
 
-                    {/* Payment Method - Only show if active or has customer ID */}
-                    {org?.stripe_customer_id && <PaymentMethodCard />}
+                            <div className="flex flex-col sm:flex-row gap-4">
+                                <ManageBillingButton mode={isActive ? 'portal' : 'checkout'} />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Payment Method Section */}
+                    <PaymentMethodCard />
+
+                    {/* Invoice History */}
+                    {isActive && INVOICE_HISTORY.length > 0 && (
+                        <div className="space-y-6">
+                            <h3 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-3 px-2">
+                                <Download className="h-5 w-5 text-slate-400" />
+                                Billing History
+                            </h3>
+                            <div className="bg-white border border-slate-100 rounded-[2rem] overflow-hidden shadow-xl shadow-slate-200/40">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow className="bg-slate-50/50 border-b border-slate-100">
+                                            <TableHead className="font-bold text-slate-500 uppercase tracking-widest text-[10px] py-6 px-8">Date</TableHead>
+                                            <TableHead className="font-bold text-slate-500 uppercase tracking-widest text-[10px] py-6">Amount</TableHead>
+                                            <TableHead className="font-bold text-slate-500 uppercase tracking-widest text-[10px] py-6">Status</TableHead>
+                                            <TableHead className="font-bold text-slate-500 uppercase tracking-widest text-[10px] py-6 text-right px-8">Action</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {INVOICE_HISTORY.map((invoice) => (
+                                            <TableRow key={invoice.id} className="hover:bg-slate-50/50 border-b border-slate-50 transition-colors">
+                                                <TableCell className="py-6 px-8 font-bold text-slate-900">
+                                                    {new Date(invoice.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                </TableCell>
+                                                <TableCell className="py-6 font-bold text-slate-900">${invoice.amount}.00</TableCell>
+                                                <TableCell className="py-6">
+                                                    <Badge className={`
+                                                        capitalize font-bold border-0 px-3 py-1 rounded-full text-[10px] tracking-wider
+                                                        ${invoice.status === 'paid' ? 'bg-green-100 text-green-700' :
+                                                            invoice.status === 'failed' ? 'bg-red-100 text-red-700' :
+                                                                'bg-slate-100 text-slate-700'}
+                                                    `}>
+                                                        {invoice.status}
+                                                    </Badge>
+                                                </TableCell>
+                                                <TableCell className="py-6 px-8 text-right">
+                                                    <Button variant="ghost" size="sm" className="h-10 w-10 rounded-xl text-slate-400 hover:text-blue-600 hover:bg-blue-50">
+                                                        <Download className="h-5 w-5" />
+                                                    </Button>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
-                {/* Right Column: Upcoming Charge - Only show if active */}
-                {isActive && (
-                    <div className="space-y-8">
-                        <Card className="border-blue-100 bg-blue-50/50 shadow-sm">
-                            <CardHeader className="pb-2">
-                                <CardTitle className="text-sm font-bold text-blue-900 uppercase tracking-wider">Upcoming Charge</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="flex items-center gap-4">
-                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                                        {org?.billing_status ? org.billing_status.toUpperCase() : 'INACTIVE'}
-                                    </span>
-                                </div>
-                                <div className="flex items-baseline gap-1 mb-1">
-                                    <span className="text-3xl font-bold text-blue-900">$59</span>
-                                    <span className="text-sm font-medium text-blue-700">USD</span>
-                                </div>
-                                <div className="text-sm text-blue-800 mb-4">
-                                    Due on {org?.current_period_end ? new Date(org.current_period_end).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'Next Cycle'}
-                                </div>
+                {/* Sidebar / Summary Area */}
+                <div className="lg:col-span-4 space-y-8">
+                    {isActive ? (
+                        <div className="sticky top-8 bg-blue-600 rounded-[2.5rem] p-8 text-white shadow-2xl shadow-blue-600/30 overflow-hidden">
+                            {/* Decorative Elements */}
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+                            <div className="absolute bottom-0 left-0 w-24 h-24 bg-indigo-400/20 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2" />
 
-                                <div className="space-y-3 pt-4 border-t border-blue-200/60">
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-blue-700/80">Plan</span>
-                                        <span className="font-medium text-blue-900">Drivofy Standard</span>
+                            <div className="relative z-10">
+                                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-blue-200 mb-8">Summary</h3>
+
+                                <div className="space-y-6">
+                                    <div className="flex justify-between items-end">
+                                        <div className="text-sm font-bold text-blue-100">Monthly Total</div>
+                                        <div className="text-4xl font-black tracking-tight">$59</div>
+                                    </div>
+
+                                    <div className="pt-6 border-t border-white/10 space-y-4">
+                                        <div className="flex justify-between text-sm font-medium text-blue-100">
+                                            <span>Current Cycle Ends</span>
+                                            <span className="text-white">
+                                                {org?.current_period_end ? new Date(org.current_period_end).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'N/A'}
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between text-sm font-medium text-blue-100">
+                                            <span>Payment Method</span>
+                                            <span className="text-white flex items-center gap-2">
+                                                <CardIcon className="h-3.5 w-3.5" />
+                                                Secure
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 text-[10px] font-bold text-blue-100 leading-relaxed text-center uppercase tracking-widest">
+                                        Next charge will be automated
                                     </div>
                                 </div>
-
-                                <div className="mt-6 text-xs text-center text-blue-600/70 font-medium">
-                                    Billed securely via Stripe
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </div>
-                )}
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="sticky top-8 bg-slate-50 border border-slate-200 border-dashed rounded-[2.5rem] p-10 text-center">
+                            <div className="h-16 w-16 bg-white rounded-2xl border border-slate-200 flex items-center justify-center mx-auto mb-6 shadow-sm">
+                                <Zap className="h-8 w-8 text-slate-300" />
+                            </div>
+                            <h3 className="text-xl font-black text-slate-900 tracking-tight mb-3">No Active Plan</h3>
+                            <p className="text-slate-500 text-sm font-medium leading-relaxed mb-8">
+                                Subscribe to unlock full access to the Drivofy platform and start managing your school.
+                            </p>
+                            <ManageBillingButton mode="checkout" />
+                        </div>
+                    )}
+                </div>
             </div>
-
-            {/* Invoice History - Only show if active */}
-            {isActive && INVOICE_HISTORY.length > 0 && (
-                <Card className="border-gray-200 shadow-sm mt-8">
-                    <CardHeader>
-                        <CardTitle className="text-lg font-bold text-gray-900">Invoice History</CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-0">
-                        <Table>
-                            <TableHeader>
-                                <TableRow className="bg-gray-50/50">
-                                    <TableHead className="font-semibold text-gray-600">Date</TableHead>
-                                    <TableHead className="font-semibold text-gray-600">Invoice ID</TableHead>
-                                    <TableHead className="font-semibold text-gray-600">Description</TableHead>
-                                    <TableHead className="font-semibold text-gray-600">Amount</TableHead>
-                                    <TableHead className="font-semibold text-gray-600">Status</TableHead>
-                                    <TableHead className="font-semibold text-gray-600 text-right">Download</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {INVOICE_HISTORY.map((invoice) => (
-                                    <TableRow key={invoice.id} className="hover:bg-gray-50/50">
-                                        <TableCell className="font-medium text-gray-900">
-                                            {new Date(invoice.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                                        </TableCell>
-                                        <TableCell className="text-gray-500 font-mono text-xs">{invoice.id}</TableCell>
-                                        <TableCell className="text-gray-600">{invoice.description}</TableCell>
-                                        <TableCell className="font-medium text-gray-900">${invoice.amount}.00</TableCell>
-                                        <TableCell>
-                                            <Badge variant="secondary" className={`
-                                                capitalize font-medium border-0 px-2 py-0.5
-                                                ${invoice.status === 'paid' ? 'bg-green-100 text-green-700' :
-                                                    invoice.status === 'failed' ? 'bg-red-100 text-red-700' :
-                                                        'bg-gray-100 text-gray-700'}
-                                            `}>
-                                                {invoice.status === 'paid' && <CheckCircle2 className="h-3 w-3 mr-1" />}
-                                                {invoice.status === 'failed' && <AlertCircle className="h-3 w-3 mr-1" />}
-                                                {invoice.status}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-gray-400 hover:text-gray-900">
-                                                <Download className="h-4 w-4" />
-                                            </Button>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </CardContent>
-                </Card>
-            )}
         </div>
     )
 }
+

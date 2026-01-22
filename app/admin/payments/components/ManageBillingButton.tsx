@@ -46,18 +46,18 @@ export default function ManageBillingButton({ mode = 'portal' }: { mode?: 'check
             onClick={handleAction}
             disabled={loading}
             className={mode === 'checkout'
-                ? "bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
-                : "bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"
+                ? "bg-slate-900 hover:bg-blue-600 text-white font-bold rounded-2xl h-12 px-8 transition-all shadow-lg shadow-slate-900/10 hover:shadow-blue-600/20 active:scale-95"
+                : "bg-white hover:bg-slate-50 text-slate-900 font-bold border border-slate-200 rounded-2xl h-12 px-8 transition-all shadow-sm active:scale-95"
             }
         >
             {loading ? (
                 <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Redirecting...
+                    Processing...
                 </>
             ) : (
                 <>
-                    <CreditCard className="mr-2 h-4 w-4" />
+                    <CreditCard className={`mr-2 h-4 w-4 ${mode === 'checkout' ? 'text-blue-400' : 'text-slate-400'}`} />
                     {mode === 'checkout' ? 'Subscribe Now' : 'Manage Billing'}
                 </>
             )}
