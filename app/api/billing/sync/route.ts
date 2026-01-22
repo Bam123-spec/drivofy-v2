@@ -34,14 +34,22 @@ export async function POST(req: Request) {
         const subscriptions = await stripe.subscriptions.list({
             customer: org.stripe_customer_id,
             limit: 1,
-            status: 'all',
+            status: 'active', // Only sync active ones
         });
+
+        console.log('Sync: Found subscriptions:', subscriptions.data.length);
 
         if (subscriptions.data.length === 0) {
             return NextResponse.json({ status: 'no_subscription' });
         }
 
         const sub = subscriptions.data[0];
+        console.log('Sync: Selected sub:', sub.id, 'Status:', sub.status, 'Period End:', sub.current_period_end);
+
+        if (!sub.current_period_end) {
+            console.error('Sync: Missing current_period_end for sub:', sub.id);
+            return NextResponse.json({ error: 'Subscription missing period end date' }, { status: 400 });
+        }
 
         // Update DB
         const { error: updateError } = await supabase

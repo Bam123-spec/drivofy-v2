@@ -51,7 +51,7 @@ export default async function BillingPage() {
         .from('organizations')
         .select('*')
         .eq('owner_user_id', user.id)
-        .single()
+        .maybeSingle()
 
     const isActive = org?.billing_status === 'active' || org?.billing_status === 'trialing'
     const isCanceled = org?.billing_status === 'canceled'
