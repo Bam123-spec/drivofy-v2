@@ -62,6 +62,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
+import { Suspense } from "react"
 import { format, isValid, isSameDay, addDays, isBefore } from "date-fns"
 import { CreateClassDialog } from "./components/CreateClassDialog"
 import { GoogleCalendarConnect } from "@/app/instructor/profile/components/GoogleCalendarConnect"
@@ -435,7 +436,9 @@ export default function AdminClassesPage() {
                 </div>
                 <div className="flex items-center gap-4">
                     <div className="hidden lg:block w-64">
-                        <GoogleCalendarConnect instructorId="" />
+                        <Suspense fallback={<div className="h-10 animate-pulse bg-gray-100 rounded-lg" />}>
+                            <GoogleCalendarConnect instructorId="" />
+                        </Suspense>
                     </div>
                     <div className="flex items-center gap-3">
                         <div className="flex items-center bg-gray-100 p-1 rounded-lg mr-2">

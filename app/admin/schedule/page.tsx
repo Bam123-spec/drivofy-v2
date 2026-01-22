@@ -1,5 +1,6 @@
 "use client"
 
+import { Suspense } from "react"
 import { AdminScheduleCalendar } from "./components/AdminScheduleCalendar"
 import { GoogleCalendarConnect } from "@/app/instructor/profile/components/GoogleCalendarConnect"
 import { CalendarDays, Info, ShieldAlert } from "lucide-react"
@@ -16,7 +17,9 @@ export default function AdminSchedulePage() {
                 </div>
 
                 <div className="w-full lg:w-72">
-                    <GoogleCalendarConnect instructorId="" />
+                    <Suspense fallback={<div className="h-20 animate-pulse bg-gray-100 rounded-xl" />}>
+                        <GoogleCalendarConnect instructorId="" />
+                    </Suspense>
                 </div>
             </div>
 
