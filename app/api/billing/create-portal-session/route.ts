@@ -3,6 +3,7 @@ export const runtime = 'edge';
 // Force rebuild
 import { cookies } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';
+import { stripe } from '@/lib/stripe';
 
 export async function POST(request: Request) {
     try {
@@ -57,10 +58,43 @@ export async function POST(request: Request) {
             }
         }
 
-        // Option B: Fallback
+        // Option C: Create new customer if not found (Auto-fix)
         if (!stripeCustomerId) {
-            console.warn("No Stripe customer found for user. Ensure user has a customer ID.");
-            return NextResponse.json({ error: 'No Stripe customer record found for this user.' }, { status: 400 });
+            console.log("No Stripe customer found. Creating new customer for user:", user.email);
+
+            try {
+                const newCustomer = await stripe.customers.create({
+                    email: user.email,
+                    metadata: {
+                        userId: user.id,
+                        orgId: org?.id
+                    }
+                });
+                stripeCustomerId = newCustomer.id;
+
+                // Save to DB
+                if (org) {
+                    await supabase
+                        .from('organizations')
+                        .update({ stripe_customer_id: stripeCustomerId })
+                        .eq('id', org.id);
+                } else {
+                    // Create org if missing (edge case)
+                    await supabase
+                        .from('organizations')
+                        .insert({
+                            owner_user_id: user.id,
+                            stripe_customer_id: stripeCustomerId
+                        });
+                }
+            } catch (createErr) {
+                console.error("Error creating new Stripe customer:", createErr);
+                return NextResponse.json({ error: 'Failed to create billing profile.' }, { status: 500 });
+            }
+        }
+
+        if (!stripeCustomerId) {
+            return NextResponse.json({ error: 'Could not establish billing profile.' }, { status: 500 });
         }
 
         // 3. Create Portal Session using fetch
