@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { getOfferingsForPage, updateOffering } from "@/app/actions/website"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -20,19 +21,85 @@ import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
 
 export function PricingEditor() {
-    const [prices, setPrices] = useState({
-        drivingSession: 85,
-        driverEdPackage: 495,
-        premiumBundle: 595
-    })
+    const [offerings, setOfferings] = useState<any[]>([])
+    const [loading, setLoading] = useState(true)
     const [isSaving, setIsSaving] = useState(false)
+    const [selectedOffering, setSelectedOffering] = useState<any>(null)
+
+    useEffect(() => {
+        loadOfferings()
+    }, [])
+
+    const loadOfferings = async () => {
+        try {
+            const data = await getOfferingsForPage('drivers-ed-packages', 'pricing_cards')
+            if (data && data.length > 0) {
+                setOfferings(data)
+                // Default to driver_ed_package for preview if available, else first one
+                const de = data.find((o: any) => o.slug === 'driver_ed_package')
+                setSelectedOffering(de || data[0])
+            }
+        } catch (error) {
+            console.error(error)
+            toast.error("Failed to load pricing data")
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const handlePriceChange = (slug: string, newPrice: string) => {
+        setOfferings(prev => prev.map(item =>
+            item.slug === slug ? { ...item, price_numeric: Number(newPrice) } : item
+        ))
+    }
 
     const handleSave = async () => {
         setIsSaving(true)
-        // Simulate API call
-        await new Promise(r => setTimeout(r, 1500))
-        setIsSaving(false)
-        toast.success("Pricing updated across all site pages!")
+        try {
+            const promises = offerings.map(item => {
+                // Simple logic to preserve "Starting at" prefix if it existed, strictly based on user requirement
+                // If the old display string contained "Starting at", keep it.
+                // Otherwise just use "$<price>"
+                let newDisplay = `$${item.price_numeric}`
+                if (item.price_display.toLowerCase().includes('starting')) {
+                    newDisplay = `Starting at $${item.price_numeric}`
+                }
+
+                return updateOffering(item.id, {
+                    price_numeric: item.price_numeric,
+                    price_display: newDisplay
+                })
+            })
+
+            await Promise.all(promises)
+            toast.success("Pricing updated across all site pages!")
+
+            // Refresh local state to ensure consistency
+            await loadOfferings()
+        } catch (error) {
+            console.error(error)
+            toast.error("Failed to update pricing")
+        } finally {
+            setIsSaving(false)
+        }
+    }
+
+    // Map fetched offerings to the specific inputs we expect
+    const drivingSession = offerings.find(o => o.slug === 'individual_session')
+    const driverEdPackage = offerings.find(o => o.slug === 'driver_ed_package')
+    const premiumBundle = offerings.find(o => o.slug === 'premium_bundle')
+
+    // Start with driverEdPackage for preview if no specific selection logic (simplified for MVP)
+    // The user moves focus? or just static preview of "Driver Ed Package"?
+    // The original code static previewed "Driver Education". Let's stick to showing the popular one (Driver Ed) or allow switching?
+    // User requirement: "If admin edits “Driver Ed Package price”, the preview updates instantly."
+    // So if they type in DE package, update preview.
+    // Ideally preview matches the input they are focused on, or we just show the main package.
+    // Let's stick to showing the Driver Ed package in preview as per original design, but dynamic.
+    const previewItem = driverEdPackage || { price_numeric: 0, price_display: '$0' }
+
+    if (loading) {
+        return <div className="p-10 text-center text-slate-500 animate-pulse">Loading pricing data...</div>
     }
 
     return (
@@ -79,44 +146,50 @@ export function PricingEditor() {
                         </CardHeader>
                         <CardContent className="p-8 space-y-6">
                             <div className="grid gap-6">
-                                <div className="space-y-2 group">
-                                    <Label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1 group-focus-within:text-blue-600 transition-colors">Individual Session</Label>
-                                    <div className="relative">
-                                        <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                                        <Input
-                                            type="number"
-                                            value={prices.drivingSession}
-                                            onChange={(e) => setPrices({ ...prices, drivingSession: Number(e.target.value) })}
-                                            className="pl-12 h-14 bg-slate-50 border-transparent focus:bg-white focus:border-blue-500/20 focus:ring-4 focus:ring-blue-500/5 transition-all rounded-2xl text-lg font-bold text-slate-900"
-                                        />
+                                {drivingSession && (
+                                    <div className="space-y-2 group">
+                                        <Label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1 group-focus-within:text-blue-600 transition-colors">Individual Session</Label>
+                                        <div className="relative">
+                                            <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                            <Input
+                                                type="number"
+                                                value={drivingSession.price_numeric}
+                                                onChange={(e) => handlePriceChange('individual_session', e.target.value)}
+                                                className="pl-12 h-14 bg-slate-50 border-transparent focus:bg-white focus:border-blue-500/20 focus:ring-4 focus:ring-blue-500/5 transition-all rounded-2xl text-lg font-bold text-slate-900"
+                                            />
+                                        </div>
                                     </div>
-                                </div>
+                                )}
 
-                                <div className="space-y-2 group">
-                                    <Label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1 group-focus-within:text-indigo-600 transition-colors">Driver Ed Package (DE)</Label>
-                                    <div className="relative">
-                                        <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                                        <Input
-                                            type="number"
-                                            value={prices.driverEdPackage}
-                                            onChange={(e) => setPrices({ ...prices, driverEdPackage: Number(e.target.value) })}
-                                            className="pl-12 h-14 bg-slate-50 border-transparent focus:bg-white focus:border-indigo-500/20 focus:ring-4 focus:ring-indigo-500/5 transition-all rounded-2xl text-lg font-bold text-slate-900"
-                                        />
+                                {driverEdPackage && (
+                                    <div className="space-y-2 group">
+                                        <Label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1 group-focus-within:text-indigo-600 transition-colors">Driver Ed Package (DE)</Label>
+                                        <div className="relative">
+                                            <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                            <Input
+                                                type="number"
+                                                value={driverEdPackage.price_numeric}
+                                                onChange={(e) => handlePriceChange('driver_ed_package', e.target.value)}
+                                                className="pl-12 h-14 bg-slate-50 border-transparent focus:bg-white focus:border-indigo-500/20 focus:ring-4 focus:ring-indigo-500/5 transition-all rounded-2xl text-lg font-bold text-slate-900"
+                                            />
+                                        </div>
                                     </div>
-                                </div>
+                                )}
 
-                                <div className="space-y-2 group">
-                                    <Label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1 group-focus-within:text-violet-600 transition-colors">Premium Bundle (DE + Extra Sessions)</Label>
-                                    <div className="relative">
-                                        <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                                        <Input
-                                            type="number"
-                                            value={prices.premiumBundle}
-                                            onChange={(e) => setPrices({ ...prices, premiumBundle: Number(e.target.value) })}
-                                            className="pl-12 h-14 bg-slate-50 border-transparent focus:bg-white focus:border-violet-500/20 focus:ring-4 focus:ring-violet-500/5 transition-all rounded-2xl text-lg font-bold text-slate-900"
-                                        />
+                                {premiumBundle && (
+                                    <div className="space-y-2 group">
+                                        <Label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1 group-focus-within:text-violet-600 transition-colors">Premium Bundle (DE + Extra Sessions)</Label>
+                                        <div className="relative">
+                                            <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                            <Input
+                                                type="number"
+                                                value={premiumBundle.price_numeric}
+                                                onChange={(e) => handlePriceChange('premium_bundle', e.target.value)}
+                                                className="pl-12 h-14 bg-slate-50 border-transparent focus:bg-white focus:border-violet-500/20 focus:ring-4 focus:ring-violet-500/5 transition-all rounded-2xl text-lg font-bold text-slate-900"
+                                            />
+                                        </div>
                                     </div>
-                                </div>
+                                )}
                             </div>
 
                             <Button
@@ -164,7 +237,7 @@ export function PricingEditor() {
                                     </div>
                                     <CardContent className="p-8 space-y-6">
                                         <div className="flex items-baseline gap-1">
-                                            <span className="text-4xl font-black text-slate-900 tracking-tight">${prices.driverEdPackage}</span>
+                                            <span className="text-4xl font-black text-slate-900 tracking-tight">${previewItem.price_numeric}</span>
                                             <span className="text-slate-400 text-sm font-bold uppercase tracking-widest">Total</span>
                                         </div>
 
