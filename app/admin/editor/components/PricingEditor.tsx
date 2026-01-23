@@ -86,13 +86,7 @@ export function PricingEditor() {
         }
     }
 
-    // Map fetched offerings to the specific inputs we expect
-    const drivingSession = offerings.find(o => o.slug === 'individual_session')
-    const driverEdPackage = offerings.find(o => o.slug === 'driver_ed_package')
-    const premiumBundle = offerings.find(o => o.slug === 'premium_bundle')
 
-    // Start with driverEdPackage for preview if no specific selection logic (simplified for MVP)
-    const previewItem = driverEdPackage || { price_numeric: 0, price_display: '$0', title: 'Driver Education', description: 'Complete classroom and road training.', features: [] }
 
     // Icon mapping
     const IconMap: any = {
@@ -148,48 +142,26 @@ export function PricingEditor() {
                         </CardHeader>
                         <CardContent className="p-8 space-y-6">
                             <div className="grid gap-6">
-                                {drivingSession && (
-                                    <div className="space-y-2 group">
-                                        <Label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1 group-focus-within:text-blue-600 transition-colors">{drivingSession.title || 'Individual Session'}</Label>
+                                {offerings.map((offering) => (
+                                    <div key={offering.id} className="space-y-2 group">
+                                        <Label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1 group-focus-within:text-blue-600 transition-colors">
+                                            {offering.title}
+                                        </Label>
                                         <div className="relative">
                                             <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                                             <Input
                                                 type="number"
-                                                value={drivingSession.price_numeric}
-                                                onChange={(e) => handlePriceChange('individual_session', e.target.value)}
+                                                value={offering.price_numeric}
+                                                onChange={(e) => handlePriceChange(offering.slug, e.target.value)}
                                                 className="pl-12 h-14 bg-slate-50 border-transparent focus:bg-white focus:border-blue-500/20 focus:ring-4 focus:ring-blue-500/5 transition-all rounded-2xl text-lg font-bold text-slate-900"
                                             />
                                         </div>
                                     </div>
-                                )}
+                                ))}
 
-                                {driverEdPackage && (
-                                    <div className="space-y-2 group">
-                                        <Label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1 group-focus-within:text-indigo-600 transition-colors">{driverEdPackage.title || 'Driver Ed Package'}</Label>
-                                        <div className="relative">
-                                            <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                                            <Input
-                                                type="number"
-                                                value={driverEdPackage.price_numeric}
-                                                onChange={(e) => handlePriceChange('driver_ed_package', e.target.value)}
-                                                className="pl-12 h-14 bg-slate-50 border-transparent focus:bg-white focus:border-indigo-500/20 focus:ring-4 focus:ring-indigo-500/5 transition-all rounded-2xl text-lg font-bold text-slate-900"
-                                            />
-                                        </div>
-                                    </div>
-                                )}
-
-                                {premiumBundle && (
-                                    <div className="space-y-2 group">
-                                        <Label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1 group-focus-within:text-violet-600 transition-colors">{premiumBundle.title || 'Premium Bundle'}</Label>
-                                        <div className="relative">
-                                            <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                                            <Input
-                                                type="number"
-                                                value={premiumBundle.price_numeric}
-                                                onChange={(e) => handlePriceChange('premium_bundle', e.target.value)}
-                                                className="pl-12 h-14 bg-slate-50 border-transparent focus:bg-white focus:border-violet-500/20 focus:ring-4 focus:ring-violet-500/5 transition-all rounded-2xl text-lg font-bold text-slate-900"
-                                            />
-                                        </div>
+                                {offerings.length === 0 && (
+                                    <div className="text-center py-8 text-slate-400 text-sm">
+                                        No pricing packages found to edit.
                                     </div>
                                 )}
                             </div>
