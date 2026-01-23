@@ -132,17 +132,18 @@ export function PricingEditor() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                {/* Inputs Section */}
-                <div className="lg:col-span-7 space-y-6">
-                    <Card className="border-0 shadow-2xl shadow-slate-200/50 rounded-[2rem] overflow-hidden">
+            {/* Editor & Preview Split */}
+            <div className="flex flex-col xl:flex-row gap-8">
+                {/* Inputs Panel */}
+                <div className="xl:w-1/3 space-y-6">
+                    <Card className="border-0 shadow-2xl shadow-slate-200/50 rounded-[2rem] overflow-hidden sticky top-24">
                         <CardHeader className="p-8 pb-0">
                             <CardTitle className="text-xl font-black text-slate-900 flex items-center gap-2 uppercase tracking-tight">
                                 <Zap className="h-5 w-5 text-blue-500 fill-current" />
                                 Pricing Tiers
                             </CardTitle>
                             <CardDescription className="text-slate-500 font-medium pt-1">
-                                Set the base price for your primary offerings.
+                                Set the live prices for your packages.
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="p-8 space-y-6">
@@ -164,7 +165,7 @@ export function PricingEditor() {
 
                                 {driverEdPackage && (
                                     <div className="space-y-2 group">
-                                        <Label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1 group-focus-within:text-indigo-600 transition-colors">{driverEdPackage.title || 'Driver Ed Package (DE)'}</Label>
+                                        <Label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1 group-focus-within:text-indigo-600 transition-colors">{driverEdPackage.title || 'Driver Ed Package'}</Label>
                                         <div className="relative">
                                             <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                                             <Input
@@ -179,7 +180,7 @@ export function PricingEditor() {
 
                                 {premiumBundle && (
                                     <div className="space-y-2 group">
-                                        <Label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1 group-focus-within:text-violet-600 transition-colors">{premiumBundle.title || 'Premium Bundle (DE + Extra Sessions)'}</Label>
+                                        <Label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1 group-focus-within:text-violet-600 transition-colors">{premiumBundle.title || 'Premium Bundle'}</Label>
                                         <div className="relative">
                                             <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                                             <Input
@@ -202,12 +203,12 @@ export function PricingEditor() {
                                 {isSaving ? (
                                     <>
                                         <div className="h-5 w-5 border-2 border-white/20 border-t-white rounded-full animate-spin mr-2" />
-                                        Updating Site...
+                                        Updating...
                                     </>
                                 ) : (
                                     <>
                                         <Save className="mr-2 h-5 w-5" />
-                                        Publish Prices
+                                        Publish Changes
                                     </>
                                 )}
                             </Button>
@@ -215,72 +216,68 @@ export function PricingEditor() {
                     </Card>
                 </div>
 
-                {/* Preview Section */}
-                <div className="lg:col-span-5 space-y-6">
-                    <div className="sticky top-8 space-y-6">
-                        <div className="px-2">
-                            <h3 className="text-sm font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2 mb-4">
-                                <MousePointer2 className="h-3 w-3" />
-                                Live Preview
-                            </h3>
+                {/* Live Preview Grid - Full Width */}
+                <div className="xl:w-2/3 space-y-6">
+                    <div className="flex items-center justify-between px-2">
+                        <h3 className="text-sm font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2">
+                            <MousePointer2 className="h-3 w-3" />
+                            Live Website Preview
+                        </h3>
+                        <Badge variant="outline" className="bg-emerald-50 text-emerald-600 border-emerald-100 uppercase tracking-widest text-[10px] font-black px-2">
+                            Visible to Students
+                        </Badge>
+                    </div>
 
-                            {/* Card Preview */}
-                            <div className="relative group transition-all duration-500 cursor-default">
-                                <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-[2.5rem] blur-xl opacity-20 group-hover:opacity-40 transition duration-1000" />
-                                <Card className="relative border-0 shadow-2xl rounded-[2.5rem] overflow-hidden bg-white">
-                                    <div className="p-8 bg-slate-50/50 border-b border-slate-100">
-                                        <div className="flex justify-between items-start mb-6">
-                                            {previewItem.popular && (
-                                                <Badge className="bg-indigo-500 border-0 text-[10px] font-black px-3 py-1 uppercase tracking-widest text-white">Most Popular</Badge>
+                    {/* Grid matching the public page design */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {offerings.map((offering) => (
+                            <div key={offering.id} className="relative group transition-all duration-500">
+                                {/* Glow Effect */}
+                                <div className={`absolute -inset-1 bg-gradient-to-r ${offering.popular ? 'from-indigo-500 to-purple-500' : 'from-slate-200 to-slate-200'} rounded-[2.5rem] blur-xl opacity-20 group-hover:opacity-40 transition duration-1000`} />
+
+                                <Card className={`relative border-0 shadow-xl shadow-slate-200/40 rounded-[2.5rem] overflow-hidden bg-white h-full flex flex-col ring-1 ${offering.popular ? 'ring-indigo-100' : 'ring-slate-100'}`}>
+                                    <div className="p-6 bg-slate-50/50 border-b border-slate-100">
+                                        <div className="flex justify-between items-start mb-4">
+                                            {offering.popular ? (
+                                                <Badge className="bg-indigo-500 border-0 text-[10px] font-black px-2 py-0.5 uppercase tracking-widest text-white shadow-lg shadow-indigo-500/30">Most Popular</Badge>
+                                            ) : (
+                                                <div className="h-5"></div>
                                             )}
-                                            <ArrowUpRight className="h-5 w-5 text-slate-300 ml-auto" />
+                                            {offering.popular && <ArrowUpRight className="h-4 w-4 text-indigo-500" />}
+                                            {!offering.popular && <ArrowUpRight className="h-4 w-4 text-slate-300" />}
                                         </div>
-                                        <h4 className="text-2xl font-black text-slate-900 tracking-tight mb-2">{previewItem.title}</h4>
-                                        <p className="text-xs text-slate-500 font-medium">{previewItem.description}</p>
+                                        <h4 className="text-xl font-black text-slate-900 tracking-tight mb-1">{offering.title}</h4>
+                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wide leading-relaxed">{offering.description}</p>
                                     </div>
-                                    <CardContent className="p-8 space-y-6">
+                                    <CardContent className="p-6 space-y-6 flex-1 flex flex-col">
                                         <div className="flex items-baseline gap-1">
-                                            <span className="text-4xl font-black text-slate-900 tracking-tight">${previewItem.price_numeric}</span>
-                                            <span className="text-slate-400 text-sm font-bold uppercase tracking-widest">Total</span>
+                                            <span className={`text-3xl font-black tracking-tight ${offering.popular ? 'text-indigo-600' : 'text-slate-900'}`}>
+                                                ${offering.price_numeric}
+                                            </span>
                                         </div>
 
-                                        <div className="space-y-3">
-                                            {previewItem.features?.map((feature: any, i: number) => {
+                                        <div className="space-y-3 flex-1">
+                                            {offering.features?.slice(0, 4).map((feature: any, i: number) => {
                                                 const Icon = IconMap[feature.icon || 'CheckCircle2'] || CheckCircle2
                                                 return (
-                                                    <div key={i} className="flex items-center gap-3">
-                                                        <div className={`p-1 rounded-full bg-slate-50 ${feature.color || 'text-slate-600'}`}>
-                                                            <Icon className="h-3.5 w-3.5" />
+                                                    <div key={i} className="flex items-start gap-3">
+                                                        <div className={`p-1 mt-0.5 rounded-full bg-slate-50 border border-slate-100 ${feature.color || 'text-slate-600'}`}>
+                                                            <Icon className="h-3 w-3" />
                                                         </div>
-                                                        <span className="text-xs font-bold text-slate-600">{feature.text}</span>
+                                                        <span className="text-xs font-bold text-slate-600 leading-snug">{feature.text}</span>
                                                     </div>
                                                 )
                                             })}
-                                            {(!previewItem.features || previewItem.features.length === 0) && (
-                                                <div className="text-xs text-slate-400 italic">No features listed.</div>
+                                            {offering.features?.length > 4 && (
+                                                <div className="text-[10px] font-bold text-slate-400 pl-8">
+                                                    + {offering.features.length - 4} more features
+                                                </div>
                                             )}
-                                        </div>
-
-                                        <div className="pt-2">
-                                            <div className="w-full h-12 bg-slate-100 border border-slate-200 rounded-xl flex items-center justify-center text-slate-400 text-xs font-black uppercase tracking-widest italic">
-                                                Student View Preview
-                                            </div>
                                         </div>
                                     </CardContent>
                                 </Card>
                             </div>
-
-                            {/* Info Box */}
-                            <div className="mt-8 p-6 rounded-[2rem] bg-amber-50 border border-amber-100 space-y-3 shadow-xl shadow-amber-900/5">
-                                <div className="flex items-center gap-2 text-amber-700 font-black text-[10px] uppercase tracking-widest">
-                                    <Sparkles className="h-3 w-3 fill-current" />
-                                    Why it matters
-                                </div>
-                                <p className="text-xs text-amber-900/70 font-medium leading-relaxed">
-                                    Visual consistency across your platform builds trust. These rates will appear on your homepage, enrollment forms, and even auto-generated PDF receipts.
-                                </p>
-                            </div>
-                        </div>
+                        ))}
                     </div>
                 </div>
             </div>
