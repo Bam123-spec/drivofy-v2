@@ -63,7 +63,7 @@ export function PricingEditor() {
                 // If the old display string contained "Starting at", keep it.
                 // Otherwise just use "$<price>"
                 let newDisplay = `$${item.price_numeric}`
-                if (item.price_display.toLowerCase().includes('starting')) {
+                if (item.price_display && item.price_display.toLowerCase().includes('starting')) {
                     newDisplay = `Starting at $${item.price_numeric}`
                 }
 
@@ -73,14 +73,22 @@ export function PricingEditor() {
                 })
             })
 
-            await Promise.all(promises)
+            const results = await Promise.all(promises)
+
+            // Check for errors in results
+            const errors = results.filter(result => result && result.error)
+            if (errors.length > 0) {
+                console.error("Save errors:", errors)
+                throw new Error("Some updates failed")
+            }
+
             toast.success("Pricing updated across all site pages!")
 
             // Refresh local state to ensure consistency
             await loadOfferings()
         } catch (error) {
             console.error(error)
-            toast.error("Failed to update pricing")
+            toast.error("Failed to update pricing. Check console for details.")
         } finally {
             setIsSaving(false)
         }
