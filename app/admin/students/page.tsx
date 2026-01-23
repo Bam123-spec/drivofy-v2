@@ -363,7 +363,7 @@ export default function AdminStudentsPage() {
                     {viewMode === 'table' ? (
                         <Table>
                             <TableHeader>
-                                <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-slate-100">
+                                <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-slate-200">
                                     <TableHead className="pl-6 font-semibold text-slate-900 uppercase text-[10px] tracking-wider py-4">Student Info</TableHead>
                                     <TableHead className="font-semibold text-slate-900 uppercase text-[10px] tracking-wider">Contact</TableHead>
                                     <TableHead className="font-semibold text-slate-900 uppercase text-[10px] tracking-wider">Type</TableHead>
@@ -374,7 +374,7 @@ export default function AdminStudentsPage() {
                             <TableBody>
                                 {displayData.length > 0 ? (
                                     displayData.map((student) => (
-                                        <TableRow key={student.id} className="group hover:bg-slate-50/30 transition-colors border-slate-50">
+                                        <TableRow key={student.id} className="group hover:bg-slate-50/30 transition-colors border-slate-200 even:bg-slate-50/50">
                                             <TableCell className="pl-6 py-4">
                                                 <div className="flex items-center gap-3">
                                                     <div className="relative">
