@@ -19,7 +19,9 @@ import {
     CheckCircle2,
     Calendar,
     ArrowUpRight,
-    Filter
+    Filter,
+    LayoutGrid,
+    List
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -61,6 +63,7 @@ export default function AdminStudentsPage() {
     const [loading, setLoading] = useState(true)
     const [searchQuery, setSearchQuery] = useState("")
     const [filter, setFilter] = useState<'all' | 'registered' | 'leads'>('all')
+    const [viewMode, setViewMode] = useState<'table' | 'grid'>('table')
 
     // Add Student State
     const [isAddOpen, setIsAddOpen] = useState(false)
@@ -353,129 +356,243 @@ export default function AdminStudentsPage() {
                             />
                         </div>
 
-                        <div className="flex border-2 border-slate-100 p-1.5 rounded-2xl bg-slate-50/50 w-fit">
-                            {(['all', 'registered', 'leads'] as const).map((t) => (
-                                <button
-                                    key={t}
-                                    onClick={() => setFilter(t)}
-                                    className={`px-6 py-2 rounded-xl text-sm font-black transition-all ${filter === t
-                                        ? 'bg-white text-blue-600 shadow-xl shadow-slate-200'
-                                        : 'text-slate-400 hover:text-slate-600'
-                                        }`}
+                        <div className="flex items-center gap-4">
+                            <div className="flex border-2 border-slate-100 p-1.5 rounded-2xl bg-slate-50/50 w-fit">
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className={`h-9 px-4 rounded-xl font-bold transition-all ${viewMode === 'table' ? 'bg-white text-blue-600 shadow-xl shadow-slate-200' : 'text-slate-400 hover:text-slate-600'}`}
+                                    onClick={() => setViewMode('table')}
                                 >
-                                    {t.charAt(0).toUpperCase() + t.slice(1)}
-                                </button>
-                            ))}
+                                    <List className="h-4 w-4 mr-2" /> Table
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className={`h-9 px-4 rounded-xl font-bold transition-all ${viewMode === 'grid' ? 'bg-white text-blue-600 shadow-xl shadow-slate-200' : 'text-slate-400 hover:text-slate-600'}`}
+                                    onClick={() => setViewMode('grid')}
+                                >
+                                    <LayoutGrid className="h-4 w-4 mr-2" /> Grid
+                                </Button>
+                            </div>
+
+                            <div className="flex border-2 border-slate-100 p-1.5 rounded-2xl bg-slate-50/50 w-fit">
+                                {(['all', 'registered', 'leads'] as const).map((t) => (
+                                    <button
+                                        key={t}
+                                        onClick={() => setFilter(t)}
+                                        className={`px-6 py-2 rounded-xl text-sm font-black transition-all ${filter === t
+                                            ? 'bg-white text-blue-600 shadow-xl shadow-slate-200'
+                                            : 'text-slate-400 hover:text-slate-600'
+                                            }`}
+                                    >
+                                        {t.charAt(0).toUpperCase() + t.slice(1)}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 </CardHeader>
                 <CardContent className="p-0">
-                    <Table>
-                        <TableHeader>
-                            <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 h-16 border-slate-100">
-                                <TableHead className="pl-8 font-black text-slate-900 uppercase text-[10px] tracking-widest">Student / Lead Info</TableHead>
-                                <TableHead className="font-black text-slate-900 uppercase text-[10px] tracking-widest">Contact Details</TableHead>
-                                <TableHead className="font-black text-slate-900 uppercase text-[10px] tracking-widest">Source / Type</TableHead>
-                                <TableHead className="font-black text-slate-900 uppercase text-[10px] tracking-widest">Added Date</TableHead>
-                                <TableHead className="pr-8 text-right font-black text-slate-900 uppercase text-[10px] tracking-widest">Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {displayData.length > 0 ? (
-                                displayData.map((student) => (
-                                    <TableRow key={student.id} className="group hover:bg-slate-50/30 transition-colors h-24 border-slate-50">
-                                        <TableCell className="pl-8">
-                                            <div className="flex items-center gap-4">
-                                                <div className="relative">
-                                                    <Avatar className="h-14 w-14 border-4 border-white shadow-xl">
-                                                        <AvatarImage src={student.avatar_url} />
-                                                        <AvatarFallback className={`bg-${student.type === 'registered' ? 'blue' : 'orange'}-100 text-${student.type === 'registered' ? 'blue' : 'orange'}-600 font-black text-lg`}>
-                                                            {student.full_name?.charAt(0) || "S"}
-                                                        </AvatarFallback>
-                                                    </Avatar>
-                                                    <div className={`absolute -bottom-1 -right-1 h-5 w-5 rounded-full border-2 border-white ${student.type === 'registered' ? 'bg-blue-500' : 'bg-orange-500'} flex items-center justify-center`}>
-                                                        {student.type === 'registered' ? <CheckCircle2 className="h-3 w-3 text-white" /> : <TrendingUp className="h-3 w-3 text-white" />}
+                    {viewMode === 'table' ? (
+                        <Table>
+                            <TableHeader>
+                                <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 h-16 border-slate-100">
+                                    <TableHead className="pl-8 font-black text-slate-900 uppercase text-[10px] tracking-widest">Student / Lead Info</TableHead>
+                                    <TableHead className="font-black text-slate-900 uppercase text-[10px] tracking-widest">Contact Details</TableHead>
+                                    <TableHead className="font-black text-slate-900 uppercase text-[10px] tracking-widest">Source / Type</TableHead>
+                                    <TableHead className="font-black text-slate-900 uppercase text-[10px] tracking-widest">Added Date</TableHead>
+                                    <TableHead className="pr-8 text-right font-black text-slate-900 uppercase text-[10px] tracking-widest">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {displayData.length > 0 ? (
+                                    displayData.map((student) => (
+                                        <TableRow key={student.id} className="group hover:bg-slate-50/30 transition-colors h-24 border-slate-50">
+                                            <TableCell className="pl-8">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="relative">
+                                                        <Avatar className="h-14 w-14 border-4 border-white shadow-xl">
+                                                            <AvatarImage src={student.avatar_url} />
+                                                            <AvatarFallback className={`bg-${student.type === 'registered' ? 'blue' : 'orange'}-100 text-${student.type === 'registered' ? 'blue' : 'orange'}-600 font-black text-lg`}>
+                                                                {student.full_name?.charAt(0) || "S"}
+                                                            </AvatarFallback>
+                                                        </Avatar>
+                                                        <div className={`absolute -bottom-1 -right-1 h-5 w-5 rounded-full border-2 border-white ${student.type === 'registered' ? 'bg-blue-500' : 'bg-orange-500'} flex items-center justify-center`}>
+                                                            {student.type === 'registered' ? <CheckCircle2 className="h-3 w-3 text-white" /> : <TrendingUp className="h-3 w-3 text-white" />}
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <div className="font-bold text-slate-900 text-lg group-hover:text-blue-600 transition-colors">{student.full_name}</div>
+                                                        <div className="text-[10px] text-slate-400 font-black tracking-widest">UUID: {student.id.slice(0, 8)}</div>
                                                     </div>
                                                 </div>
-                                                <div>
-                                                    <div className="font-bold text-slate-900 text-lg group-hover:text-blue-600 transition-colors">{student.full_name}</div>
-                                                    <div className="text-[10px] text-slate-400 font-black tracking-widest">UUID: {student.id.slice(0, 8)}</div>
-                                                </div>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="space-y-1">
-                                                <div className="flex items-center text-slate-600 font-medium">
-                                                    <div className="h-7 w-7 rounded-lg bg-slate-100 flex items-center justify-center mr-3">
-                                                        <Mail className="h-3.5 w-3.5 text-slate-500" />
-                                                    </div>
-                                                    {student.email}
-                                                </div>
-                                                {student.phone && (
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="space-y-1">
                                                     <div className="flex items-center text-slate-600 font-medium">
                                                         <div className="h-7 w-7 rounded-lg bg-slate-100 flex items-center justify-center mr-3">
-                                                            <Phone className="h-3.5 w-3.5 text-slate-500" />
+                                                            <Mail className="h-3.5 w-3.5 text-slate-500" />
                                                         </div>
-                                                        {student.phone}
+                                                        {student.email}
                                                     </div>
-                                                )}
+                                                    {student.phone && (
+                                                        <div className="flex items-center text-slate-600 font-medium">
+                                                            <div className="h-7 w-7 rounded-lg bg-slate-100 flex items-center justify-center mr-3">
+                                                                <Phone className="h-3.5 w-3.5 text-slate-500" />
+                                                            </div>
+                                                            {student.phone}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge className={`border-0 px-4 py-1.5 rounded-full font-black text-[10px] tracking-widest uppercase ${student.type === 'registered'
+                                                    ? 'bg-blue-50 text-blue-600'
+                                                    : 'bg-orange-50 text-orange-600'
+                                                    }`}>
+                                                    {student.type === 'registered' ? 'Registered User' : 'Website Inquiry'}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex items-center text-slate-500 font-bold">
+                                                    <Calendar className="h-4 w-4 mr-2 text-slate-300" />
+                                                    {new Date(student.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="pr-8 text-right">
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" className="h-10 w-10 p-0 rounded-xl hover:bg-slate-100 transition-all">
+                                                            <MoreHorizontal className="h-5 w-5 text-slate-400" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end" className="w-56 rounded-2xl border-0 shadow-2xl p-2 bg-white ring-1 ring-slate-100">
+                                                        <DropdownMenuLabel className="font-black text-slate-900 text-[10px] uppercase tracking-widest mb-1 px-3">Management</DropdownMenuLabel>
+                                                        <DropdownMenuItem onClick={() => openEditDialog(student)} className="rounded-xl font-bold py-2.5 cursor-pointer">
+                                                            <Pencil className="mr-3 h-4 w-4 text-blue-500" /> Edit Information
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem className="rounded-xl font-bold py-2.5 cursor-pointer">
+                                                            <Mail className="mr-3 h-4 w-4 text-slate-400" /> Message Student
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuSeparator className="bg-slate-50 my-1" />
+                                                        <DropdownMenuItem
+                                                            className="rounded-xl font-bold py-2.5 text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer"
+                                                            onClick={() => handleDeleteStudent(student.id)}
+                                                        >
+                                                            <Trash2 className="mr-3 h-4 w-4" /> Terminate Access
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                ) : (
+                                    <TableRow>
+                                        <TableCell colSpan={5} className="h-64 text-center">
+                                            <div className="flex flex-col items-center justify-center gap-3">
+                                                <div className="h-16 w-16 bg-slate-50 rounded-2xl flex items-center justify-center">
+                                                    <Users className="h-8 w-8 text-slate-200" />
+                                                </div>
+                                                <p className="text-slate-500 font-black text-base">No students or leads found match your criteria.</p>
                                             </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Badge className={`border-0 px-4 py-1.5 rounded-full font-black text-[10px] tracking-widest uppercase ${student.type === 'registered'
-                                                ? 'bg-blue-50 text-blue-600'
-                                                : 'bg-orange-50 text-orange-600'
-                                                }`}>
-                                                {student.type === 'registered' ? 'Registered User' : 'Website Inquiry'}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="flex items-center text-slate-500 font-bold">
-                                                <Calendar className="h-4 w-4 mr-2 text-slate-300" />
-                                                {new Date(student.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="pr-8 text-right">
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" className="h-10 w-10 p-0 rounded-xl hover:bg-slate-100 transition-all">
-                                                        <MoreHorizontal className="h-5 w-5 text-slate-400" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end" className="w-56 rounded-2xl border-0 shadow-2xl p-2 bg-white ring-1 ring-slate-100">
-                                                    <DropdownMenuLabel className="font-black text-slate-900 text-[10px] uppercase tracking-widest mb-1 px-3">Management</DropdownMenuLabel>
-                                                    <DropdownMenuItem onClick={() => openEditDialog(student)} className="rounded-xl font-bold py-2.5 cursor-pointer">
-                                                        <Pencil className="mr-3 h-4 w-4 text-blue-500" /> Edit Information
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem className="rounded-xl font-bold py-2.5 cursor-pointer">
-                                                        <Mail className="mr-3 h-4 w-4 text-slate-400" /> Message Student
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuSeparator className="bg-slate-50 my-1" />
-                                                    <DropdownMenuItem
-                                                        className="rounded-xl font-bold py-2.5 text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer"
-                                                        onClick={() => handleDeleteStudent(student.id)}
-                                                    >
-                                                        <Trash2 className="mr-3 h-4 w-4" /> Terminate Access
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
                                         </TableCell>
                                     </TableRow>
-                                ))
-                            ) : (
-                                <TableRow>
-                                    <TableCell colSpan={5} className="h-64 text-center">
-                                        <div className="flex flex-col items-center justify-center gap-3">
-                                            <div className="h-16 w-16 bg-slate-50 rounded-2xl flex items-center justify-center">
-                                                <Users className="h-8 w-8 text-slate-200" />
-                                            </div>
-                                            <p className="text-slate-500 font-black text-base">No students or leads found match your criteria.</p>
+                                )}
+                            </TableBody>
+                        </Table>
+                    ) : (
+                        <div className="p-8">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                                {displayData.length > 0 ? (
+                                    displayData.map((student) => (
+                                        <Card key={student.id} className="border-0 bg-slate-50/50 hover:bg-white hover:shadow-2xl hover:shadow-slate-200/50 transition-all duration-500 rounded-[2.5rem] overflow-hidden group">
+                                            <CardContent className="p-8 space-y-6">
+                                                <div className="flex items-start justify-between">
+                                                    <div className="relative">
+                                                        <Avatar className="h-20 w-20 border-4 border-white shadow-2xl">
+                                                            <AvatarImage src={student.avatar_url} />
+                                                            <AvatarFallback className={`bg-${student.type === 'registered' ? 'blue' : 'orange'}-100 text-${student.type === 'registered' ? 'blue' : 'orange'}-600 font-black text-2xl`}>
+                                                                {student.full_name?.charAt(0) || "S"}
+                                                            </AvatarFallback>
+                                                        </Avatar>
+                                                        <div className={`absolute -bottom-1 -right-1 h-7 w-7 rounded-full border-4 border-white ${student.type === 'registered' ? 'bg-blue-500' : 'bg-orange-500'} flex items-center justify-center shadow-lg`}>
+                                                            {student.type === 'registered' ? <CheckCircle2 className="h-4 w-4 text-white" /> : <TrendingUp className="h-4 w-4 text-white" />}
+                                                        </div>
+                                                    </div>
+                                                    <Badge className={`border-0 px-4 py-1.5 rounded-full font-black text-[10px] tracking-widest uppercase ${student.type === 'registered'
+                                                        ? 'bg-blue-100 text-blue-600'
+                                                        : 'bg-orange-100 text-orange-600'
+                                                        }`}>
+                                                        {student.type === 'registered' ? 'Registered Student' : 'Website Lead'}
+                                                    </Badge>
+                                                </div>
+
+                                                <div className="space-y-1">
+                                                    <h3 className="text-2xl font-black text-slate-900 group-hover:text-blue-600 transition-colors uppercase tracking-tight truncate">{student.full_name}</h3>
+                                                    <p className="text-[11px] text-slate-400 font-black tracking-widest uppercase">ID: {student.id.slice(0, 12)}</p>
+                                                </div>
+
+                                                <div className="space-y-3 pt-2">
+                                                    <div className="flex items-center text-slate-600 font-bold group/item">
+                                                        <div className="h-10 w-10 min-w-10 rounded-xl bg-white flex items-center justify-center mr-4 shadow-sm group-hover/item:text-blue-600 transition-colors">
+                                                            <Mail className="h-4 w-4" />
+                                                        </div>
+                                                        <span className="truncate text-sm">{student.email}</span>
+                                                    </div>
+                                                    {student.phone && (
+                                                        <div className="flex items-center text-slate-600 font-bold group/item">
+                                                            <div className="h-10 w-10 min-w-10 rounded-xl bg-white flex items-center justify-center mr-4 shadow-sm group-hover/item:text-blue-600 transition-colors">
+                                                                <Phone className="h-4 w-4" />
+                                                            </div>
+                                                            <span className="truncate text-sm">{student.phone}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <div className="pt-6 border-t border-slate-100 flex items-center justify-between mt-auto">
+                                                    <div className="flex items-center text-slate-400 font-black text-[10px] uppercase tracking-widest">
+                                                        <Calendar className="h-3 w-3 mr-2" />
+                                                        Joined {new Date(student.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                                    </div>
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button variant="ghost" className="h-12 px-6 rounded-2xl hover:bg-slate-100 font-black text-xs uppercase tracking-widest transition-all">
+                                                                Actions
+                                                                <MoreHorizontal className="h-4 w-4 ml-2" />
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end" className="w-56 rounded-2xl border-0 shadow-2xl p-2 bg-white ring-1 ring-slate-100">
+                                                            <DropdownMenuItem onClick={() => openEditDialog(student)} className="rounded-xl font-bold py-2.5 cursor-pointer">
+                                                                <Pencil className="mr-3 h-4 w-4 text-blue-500" /> Edit Info
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem className="rounded-xl font-bold py-2.5 cursor-pointer">
+                                                                <Mail className="mr-3 h-4 w-4 text-slate-400" /> Message
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuSeparator className="bg-slate-50 my-1" />
+                                                            <DropdownMenuItem
+                                                                className="rounded-xl font-bold py-2.5 text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer"
+                                                                onClick={() => handleDeleteStudent(student.id)}
+                                                            >
+                                                                <Trash2 className="mr-3 h-4 w-4" /> Terminate
+                                                            </DropdownMenuItem>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    ))
+                                ) : (
+                                    <div className="col-span-full h-64 flex flex-col items-center justify-center gap-4 bg-slate-50/50 rounded-[2.5rem]">
+                                        <div className="h-16 w-16 bg-white rounded-2xl shadow-sm flex items-center justify-center">
+                                            <Users className="h-8 w-8 text-slate-200" />
                                         </div>
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
+                                        <p className="text-slate-500 font-black text-base uppercase tracking-widest">No results found</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
 

@@ -31,7 +31,14 @@ import {
 } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { UserPlus, MoreHorizontal, Shield, Mail, Clock, Loader2, Edit2, Trash2, Key, Ban, CheckCircle2, Copy, ArrowUpRight, TrendingUp, ShieldCheck, Users, Activity } from "lucide-react"
+import {
+    UserPlus, MoreHorizontal, Shield, Mail, Clock, Loader2, Edit2, Trash2, Key, Ban, CheckCircle2, Copy, ArrowUpRight, TrendingUp, ShieldCheck, Users, Activity,
+    Search,
+    Filter,
+    LayoutGrid,
+    List,
+    Pencil
+} from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { toast } from "sonner"
 import {
@@ -48,7 +55,7 @@ import { supabase } from "@/lib/supabaseClient"
 import { useEffect } from "react"
 
 // Real Roles & Statuses
-type AdminRole = 'owner' | 'manager' | 'staff' | 'admin'
+type AdminRole = 'owner' | 'manager' | 'staff' | 'admin' | 'instructor'
 type AdminStatus = 'active' | 'suspended' | 'pending'
 
 interface AdminUser {
@@ -63,6 +70,7 @@ interface AdminUser {
 export default function AdminUsersPage() {
     const [admins, setAdmins] = useState<AdminUser[]>([])
     const [loading, setLoading] = useState(true)
+    const [viewMode, setViewMode] = useState<'table' | 'grid'>('table')
     const [roleFilter, setRoleFilter] = useState<string>("all")
     const [statusFilter, setStatusFilter] = useState<string>("all")
     const [inviteOpen, setInviteOpen] = useState(false)
@@ -228,9 +236,30 @@ export default function AdminUsersPage() {
 
                 <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
                     <DialogTrigger asChild>
-                        <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20 px-6 h-11 transition-all hover:scale-[1.02] active:scale-[0.98]">
-                            <UserPlus className="h-4 w-4 mr-2" /> Invite Admin
-                        </Button>
+                        <div className="flex items-center gap-4">
+                            <div className="flex border-2 border-slate-100 p-1.5 rounded-2xl bg-slate-50/50 w-fit">
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className={`h-9 px-4 rounded-xl font-bold transition-all ${viewMode === 'table' ? 'bg-white text-blue-600 shadow-xl shadow-slate-200' : 'text-slate-400 hover:text-slate-600'}`}
+                                    onClick={() => setViewMode('table')}
+                                >
+                                    <List className="h-4 w-4 mr-2" /> Table
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className={`h-9 px-4 rounded-xl font-bold transition-all ${viewMode === 'grid' ? 'bg-white text-blue-600 shadow-xl shadow-slate-200' : 'text-slate-400 hover:text-slate-600'}`}
+                                    onClick={() => setViewMode('grid')}
+                                >
+                                    <LayoutGrid className="h-4 w-4 mr-2" /> Grid
+                                </Button>
+                            </div>
+
+                            <Button onClick={() => setInviteOpen(true)} className="h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-500/20 transition-all active:scale-95">
+                                <UserPlus className="h-4 w-4 mr-2" /> Invite Admin
+                            </Button>
+                        </div>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-md">
                         <DialogHeader>
@@ -368,96 +397,178 @@ export default function AdminUsersPage() {
                     </div>
                 </CardHeader>
                 <CardContent className="p-0">
-                    <Table>
-                        <TableHeader>
-                            <TableRow className="bg-gray-50/50">
-                                <TableHead className="font-semibold text-slate-600 px-6 py-4">User</TableHead>
-                                <TableHead className="font-semibold text-slate-600 px-6 py-4">Role</TableHead>
-                                <TableHead className="font-semibold text-slate-600 px-6 py-4">Status</TableHead>
-                                <TableHead className="font-semibold text-slate-600 px-6 py-4 text-center">Last Active</TableHead>
-                                <TableHead className="font-semibold text-slate-600 px-6 py-4 text-right">Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {filteredAdmins.map((admin) => (
-                                <TableRow key={admin.id} className="hover:bg-gray-50/50">
-                                    <TableCell className="px-6 py-4">
-                                        <div className="flex items-center gap-3">
-                                            <Avatar className="h-9 w-9 border border-slate-100">
-                                                <AvatarFallback className="bg-blue-50 text-blue-600 font-bold uppercase text-xs">
-                                                    {admin.name.charAt(0)}
-                                                </AvatarFallback>
-                                            </Avatar>
-                                            <div className="flex flex-col">
-                                                <span className="font-bold text-slate-900 group-hover:text-blue-600 transition-colors uppercase text-xs tracking-tight">{admin.name}</span>
-                                                <span className="text-[10px] text-slate-400 font-medium flex items-center gap-1">
-                                                    <Mail className="h-2.5 w-2.5" />
-                                                    {admin.email}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex items-center gap-1.5">
-                                            <Shield className={`h-3.5 w-3.5 ${admin.role === 'owner' || admin.role === 'admin' ? 'text-purple-600' :
-                                                admin.role === 'manager' ? 'text-blue-600' : 'text-gray-500'
-                                                }`} />
-                                            <span className="capitalize text-sm text-gray-700">{admin.role}</span>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge variant="secondary" className={`
-                                            capitalize font-semibold border-0
-                                            ${admin.status === 'active' ? 'bg-green-100 text-green-700' :
-                                                admin.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                                                    'bg-red-100 text-red-700'}
-                                        `}>
-                                            {admin.status}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell className="px-6 py-4 text-center">
-                                        <div className="flex flex-col items-center">
-                                            <div className="flex items-center gap-1.5 font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded text-[10px] uppercase tracking-wider mb-0.5">
-                                                <Activity className="h-2.5 w-2.5" />
-                                                Online
-                                            </div>
-                                            <div className="text-[10px] text-slate-400 font-medium whitespace-nowrap">
-                                                {formatDistanceToNow(new Date(admin.lastActive), { addSuffix: true })}
-                                            </div>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-gray-900">
-                                                    <MoreHorizontal className="h-4 w-4" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end" className="w-48">
-                                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                                <DropdownMenuItem onClick={() => setEditUser(admin)}>
-                                                    <Edit2 className="h-4 w-4 mr-2" /> Edit Details
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem onClick={() => copyToClipboard(admin.email)}>
-                                                    <Copy className="h-4 w-4 mr-2" /> Copy Email
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem onClick={() => handlePasswordReset(admin.email)}>
-                                                    <Key className="h-4 w-4 mr-2" /> Reset Password
-                                                </DropdownMenuItem>
-                                                <DropdownMenuSeparator />
-                                                <DropdownMenuItem
-                                                    className="text-red-600 focus:text-red-600 focus:bg-red-50"
-                                                    onClick={() => setDeleteUser(admin)}
-                                                >
-                                                    <Trash2 className="h-4 w-4 mr-2" /> Delete User
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </TableCell>
+                    {viewMode === 'table' ? (
+                        <Table>
+                            <TableHeader>
+                                <TableRow className="bg-gray-50/50">
+                                    <TableHead className="font-semibold text-slate-600 px-6 py-4">User</TableHead>
+                                    <TableHead className="font-semibold text-slate-600 px-6 py-4">Role</TableHead>
+                                    <TableHead className="font-semibold text-slate-600 px-6 py-4">Status</TableHead>
+                                    <TableHead className="font-semibold text-slate-600 px-6 py-4 text-center">Last Active</TableHead>
+                                    <TableHead className="font-semibold text-slate-600 px-6 py-4 text-right">Actions</TableHead>
                                 </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
+                            </TableHeader>
+                            <TableBody>
+                                {filteredAdmins.map((admin) => (
+                                    <TableRow key={admin.id} className="hover:bg-gray-50/50">
+                                        <TableCell className="px-6 py-4">
+                                            <div className="flex items-center gap-3">
+                                                <Avatar className="h-9 w-9 border border-slate-100">
+                                                    <AvatarFallback className="bg-blue-50 text-blue-600 font-bold uppercase text-xs">
+                                                        {admin.name.charAt(0)}
+                                                    </AvatarFallback>
+                                                </Avatar>
+                                                <div className="flex flex-col">
+                                                    <span className="font-bold text-slate-900 group-hover:text-blue-600 transition-colors uppercase text-xs tracking-tight">{admin.name}</span>
+                                                    <span className="text-[10px] text-slate-400 font-medium flex items-center gap-1">
+                                                        <Mail className="h-2.5 w-2.5" />
+                                                        {admin.email}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="flex items-center gap-1.5">
+                                                <Shield className={`h-3.5 w-3.5 ${admin.role === 'owner' || admin.role === 'admin' ? 'text-purple-600' :
+                                                    admin.role === 'manager' ? 'text-blue-600' : 'text-gray-500'
+                                                    }`} />
+                                                <span className="capitalize text-sm text-gray-700">{admin.role}</span>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge variant="secondary" className={`
+                                                capitalize font-semibold border-0
+                                                ${admin.status === 'active' ? 'bg-green-100 text-green-700' :
+                                                    admin.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                                                        'bg-red-100 text-red-700'}
+                                            `}>
+                                                {admin.status}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="px-6 py-4 text-center">
+                                            <div className="flex flex-col items-center">
+                                                <div className="flex items-center gap-1.5 font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded text-[10px] uppercase tracking-wider mb-0.5">
+                                                    <Activity className="h-2.5 w-2.5" />
+                                                    Online
+                                                </div>
+                                                <div className="text-[10px] text-slate-400 font-medium whitespace-nowrap">
+                                                    {formatDistanceToNow(new Date(admin.lastActive), { addSuffix: true })}
+                                                </div>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-gray-900">
+                                                        <MoreHorizontal className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" className="w-48">
+                                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                    <DropdownMenuItem onClick={() => setEditUser(admin)}>
+                                                        <Edit2 className="h-4 w-4 mr-2" /> Edit Details
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => copyToClipboard(admin.email)}>
+                                                        <Copy className="h-4 w-4 mr-2" /> Copy Email
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => handlePasswordReset(admin.email)}>
+                                                        <Key className="h-4 w-4 mr-2" /> Reset Password
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuItem
+                                                        className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                                                        onClick={() => setDeleteUser(admin)}
+                                                    >
+                                                        <Trash2 className="h-4 w-4 mr-2" /> Delete User
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    ) : (
+                        <div className="p-8">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                                {filteredAdmins.length > 0 ? (
+                                    filteredAdmins.map((admin) => (
+                                        <Card key={admin.id} className="border-0 bg-slate-50/50 hover:bg-white hover:shadow-2xl hover:shadow-slate-200/50 transition-all duration-500 rounded-[2.5rem] overflow-hidden group">
+                                            <CardContent className="p-8 space-y-6">
+                                                <div className="flex items-start justify-between">
+                                                    <div className="relative">
+                                                        <Avatar className="h-20 w-20 border-4 border-white shadow-2xl">
+                                                            {/* AvatarImage src={admin.avatar_url} - avatar_url not in AdminUser */}
+                                                            <AvatarFallback className="bg-blue-100 text-blue-600 font-black text-2xl">
+                                                                {admin.name?.charAt(0) || "U"}
+                                                            </AvatarFallback>
+                                                        </Avatar>
+                                                        <div className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full border-4 border-white bg-emerald-500 flex items-center justify-center shadow-lg">
+                                                            <Activity className="h-3 w-3 text-white" />
+                                                        </div>
+                                                    </div>
+                                                    <Badge className={`border-0 px-4 py-1.5 rounded-full font-black text-[10px] tracking-widest uppercase ${admin.role === 'admin' || admin.role === 'owner'
+                                                        ? 'bg-purple-100 text-purple-600'
+                                                        : admin.role === 'manager'
+                                                            ? 'bg-blue-100 text-blue-600'
+                                                            : 'bg-emerald-100 text-emerald-600'
+                                                        }`}>
+                                                        {admin.role}
+                                                    </Badge>
+                                                </div>
+
+                                                <div className="space-y-1">
+                                                    <h3 className="text-2xl font-black text-slate-900 group-hover:text-blue-600 transition-colors uppercase tracking-tight truncate">{admin.name}</h3>
+                                                    <p className="text-[11px] text-slate-400 font-black tracking-widest truncate">{admin.email}</p>
+                                                </div>
+
+                                                <div className="pt-6 border-t border-slate-100 flex items-center justify-between mt-auto">
+                                                    <div className="flex flex-col">
+                                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Last Active</span>
+                                                        <span className="text-sm font-bold text-slate-600">
+                                                            {admin.lastActive ? formatDistanceToNow(new Date(admin.lastActive), { addSuffix: true }) : 'Never'}
+                                                        </span>
+                                                    </div>
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button variant="ghost" className="h-10 w-10 p-0 rounded-xl hover:bg-slate-100 transition-all">
+                                                                <MoreHorizontal className="h-5 w-5 text-slate-400" />
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end" className="w-56 rounded-2xl border-0 shadow-2xl p-2 bg-white ring-1 ring-slate-100">
+                                                            <DropdownMenuLabel className="font-black text-slate-900 text-[10px] uppercase tracking-widest mb-1 px-3">Management</DropdownMenuLabel>
+                                                            <DropdownMenuItem onClick={() => setEditUser(admin)} className="rounded-xl font-bold py-2.5 cursor-pointer">
+                                                                <Pencil className="mr-3 h-4 w-4 text-blue-500" /> Edit Member
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem onClick={() => handlePasswordReset(admin.email)} className="rounded-xl font-bold py-2.5 cursor-pointer">
+                                                                <Key className="mr-3 h-4 w-4 text-slate-400" /> Reset Password
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuSeparator className="bg-slate-50 my-1" />
+                                                            <DropdownMenuItem
+                                                                className="rounded-xl font-bold py-2.5 text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer"
+                                                                onClick={() => {
+                                                                    setDeleteUser(admin);
+                                                                }}
+                                                            >
+                                                                <Trash2 className="mr-3 h-4 w-4" /> Revoke Access
+                                                            </DropdownMenuItem>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    ))
+                                ) : (
+                                    <div className="col-span-full h-64 flex flex-col items-center justify-center gap-4 bg-slate-50/50 rounded-[2.5rem]">
+                                        <div className="h-16 w-16 bg-white rounded-2xl shadow-sm flex items-center justify-center">
+                                            <Users className="h-8 w-8 text-slate-200" />
+                                        </div>
+                                        <p className="text-slate-500 font-black text-base uppercase tracking-widest">No team members found</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
 
