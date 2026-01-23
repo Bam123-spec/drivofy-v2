@@ -8,28 +8,50 @@ export async function getDashboardStats() {
     const supabase = createClient(cookieStore)
 
     try {
-        // 1. Instructors Count
-        const { count: instructorCount, error: instructorError } = await supabase
+        const now = new Date()
+        const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+        const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString()
+        const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59).toISOString()
+
+        // Helper to calculate trend
+        const calculateTrend = (current: number, previous: number) => {
+            if (previous === 0) return current > 0 ? 100 : 0
+            return Math.round(((current - previous) / previous) * 100)
+        }
+
+        // 1. Instructors Count & Trend
+        const { count: currentInstructors } = await supabase
             .from('instructors')
             .select('*', { count: 'exact', head: true })
             .eq('status', 'active')
 
-        if (instructorError) console.error("Error fetching instructors:", instructorError)
+        const { count: prevInstructors } = await supabase
+            .from('instructors')
+            .select('*', { count: 'exact', head: true })
+            .eq('status', 'active')
+            .lt('created_at', startOfThisMonth)
 
-        // 2. Active Classes Count
-        const { count: classCount, error: classError } = await supabase
+        const instructorTrend = calculateTrend(currentInstructors || 0, prevInstructors || 0)
+
+        // 2. Active Classes Count & Trend
+        const { count: currentClasses } = await supabase
             .from('classes')
             .select('*', { count: 'exact', head: true })
             .eq('status', 'active')
 
-        if (classError) console.error("Error fetching classes:", classError)
+        const { count: prevClasses } = await supabase
+            .from('classes')
+            .select('*', { count: 'exact', head: true })
+            .eq('status', 'active')
+            .lt('created_at', startOfThisMonth)
+
+        const classTrend = calculateTrend(currentClasses || 0, prevClasses || 0)
 
         // 3. Today's Sessions
-        const today = new Date()
-        const startOfDay = new Date(today.setHours(0, 0, 0, 0)).toISOString()
-        const endOfDay = new Date(today.setHours(23, 59, 59, 999)).toISOString()
+        const startOfToday = new Date(now.setHours(0, 0, 0, 0)).toISOString()
+        const endOfToday = new Date(now.setHours(23, 59, 59, 999)).toISOString()
 
-        const { data: sessions, count: sessionCount, error: sessionError } = await supabase
+        const { data: sessions, count: sessionCount } = await supabase
             .from('driving_sessions')
             .select(`
                 id,
@@ -39,23 +61,53 @@ export async function getDashboardStats() {
                 student:student_id(full_name),
                 instructor:instructor_id(full_name)
             `, { count: 'exact' })
-            .gte('start_time', startOfDay)
-            .lte('start_time', endOfDay)
+            .gte('start_time', startOfToday)
+            .lte('start_time', endOfToday)
             .order('start_time', { ascending: true })
             .limit(5)
 
-        if (sessionError) console.error("Error fetching sessions:", sessionError)
-
-        // 4. Total Students (Count profiles with role 'student')
-        const { count: studentCount, error: studentError } = await supabase
+        // 4. Total Students & Trend
+        const { count: currentStudents } = await supabase
             .from('profiles')
             .select('*', { count: 'exact', head: true })
             .eq('role', 'student')
 
-        if (studentError) console.error("Error fetching students:", studentError)
+        const { count: prevStudents } = await supabase
+            .from('profiles')
+            .select('*', { count: 'exact', head: true })
+            .eq('role', 'student')
+            .lt('created_at', startOfThisMonth)
 
-        // 5. Recent Activity (Enrollments)
-        const { data: enrollments, error: enrollmentError } = await supabase
+        const studentTrend = calculateTrend(currentStudents || 0, prevStudents || 0)
+
+        // 5. Total Revenue & Trend (Paid enrollments * class price)
+        const { data: revenueData } = await supabase
+            .from('enrollments')
+            .select(`
+                enrolled_at,
+                payment_status,
+                class:class_id(price)
+            `)
+            .eq('payment_status', 'paid')
+
+        let currentRevenue = 0
+        let lastMonthRevenue = 0
+
+        revenueData?.forEach(e => {
+            const price = Number((e.class as any)?.price) || 0
+            const enrolledAt = new Date(e.enrolled_at)
+            if (enrolledAt >= new Date(startOfThisMonth)) {
+                currentRevenue += price
+            } else if (enrolledAt >= new Date(startOfLastMonth) && enrolledAt <= new Date(endOfLastMonth)) {
+                lastMonthRevenue += price
+            }
+        })
+
+        const totalRevenue = revenueData?.reduce((acc, e) => acc + (Number((e.class as any)?.price) || 0), 0) || 0
+        const revenueTrend = calculateTrend(currentRevenue, lastMonthRevenue)
+
+        // 6. Recent Activity (Enrollments)
+        const { data: enrollments } = await supabase
             .from('enrollments')
             .select(`
                 id,
@@ -67,25 +119,19 @@ export async function getDashboardStats() {
             .order('enrolled_at', { ascending: false })
             .limit(10)
 
-        if (enrollmentError) console.error("Error fetching enrollments:", enrollmentError)
-
-        // 6. Growth Data (Last 6 months enrollments)
-        // We fetch all enrollments for the last 6 months to aggregate in JS
+        // 7. Growth Data (Last 6 months)
         const sixMonthsAgo = new Date()
-        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
+        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5)
+        sixMonthsAgo.setDate(1)
 
-        const { data: growthRaw, error: growthError } = await supabase
+        const { data: growthRaw } = await supabase
             .from('enrollments')
             .select('enrolled_at')
             .gte('enrolled_at', sixMonthsAgo.toISOString())
 
-        if (growthError) console.error("Error fetching growth data:", growthError)
-
-        // Process Growth Data
         const months: { [key: string]: number } = {}
         const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
-        // Initialize last 6 months with 0
         for (let i = 5; i >= 0; i--) {
             const d = new Date()
             d.setMonth(d.getMonth() - i)
@@ -96,9 +142,7 @@ export async function getDashboardStats() {
         growthRaw?.forEach(e => {
             const d = new Date(e.enrolled_at)
             const key = `${monthNames[d.getMonth()]}`
-            if (months[key] !== undefined) {
-                months[key]++
-            }
+            if (months[key] !== undefined) months[key]++
         })
 
         const growthData = Object.keys(months).map(key => ({
@@ -106,16 +150,10 @@ export async function getDashboardStats() {
             students: months[key]
         }))
 
-        // 7. Student Status Distribution
-        // We can use the enrollments fetched above or a separate aggregate query
-        // For simplicity, let's use the recent enrollments query if we fetched enough, 
-        // but better to do a separate aggregate if we want total distribution.
-        // Let's fetch status counts directly if possible, or just fetch all enrollment statuses.
-        const { data: allStatuses, error: statusError } = await supabase
+        // 8. Distribution
+        const { data: allStatuses } = await supabase
             .from('enrollments')
             .select('status')
-
-        if (statusError) console.error("Error fetching statuses:", statusError)
 
         const statusCounts: { [key: string]: number } = {}
         allStatuses?.forEach(e => {
@@ -128,31 +166,18 @@ export async function getDashboardStats() {
             value: statusCounts[key]
         }))
 
-        // Debug: Get current user and role
-        const { data: { user } } = await supabase.auth.getUser()
-        let userRole = 'unknown'
-        if (user) {
-            const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-            userRole = profile?.role || 'unknown'
-        }
-
         return {
             stats: {
-                instructors: instructorCount || 0,
-                activeClasses: classCount || 0,
-                todaySessions: sessionCount || 0,
-                totalStudents: studentCount || 0
+                instructors: { value: currentInstructors || 0, trend: instructorTrend },
+                activeClasses: { value: currentClasses || 0, trend: classTrend },
+                todaySessions: { value: sessionCount || 0, trend: 0 },
+                totalStudents: { value: currentStudents || 0, trend: studentTrend },
+                revenue: { value: totalRevenue, trend: revenueTrend }
             },
             todaysSessions: sessions || [],
             recentActivity: enrollments || [],
             growthData,
-            distributionData,
-            debug: {
-                userId: user?.id,
-                role: userRole,
-                instructorError,
-                studentError
-            }
+            distributionData
         }
 
     } catch (error) {

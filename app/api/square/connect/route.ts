@@ -15,8 +15,13 @@ export async function GET(request: Request) {
         ? process.env.SQUARE_PROD_REDIRECT_URI
         : process.env.SQUARE_SANDBOX_REDIRECT_URI;
 
-    if (!SQUARE_APP_ID || !REDIRECT_URI) {
-        return NextResponse.json({ error: "Square configuration missing" }, { status: 500 });
+    if (!SQUARE_APP_ID) {
+        return NextResponse.json({ error: "Square Configuration Error: SQUARE_APP_ID is missing" }, { status: 500 });
+    }
+    if (!REDIRECT_URI) {
+        return NextResponse.json({
+            error: `Square Configuration Error: ${SQUARE_ENV === 'production' ? 'SQUARE_PROD_REDIRECT_URI' : 'SQUARE_SANDBOX_REDIRECT_URI'} is missing`
+        }, { status: 500 });
     }
 
     const supabase = createAdminClient();

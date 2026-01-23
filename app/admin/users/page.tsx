@@ -30,12 +30,24 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
-import { UserPlus, MoreHorizontal, Shield, Mail, Clock } from "lucide-react"
+import { UserPlus, MoreHorizontal, Shield, Mail, Clock, Loader2, Edit2, Trash2, Key, Ban, CheckCircle2, Copy } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { toast } from "sonner"
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { deleteAdminUser, updateAdminUser, sendPasswordReset } from "@/app/actions/adminUsers"
 
-// Mock Data
-type AdminRole = 'owner' | 'manager' | 'staff'
+import { supabase } from "@/lib/supabaseClient"
+import { useEffect } from "react"
+
+// Real Roles & Statuses
+type AdminRole = 'owner' | 'manager' | 'staff' | 'admin'
 type AdminStatus = 'active' | 'suspended' | 'pending'
 
 interface AdminUser {
@@ -47,32 +59,145 @@ interface AdminUser {
     lastActive: string
 }
 
-const MOCK_ADMINS: AdminUser[] = [
-    { id: "ADM-001", name: "Sarah Connor", email: "sarah@drivofy.com", role: "owner", status: "active", lastActive: new Date().toISOString() },
-    { id: "ADM-002", name: "John Wick", email: "john@drivofy.com", role: "manager", status: "active", lastActive: new Date(Date.now() - 1000 * 60 * 45).toISOString() }, // 45 mins ago
-    { id: "ADM-003", name: "Ellen Ripley", email: "ellen@drivofy.com", role: "staff", status: "active", lastActive: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString() }, // 2 hours ago
-    { id: "ADM-004", name: "James Bond", email: "james@drivofy.com", role: "staff", status: "suspended", lastActive: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString() }, // 5 days ago
-    { id: "ADM-005", name: "Marty McFly", email: "marty@drivofy.com", role: "staff", status: "pending", lastActive: new Date(Date.now() - 1000 * 60 * 60 * 24 * 1).toISOString() }, // 1 day ago (invite sent)
-]
-
 export default function AdminUsersPage() {
+    const [admins, setAdmins] = useState<AdminUser[]>([])
+    const [loading, setLoading] = useState(true)
     const [roleFilter, setRoleFilter] = useState<string>("all")
     const [statusFilter, setStatusFilter] = useState<string>("all")
     const [inviteOpen, setInviteOpen] = useState(false)
     const [inviteData, setInviteData] = useState({ name: "", email: "", role: "staff" })
 
-    const filteredAdmins = MOCK_ADMINS.filter(admin => {
+    // Action Dialogs State
+    const [editUser, setEditUser] = useState<AdminUser | null>(null)
+    const [deleteUser, setDeleteUser] = useState<AdminUser | null>(null)
+    const [isActionLoading, setIsActionLoading] = useState(false)
+
+    useEffect(() => {
+        fetchAdmins()
+    }, [])
+
+    const fetchAdmins = async () => {
+        setLoading(true)
+        try {
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .not('role', 'eq', 'student')
+                .order('full_name', { ascending: true })
+
+            if (error) throw error
+
+            const formattedAdmins: AdminUser[] = (data || []).map(p => ({
+                id: p.id,
+                name: p.full_name || "Unknown",
+                email: p.email || "",
+                role: p.role as AdminRole,
+                status: 'active', // Default for now as we don't have a status column in profiles
+                lastActive: p.updated_at || p.created_at
+            }))
+
+            setAdmins(formattedAdmins)
+        } catch (error) {
+            console.error("Error fetching admins:", error)
+            toast.error("Failed to load admin users")
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const filteredAdmins = admins.filter(admin => {
         if (roleFilter !== "all" && admin.role !== roleFilter) return false
         if (statusFilter !== "all" && admin.status !== statusFilter) return false
         return true
     })
 
-    const handleInvite = (e: React.FormEvent) => {
+    const handleInvite = async (e: React.FormEvent) => {
         e.preventDefault()
-        console.log("Inviting admin:", inviteData)
-        toast.success(`Invitation sent to ${inviteData.email}`)
-        setInviteOpen(false)
-        setInviteData({ name: "", email: "", role: "staff" })
+        setIsActionLoading(true)
+        try {
+            const response = await fetch('/api/invite', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: inviteData.email,
+                    full_name: inviteData.name,
+                    role: inviteData.role,
+                }),
+            })
+
+            const result = await response.json()
+
+            if (!response.ok) throw new Error(result.error || 'Failed to send invitation')
+
+            toast.success(`Invitation sent to ${inviteData.email}`)
+            setInviteOpen(false)
+            setInviteData({ name: "", email: "", role: "staff" })
+            fetchAdmins()
+        } catch (error: any) {
+            console.error("Invite error:", error)
+            toast.error(error.message || "Failed to send invitation")
+        } finally {
+            setIsActionLoading(false)
+        }
+    }
+
+    const handleUpdateUser = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!editUser) return
+        setIsActionLoading(true)
+        try {
+            const res = await updateAdminUser(editUser.id, {
+                full_name: editUser.name,
+                role: editUser.role
+            })
+            if (!res.success) throw new Error(res.error)
+            toast.success("User updated successfully")
+            setEditUser(null)
+            fetchAdmins()
+        } catch (error: any) {
+            toast.error(error.message || "Failed to update user")
+        } finally {
+            setIsActionLoading(false)
+        }
+    }
+
+    const handleDeleteUser = async () => {
+        if (!deleteUser) return
+        setIsActionLoading(true)
+        try {
+            const res = await deleteAdminUser(deleteUser.id)
+            if (!res.success) throw new Error(res.error)
+            toast.success("User deleted successfully")
+            setDeleteUser(null)
+            fetchAdmins()
+        } catch (error: any) {
+            toast.error(error.message || "Failed to delete user")
+        } finally {
+            setIsActionLoading(false)
+        }
+    }
+
+    const handlePasswordReset = async (email: string) => {
+        try {
+            const res = await sendPasswordReset(email)
+            if (!res.success) throw new Error(res.error)
+            toast.success("Password reset link generated (see console for implementation)")
+        } catch (error: any) {
+            toast.error(error.message || "Failed to send reset link")
+        }
+    }
+
+    const copyToClipboard = (text: string) => {
+        navigator.clipboard.writeText(text)
+        toast.success("Copied to clipboard")
+    }
+
+    if (loading) {
+        return (
+            <div className="h-[50vh] flex items-center justify-center">
+                <Loader2 className="h-10 w-10 animate-spin text-primary" />
+            </div>
+        )
     }
 
     return (
@@ -154,9 +279,11 @@ export default function AdminUsersPage() {
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All Roles</SelectItem>
+                                <SelectItem value="admin">Admin</SelectItem>
                                 <SelectItem value="owner">Owner</SelectItem>
                                 <SelectItem value="manager">Manager</SelectItem>
                                 <SelectItem value="staff">Staff</SelectItem>
+                                <SelectItem value="instructor">Instructor</SelectItem>
                             </SelectContent>
                         </Select>
                         <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -201,8 +328,8 @@ export default function AdminUsersPage() {
                                     </TableCell>
                                     <TableCell>
                                         <div className="flex items-center gap-1.5">
-                                            <Shield className={`h-3.5 w-3.5 ${admin.role === 'owner' ? 'text-purple-600' :
-                                                    admin.role === 'manager' ? 'text-blue-600' : 'text-gray-500'
+                                            <Shield className={`h-3.5 w-3.5 ${admin.role === 'owner' || admin.role === 'admin' ? 'text-purple-600' :
+                                                admin.role === 'manager' ? 'text-blue-600' : 'text-gray-500'
                                                 }`} />
                                             <span className="capitalize text-sm text-gray-700">{admin.role}</span>
                                         </div>
@@ -224,9 +351,32 @@ export default function AdminUsersPage() {
                                         </div>
                                     </TableCell>
                                     <TableCell className="text-right">
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-gray-900">
-                                            <MoreHorizontal className="h-4 w-4" />
-                                        </Button>
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-gray-900">
+                                                    <MoreHorizontal className="h-4 w-4" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end" className="w-48">
+                                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                <DropdownMenuItem onClick={() => setEditUser(admin)}>
+                                                    <Edit2 className="h-4 w-4 mr-2" /> Edit Details
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => copyToClipboard(admin.email)}>
+                                                    <Copy className="h-4 w-4 mr-2" /> Copy Email
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => handlePasswordReset(admin.email)}>
+                                                    <Key className="h-4 w-4 mr-2" /> Reset Password
+                                                </DropdownMenuItem>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem
+                                                    className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                                                    onClick={() => setDeleteUser(admin)}
+                                                >
+                                                    <Trash2 className="h-4 w-4 mr-2" /> Delete User
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
                                     </TableCell>
                                 </TableRow>
                             ))}
@@ -234,6 +384,83 @@ export default function AdminUsersPage() {
                     </Table>
                 </CardContent>
             </Card>
+
+            {/* Edit User Dialog */}
+            <Dialog open={!!editUser} onOpenChange={(open) => !open && setEditUser(null)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Edit User</DialogTitle>
+                        <DialogDescription>
+                            Update profile information for {editUser?.name}.
+                        </DialogDescription>
+                    </DialogHeader>
+                    {editUser && (
+                        <form onSubmit={handleUpdateUser} className="space-y-4 py-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="edit-name">Full Name</Label>
+                                <Input
+                                    id="edit-name"
+                                    value={editUser.name}
+                                    onChange={(e) => setEditUser({ ...editUser, name: e.target.value })}
+                                    required
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="edit-role">Role</Label>
+                                <Select
+                                    value={editUser.role}
+                                    onValueChange={(val) => setEditUser({ ...editUser, role: val as AdminRole })}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select role" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="admin">Admin</SelectItem>
+                                        <SelectItem value="owner">Owner</SelectItem>
+                                        <SelectItem value="manager">Manager</SelectItem>
+                                        <SelectItem value="staff">Staff</SelectItem>
+                                        <SelectItem value="instructor">Instructor</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <DialogFooter>
+                                <Button type="button" variant="outline" onClick={() => setEditUser(null)}>
+                                    Cancel
+                                </Button>
+                                <Button type="submit" disabled={isActionLoading}>
+                                    {isActionLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                                    Save Changes
+                                </Button>
+                            </DialogFooter>
+                        </form>
+                    )}
+                </DialogContent>
+            </Dialog>
+
+            {/* Delete User Dialog */}
+            <Dialog open={!!deleteUser} onOpenChange={(open) => !open && setDeleteUser(null)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle className="text-red-600">Delete User</DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to delete <strong>{deleteUser?.name}</strong>? This action will permanently remove their account and access.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="gap-2">
+                        <Button variant="outline" onClick={() => setDeleteUser(null)}>
+                            Cancel
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            onClick={handleDeleteUser}
+                            disabled={isActionLoading}
+                        >
+                            {isActionLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                            Delete Permanently
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }

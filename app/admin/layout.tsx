@@ -51,7 +51,7 @@ export default function AdminLayout({
     const router = useRouter()
     const [sidebarOpen, setSidebarOpen] = useState(false)
     const [collapsed, setCollapsed] = useState(false)
-    const [userProfile, setUserProfile] = useState<{ name: string, email: string } | null>(null)
+    const [userProfile, setUserProfile] = useState<{ name: string, email: string, role: string } | null>(null)
 
     useEffect(() => {
         const getUser = async () => {
@@ -59,18 +59,26 @@ export default function AdminLayout({
             if (user) {
                 const { data: profile } = await supabase
                     .from('profiles')
-                    .select('full_name, email')
+                    .select('full_name, email, role')
                     .eq('id', user.id)
                     .single()
 
+                const role = profile?.role || "admin"
+
                 setUserProfile({
                     name: profile?.full_name || "Admin User",
-                    email: profile?.email || user.email || ""
+                    email: profile?.email || user.email || "",
+                    role
                 })
+
+                // Role-based redirection: Staff shouldn't access dashboard root
+                if (role === 'staff' && pathname === '/admin') {
+                    router.push('/admin/students')
+                }
             }
         }
         getUser()
-    }, [])
+    }, [pathname, router])
 
     const handleLogout = async () => {
         await supabase.auth.signOut()
@@ -78,8 +86,8 @@ export default function AdminLayout({
         router.push("/login")
     }
 
-    // Enterprise Menu Structure
-    const menuGroups = [
+    // Filtered Menu Structure based on Role
+    const allMenuGroups = [
         {
             label: "Main Menu",
             items: [
@@ -115,6 +123,10 @@ export default function AdminLayout({
             ]
         }
     ]
+
+    const menuGroups = userProfile?.role === 'staff'
+        ? allMenuGroups.filter(group => group.label === "Operations")
+        : allMenuGroups
 
     return (
         <div className="min-h-screen bg-gray-50/50 flex font-sans text-gray-900">

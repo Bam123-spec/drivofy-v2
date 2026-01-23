@@ -48,10 +48,11 @@ const COLORS = ['#8b5cf6', '#10b981', '#f43f5e', '#f59e0b'];
 
 export default function AdminDashboard() {
     const [stats, setStats] = useState({
-        instructors: 0,
-        activeClasses: 0,
-        todaySessions: 0,
-        totalStudents: 0
+        instructors: { value: 0, trend: 0 },
+        activeClasses: { value: 0, trend: 0 },
+        todaySessions: { value: 0, trend: 0 },
+        totalStudents: { value: 0, trend: 0 },
+        revenue: { value: 0, trend: 0 }
     })
     const [todaysSessions, setTodaysSessions] = useState<any[]>([])
     const [recentActivity, setRecentActivity] = useState<any[]>([])
@@ -68,15 +69,11 @@ export default function AdminDashboard() {
             const data = await getDashboardStats()
 
             if (data) {
-                setStats({ ...data.stats, debug: data.debug })
+                setStats(data.stats)
                 setTodaysSessions(data.todaysSessions)
                 setRecentActivity(data.recentActivity)
                 setDistributionData(data.distributionData)
                 setGrowthData(data.growthData)
-
-                if (data.debug?.role !== 'admin') {
-                    toast.error(`Warning: You are logged in as ${data.debug?.role}, not admin.`)
-                }
             } else {
                 toast.error("Failed to load dashboard data")
             }
@@ -117,41 +114,50 @@ export default function AdminDashboard() {
             </div>
 
             {/* KPI Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                <KpiCard
+                    title="Total Revenue"
+                    value={`$${stats.revenue.value.toLocaleString()}`}
+                    icon={DollarSign}
+                    trend={`${stats.revenue.trend > 0 ? '+' : ''}${stats.revenue.trend}%`}
+                    trendUp={stats.revenue.trend >= 0}
+                    color="green"
+                    description="Total earnings"
+                />
                 <KpiCard
                     title="Total Students"
-                    value={stats.totalStudents}
+                    value={stats.totalStudents.value}
                     icon={Users}
-                    trend="+12%"
-                    trendUp={true}
+                    trend={`${stats.totalStudents.trend > 0 ? '+' : ''}${stats.totalStudents.trend}%`}
+                    trendUp={stats.totalStudents.trend >= 0}
                     color="blue"
                     description="Active learners"
                 />
                 <KpiCard
                     title="Active Instructors"
-                    value={stats.instructors}
+                    value={stats.instructors.value}
                     icon={Car}
-                    trend="+2"
-                    trendUp={true}
+                    trend={`${stats.instructors.trend > 0 ? '+' : ''}${stats.instructors.trend}%`}
+                    trendUp={stats.instructors.trend >= 0}
                     color="purple"
                     description="Currently teaching"
                 />
                 <KpiCard
                     title="Active Classes"
-                    value={stats.activeClasses}
+                    value={stats.activeClasses.value}
                     icon={BookOpen}
-                    trend="Stable"
-                    trendUp={true}
+                    trend={`${stats.activeClasses.trend > 0 ? '+' : ''}${stats.activeClasses.trend}%`}
+                    trendUp={stats.activeClasses.trend >= 0}
                     color="indigo"
                     description="Open for enrollment"
                 />
                 <KpiCard
                     title="Sessions Today"
-                    value={stats.todaySessions}
+                    value={stats.todaySessions.value}
                     icon={Clock}
                     trend="On Track"
                     trendUp={true}
-                    color="green"
+                    color="amber"
                     description="Scheduled drives"
                 />
             </div>
@@ -239,7 +245,7 @@ export default function AdminDashboard() {
                             </ResponsiveContainer>
                             {/* Center Text Overlay */}
                             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none pb-8">
-                                <span className="text-3xl font-bold text-gray-900">{stats.totalStudents}</span>
+                                <span className="text-3xl font-bold text-gray-900">{stats.totalStudents.value}</span>
                                 <span className="text-xs text-gray-500 uppercase font-medium">Students</span>
                             </div>
                         </div>
@@ -394,6 +400,7 @@ function KpiCard({ title, value, icon: Icon, trend, trendUp, color, description 
         purple: "bg-purple-50 text-purple-600",
         indigo: "bg-indigo-50 text-indigo-600",
         green: "bg-emerald-50 text-emerald-600",
+        amber: "bg-amber-50 text-amber-600",
     }
 
     return (
