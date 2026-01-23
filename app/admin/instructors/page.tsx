@@ -157,32 +157,34 @@ export default function AdminInstructorsPage() {
         <div className="space-y-8 animate-in fade-in duration-500">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Instructors</h1>
-                    <p className="text-gray-500 mt-1">Manage your driving instructors and their schedules.</p>
+                    <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Instructors</h1>
+                    <p className="text-slate-500 font-medium text-base mt-1">Manage your driving instructors and their schedules.</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <div className="flex items-center bg-white rounded-lg border border-gray-200 p-1 mr-2">
+                    <div className="flex items-center bg-white rounded-xl border border-slate-200 p-1 mr-2 shadow-sm">
                         <Button
                             variant="ghost"
                             size="sm"
-                            className={`h-7 px-2 ${viewMode === 'grid' ? 'bg-gray-100 text-gray-900' : 'text-gray-500'}`}
+                            className={`h-8 px-3 rounded-lg font-bold text-xs uppercase tracking-wider ${viewMode === 'grid' ? 'bg-slate-100 text-slate-900' : 'text-slate-500'}`}
                             onClick={() => setViewMode('grid')}
                         >
-                            <LayoutGrid className="h-4 w-4" />
+                            <LayoutGrid className="mr-2 h-3.5 w-3.5" />
+                            Grid
                         </Button>
                         <Button
                             variant="ghost"
                             size="sm"
-                            className={`h-7 px-2 ${viewMode === 'table' ? 'bg-gray-100 text-gray-900' : 'text-gray-500'}`}
+                            className={`h-8 px-3 rounded-lg font-bold text-xs uppercase tracking-wider ${viewMode === 'table' ? 'bg-slate-100 text-slate-900' : 'text-slate-500'}`}
                             onClick={() => setViewMode('table')}
                         >
-                            <List className="h-4 w-4" />
+                            <List className="mr-2 h-3.5 w-3.5" />
+                            Table
                         </Button>
                     </div>
 
                     <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
                         <DialogTrigger asChild>
-                            <Button className="shadow-lg shadow-primary/25">
+                            <Button className="h-10 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-sm transition-all">
                                 <Plus className="mr-2 h-4 w-4" />
                                 Add Instructor
                             </Button>
@@ -253,32 +255,31 @@ export default function AdminInstructorsPage() {
                 </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+            <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
                 <div className="relative w-full sm:w-96">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                     <Input
                         placeholder="Search instructors..."
-                        className="pl-10 bg-gray-50 border-transparent focus:bg-white transition-all"
+                        className="h-10 pl-10 bg-slate-50 border-transparent focus:bg-white rounded-xl transition-all font-medium text-sm"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
                 </div>
-                <div className="flex items-center gap-2 w-full sm:w-auto">
-                    <Filter className="h-4 w-4 text-gray-400" />
+                <div className="flex items-center gap-3 w-full sm:w-auto">
+                    <span className="text-slate-400 uppercase font-bold text-[10px] tracking-widest hidden sm:inline">Type:</span>
                     <Select value={selectedType} onValueChange={setSelectedType}>
-                        <SelectTrigger className="w-full sm:w-[180px] border-none bg-gray-50">
-                            <SelectValue placeholder="Filter by Type" />
+                        <SelectTrigger className="w-full sm:w-[160px] h-10 border-slate-200 bg-white rounded-xl font-bold text-xs uppercase tracking-wide">
+                            <SelectValue placeholder="All Types" />
                         </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">All Types</SelectItem>
-                            <SelectItem value="driving">Driving Only</SelectItem>
-                            <SelectItem value="theory">Theory Only</SelectItem>
-                            <SelectItem value="both">Both</SelectItem>
+                        <SelectContent className="rounded-xl border-slate-200 shadow-xl">
+                            <SelectItem value="all" className="text-xs font-bold uppercase tracking-wide">All Types</SelectItem>
+                            <SelectItem value="driving" className="text-xs font-bold uppercase tracking-wide">Driving Only</SelectItem>
+                            <SelectItem value="theory" className="text-xs font-bold uppercase tracking-wide">Theory Only</SelectItem>
+                            <SelectItem value="both" className="text-xs font-bold uppercase tracking-wide">Both</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
             </div>
-
             {viewMode === 'grid' ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {filteredInstructors.map(instructor => (
@@ -295,54 +296,52 @@ export default function AdminInstructorsPage() {
                     )}
                 </div>
             ) : (
-                <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                     <Table>
                         <TableHeader>
-                            <TableRow className="bg-gray-50/50 hover:bg-gray-50/50">
-                                <TableHead>Instructor</TableHead>
-                                <TableHead>Type</TableHead>
-                                <TableHead>Contact</TableHead>
-                                <TableHead>License</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
+                            <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-slate-100">
+                                <TableHead className="pl-6 font-bold text-slate-900 uppercase text-[10px] tracking-wider py-4">Instructor</TableHead>
+                                <TableHead className="font-bold text-slate-900 uppercase text-[10px] tracking-wider">Type</TableHead>
+                                <TableHead className="font-bold text-slate-900 uppercase text-[10px] tracking-wider">Contact</TableHead>
+                                <TableHead className="font-bold text-slate-900 uppercase text-[10px] tracking-wider">License</TableHead>
+                                <TableHead className="font-bold text-slate-900 uppercase text-[10px] tracking-wider">Status</TableHead>
+                                <TableHead className="pr-6 text-right font-bold text-slate-900 uppercase text-[10px] tracking-wider">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {filteredInstructors.map((instructor) => (
-                                <TableRow key={instructor.id} className="group hover:bg-gray-50/50 transition-colors">
-                                    <TableCell>
+                                <TableRow key={instructor.id} className="group hover:bg-slate-50/30 transition-colors border-slate-50">
+                                    <TableCell className="pl-6 py-4">
                                         <div className="flex items-center gap-3">
-                                            <Avatar className="h-9 w-9 border border-gray-100">
-                                                <AvatarFallback className="bg-blue-100 text-blue-600 font-medium">
+                                            <Avatar className="h-9 w-9 border border-slate-100 shadow-sm">
+                                                <AvatarFallback className="bg-blue-50 text-blue-600 text-[10px] font-bold">
                                                     {instructor.full_name?.charAt(0) || "I"}
                                                 </AvatarFallback>
                                             </Avatar>
-                                            <div>
-                                                <div className="font-medium text-gray-900">{instructor.full_name}</div>
-                                            </div>
+                                            <div className="font-bold text-slate-900 text-sm whitespace-nowrap">{instructor.full_name}</div>
                                         </div>
                                     </TableCell>
                                     <TableCell>
-                                        <Badge variant="secondary" className="capitalize">
+                                        <Badge variant="secondary" className="bg-slate-100 text-slate-600 border-0 font-bold text-[10px] uppercase tracking-wide">
                                             {instructor.type || 'both'}
                                         </Badge>
                                     </TableCell>
                                     <TableCell>
-                                        <div className="text-sm text-gray-600">{instructor.email}</div>
+                                        <div className="text-sm text-slate-500 font-medium">{instructor.email}</div>
                                     </TableCell>
-                                    <TableCell className="text-gray-500 font-mono text-xs">
+                                    <TableCell className="text-slate-400 font-bold text-[10px] tracking-widest uppercase">
                                         {instructor.license_number || "N/A"}
                                     </TableCell>
                                     <TableCell>
-                                        <Badge variant={instructor.status === 'active' ? 'default' : 'secondary'} className={instructor.status === 'active' ? 'bg-green-100 text-green-800 hover:bg-green-200' : ''}>
+                                        <Badge variant="secondary" className={`${instructor.status === 'active' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'} border-0 font-bold text-[10px] uppercase tracking-wide`}>
                                             {instructor.status || 'Active'}
                                         </Badge>
                                     </TableCell>
-                                    <TableCell className="text-right">
+                                    <TableCell className="pr-6 text-right">
                                         <Button
                                             variant="ghost"
                                             size="sm"
-                                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                            className="h-8 px-3 text-rose-600 hover:text-rose-700 hover:bg-rose-50 font-bold text-xs uppercase tracking-wider rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
                                             onClick={() => handleDeleteInstructor(instructor.id)}
                                         >
                                             Delete

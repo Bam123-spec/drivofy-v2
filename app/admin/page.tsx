@@ -94,19 +94,19 @@ export default function AdminDashboard() {
     }
 
     return (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="space-y-8 animate-in fade-in duration-500">
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Dashboard</h1>
-                    <p className="text-gray-500 mt-1">Overview of your driving school operations.</p>
+                    <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Dashboard</h1>
+                    <p className="text-slate-500 font-medium text-base mt-1">Overview of your driving school operations.</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <Button variant="outline" className="hidden sm:flex bg-white hover:bg-gray-50">
-                        <Calendar className="mr-2 h-4 w-4" />
+                    <Button variant="outline" className="hidden sm:flex bg-white hover:bg-slate-50 h-10 px-4 rounded-xl font-semibold border-slate-200">
+                        <Calendar className="mr-2 h-4 w-4 text-slate-400" />
                         Last 7 Days
                     </Button>
-                    <Button className="shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-shadow bg-gradient-to-r from-primary to-primary/90">
+                    <Button className="h-10 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-sm transition-all">
                         <Plus className="mr-2 h-4 w-4" />
                         New Booking
                     </Button>
@@ -165,43 +165,43 @@ export default function AdminDashboard() {
             {/* Charts Row */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Growth Chart */}
-                <Card className="lg:col-span-2 border-none shadow-md bg-white/80 backdrop-blur-sm">
-                    <CardHeader>
-                        <CardTitle>Enrollment Growth</CardTitle>
-                        <CardDescription>New student enrollments over the last 6 months</CardDescription>
+                <Card className="lg:col-span-2 border border-slate-200 shadow-sm rounded-2xl bg-white overflow-hidden">
+                    <CardHeader className="bg-white p-6 border-b border-slate-50">
+                        <CardTitle className="text-lg font-bold text-slate-900">Enrollment Growth</CardTitle>
+                        <CardDescription className="text-slate-500 font-medium">New student enrollments over the last 6 months</CardDescription>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="p-6">
                         <div className="h-[300px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={growthData}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                                     <XAxis
                                         dataKey="name"
                                         axisLine={false}
                                         tickLine={false}
-                                        tick={{ fontSize: 12, fill: '#6b7280' }}
+                                        tick={{ fontSize: 11, fill: '#94a3b8', fontWeight: 500 }}
                                         dy={10}
                                     />
                                     <YAxis
                                         axisLine={false}
                                         tickLine={false}
-                                        tick={{ fontSize: 12, fill: '#6b7280' }}
+                                        tick={{ fontSize: 11, fill: '#94a3b8', fontWeight: 500 }}
                                     />
                                     <Tooltip
-                                        cursor={{ fill: '#f3f4f6' }}
+                                        cursor={{ fill: '#f8fafc' }}
                                         contentStyle={{
                                             borderRadius: '12px',
-                                            border: 'none',
-                                            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                                            border: '1px solid #e2e8f0',
+                                            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.05)',
                                             backgroundColor: '#fff',
-                                            color: '#1f2937'
+                                            color: '#1e293b'
                                         }}
                                     />
                                     <Bar
                                         dataKey="students"
-                                        fill="var(--primary)"
-                                        radius={[6, 6, 0, 0]}
-                                        barSize={40}
+                                        fill="#2563eb"
+                                        radius={[4, 4, 0, 0]}
+                                        barSize={32}
                                     />
                                 </BarChart>
                             </ResponsiveContainer>
@@ -210,12 +210,12 @@ export default function AdminDashboard() {
                 </Card>
 
                 {/* Distribution Chart */}
-                <Card className="border-none shadow-md bg-white/80 backdrop-blur-sm">
-                    <CardHeader>
-                        <CardTitle>Student Status</CardTitle>
-                        <CardDescription>Current enrollment distribution</CardDescription>
+                <Card className="border border-slate-200 shadow-sm rounded-2xl bg-white overflow-hidden">
+                    <CardHeader className="bg-white p-6 border-b border-slate-50">
+                        <CardTitle className="text-lg font-bold text-slate-900">Student Status</CardTitle>
+                        <CardDescription className="text-slate-500 font-medium">Current enrollment distribution</CardDescription>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="p-6">
                         <div className="h-[300px] w-full relative">
                             <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
@@ -223,9 +223,9 @@ export default function AdminDashboard() {
                                         data={distributionData}
                                         cx="50%"
                                         cy="50%"
-                                        innerRadius={60}
-                                        outerRadius={80}
-                                        paddingAngle={5}
+                                        innerRadius={65}
+                                        outerRadius={85}
+                                        paddingAngle={4}
                                         dataKey="value"
                                     >
                                         {distributionData.map((entry, index) => (
@@ -235,18 +235,23 @@ export default function AdminDashboard() {
                                     <Tooltip
                                         contentStyle={{
                                             borderRadius: '12px',
-                                            border: 'none',
-                                            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                                            border: '1px solid #e2e8f0',
+                                            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.05)',
                                             backgroundColor: '#fff'
                                         }}
                                     />
-                                    <Legend verticalAlign="bottom" height={36} />
+                                    <Legend
+                                        verticalAlign="bottom"
+                                        height={36}
+                                        iconType="circle"
+                                        wrapperStyle={{ fontSize: '11px', fontWeight: 600, color: '#64748b' }}
+                                    />
                                 </PieChart>
                             </ResponsiveContainer>
                             {/* Center Text Overlay */}
                             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none pb-8">
-                                <span className="text-3xl font-bold text-gray-900">{stats.totalStudents.value}</span>
-                                <span className="text-xs text-gray-500 uppercase font-medium">Students</span>
+                                <span className="text-2xl font-bold text-slate-900">{stats.totalStudents.value}</span>
+                                <span className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Total</span>
                             </div>
                         </div>
                     </CardContent>
@@ -258,54 +263,54 @@ export default function AdminDashboard() {
 
                 {/* Left Column: Today's Schedule */}
                 <div className="lg:col-span-2 space-y-6">
-                    <Card className="border-none shadow-md bg-white/80 backdrop-blur-sm">
-                        <CardHeader className="flex flex-row items-center justify-between">
+                    <Card className="border border-slate-200 shadow-sm rounded-2xl bg-white overflow-hidden">
+                        <CardHeader className="bg-white p-6 border-b border-slate-50 flex flex-row items-center justify-between">
                             <div>
-                                <CardTitle>Today's Schedule</CardTitle>
-                                <CardDescription>Upcoming driving sessions for today.</CardDescription>
+                                <CardTitle className="text-lg font-bold text-slate-900">Today's Schedule</CardTitle>
+                                <CardDescription className="text-slate-500 font-medium">Upcoming driving sessions for today.</CardDescription>
                             </div>
-                            <Button variant="ghost" size="sm" className="text-primary hover:bg-primary/5">View All</Button>
+                            <Button variant="ghost" size="sm" className="text-blue-600 hover:bg-blue-50 font-bold text-xs uppercase tracking-wider">View All</Button>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="p-0">
                             {todaysSessions.length > 0 ? (
                                 <Table>
                                     <TableHeader>
-                                        <TableRow className="hover:bg-transparent border-gray-100">
-                                            <TableHead>Time</TableHead>
-                                            <TableHead>Student</TableHead>
-                                            <TableHead>Instructor</TableHead>
-                                            <TableHead>Status</TableHead>
-                                            <TableHead className="text-right"></TableHead>
+                                        <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-slate-100">
+                                            <TableHead className="pl-6 font-semibold text-slate-900 uppercase text-[10px] tracking-wider py-4">Time</TableHead>
+                                            <TableHead className="font-semibold text-slate-900 uppercase text-[10px] tracking-wider">Student</TableHead>
+                                            <TableHead className="font-semibold text-slate-900 uppercase text-[10px] tracking-wider">Instructor</TableHead>
+                                            <TableHead className="font-semibold text-slate-900 uppercase text-[10px] tracking-wider">Status</TableHead>
+                                            <TableHead className="pr-6 text-right font-semibold text-slate-900 uppercase text-[10px] tracking-wider"></TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                         {todaysSessions.map((session) => (
-                                            <TableRow key={session.id} className="group hover:bg-gray-50/50 transition-colors border-gray-100">
-                                                <TableCell className="font-medium">
-                                                    <div className="flex items-center gap-2 text-gray-900">
-                                                        <Clock className="h-4 w-4 text-gray-400" />
+                                            <TableRow key={session.id} className="group hover:bg-slate-50/30 transition-colors border-slate-50">
+                                                <TableCell className="pl-6 py-4">
+                                                    <div className="flex items-center gap-2 text-slate-900 font-semibold text-sm">
+                                                        <Clock className="h-3.5 w-3.5 text-slate-400" />
                                                         {new Date(session.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                     </div>
                                                 </TableCell>
                                                 <TableCell>
                                                     <div className="flex items-center gap-3">
-                                                        <Avatar className="h-8 w-8 border border-gray-100">
-                                                            <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
+                                                        <Avatar className="h-8 w-8 border border-slate-100 shadow-sm">
+                                                            <AvatarFallback className="bg-blue-50 text-blue-600 text-[10px] font-bold">
                                                                 {session.student?.full_name?.charAt(0) || "S"}
                                                             </AvatarFallback>
                                                         </Avatar>
-                                                        <span className="font-medium text-gray-700">{session.student?.full_name || "Unknown"}</span>
+                                                        <span className="font-semibold text-slate-700 text-sm whitespace-nowrap">{session.student?.full_name || "Unknown"}</span>
                                                     </div>
                                                 </TableCell>
-                                                <TableCell className="text-gray-500">
+                                                <TableCell className="text-slate-500 text-sm">
                                                     {session.instructor?.full_name || "Unassigned"}
                                                 </TableCell>
                                                 <TableCell>
                                                     <StatusBadge status={session.status} />
                                                 </TableCell>
-                                                <TableCell className="text-right">
-                                                    <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity">
-                                                        <MoreHorizontal className="h-4 w-4 text-gray-400" />
+                                                <TableCell className="pr-6 text-right">
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-900 rounded-lg transition-colors opacity-0 group-hover:opacity-100">
+                                                        <MoreHorizontal className="h-4 w-4" />
                                                     </Button>
                                                 </TableCell>
                                             </TableRow>
@@ -331,57 +336,55 @@ export default function AdminDashboard() {
                 {/* Right Column: Recent Activity & Actions */}
                 <div className="space-y-6">
                     {/* Recent Activity */}
-                    <Card className="border-none shadow-md bg-white/80 backdrop-blur-sm">
-                        <CardHeader>
-                            <CardTitle>Recent Activity</CardTitle>
-                            <CardDescription>Latest system events</CardDescription>
+                    <Card className="border border-slate-200 shadow-sm rounded-2xl bg-white overflow-hidden">
+                        <CardHeader className="bg-white p-6 border-b border-slate-50">
+                            <CardTitle className="text-lg font-bold text-slate-900">Recent Activity</CardTitle>
+                            <CardDescription className="text-slate-500 font-medium">Latest system events</CardDescription>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="p-6">
                             <div className="space-y-6">
                                 {recentActivity.length > 0 ? (
                                     recentActivity.map((activity, i) => (
                                         <div key={i} className="flex items-start gap-4 relative">
                                             {/* Timeline Line */}
                                             {i !== recentActivity.length - 1 && (
-                                                <div className="absolute left-[18px] top-10 bottom-[-24px] w-[2px] bg-gray-100"></div>
+                                                <div className="absolute left-[18px] top-10 bottom-[-24px] w-[1px] bg-slate-100"></div>
                                             )}
-                                            <div className="h-9 w-9 bg-blue-50 rounded-full flex items-center justify-center text-blue-600 shrink-0 z-10 ring-4 ring-white">
+                                            <div className="h-9 w-9 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600 shrink-0 z-10 ring-4 ring-white shadow-sm">
                                                 <Activity className="h-4 w-4" />
                                             </div>
-                                            <div>
-                                                <p className="text-sm font-medium text-gray-900">
+                                            <div className="space-y-0.5">
+                                                <p className="text-sm font-bold text-slate-900">
                                                     New Enrollment
                                                 </p>
-                                                <p className="text-xs text-gray-500 mt-0.5">
-                                                    <span className="font-medium text-gray-700">{activity.student?.full_name}</span> enrolled in <span className="font-medium text-gray-700">{activity.class?.name}</span>
+                                                <p className="text-xs text-slate-500 leading-relaxed">
+                                                    <span className="font-semibold text-slate-700">{activity.student?.full_name}</span> enrolled in <span className="font-semibold text-slate-700">{activity.class?.name}</span>
                                                 </p>
-                                                <p className="text-xs text-gray-400 mt-1">
+                                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider pt-1">
                                                     {new Date(activity.enrolled_at).toLocaleDateString()}
                                                 </p>
                                             </div>
                                         </div>
                                     ))
                                 ) : (
-                                    <p className="text-sm text-gray-500 text-center py-4">No recent activity.</p>
+                                    <p className="text-sm text-slate-500 text-center py-4">No recent activity.</p>
                                 )}
                             </div>
                         </CardContent>
                     </Card>
 
                     {/* Quick Actions */}
-                    <Card className="border-none shadow-lg bg-gradient-to-br from-gray-900 to-gray-800 text-white overflow-hidden relative group">
-                        <div className="absolute top-0 right-0 -mr-8 -mt-8 h-32 w-32 bg-white/10 rounded-full blur-2xl group-hover:bg-white/20 transition-colors duration-500"></div>
-                        <div className="absolute bottom-0 left-0 -ml-8 -mb-8 h-24 w-24 bg-primary/20 rounded-full blur-xl"></div>
-                        <CardHeader>
-                            <CardTitle className="text-white">Quick Actions</CardTitle>
+                    <Card className="border border-slate-200 shadow-sm bg-white rounded-2xl overflow-hidden relative group">
+                        <CardHeader className="bg-white p-6 border-b border-slate-50">
+                            <CardTitle className="text-lg font-bold text-slate-900">Quick Actions</CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-3 relative z-10">
-                            <Button variant="secondary" className="w-full justify-start bg-white/10 hover:bg-white/20 text-white border-none backdrop-blur-sm transition-all">
-                                <Plus className="mr-2 h-4 w-4" />
+                        <CardContent className="p-6 space-y-3">
+                            <Button variant="outline" className="w-full justify-start h-11 px-4 border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold rounded-xl shadow-sm transition-all group/btn">
+                                <Plus className="mr-3 h-4 w-4 text-blue-500 group-hover/btn:scale-110 transition-transform" />
                                 Create New Class
                             </Button>
-                            <Button variant="secondary" className="w-full justify-start bg-white/10 hover:bg-white/20 text-white border-none backdrop-blur-sm transition-all">
-                                <Users className="mr-2 h-4 w-4" />
+                            <Button variant="outline" className="w-full justify-start h-11 px-4 border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold rounded-xl shadow-sm transition-all group/btn">
+                                <Users className="mr-3 h-4 w-4 text-emerald-500 group-hover/btn:scale-110 transition-transform" />
                                 Add Instructor
                             </Button>
                         </CardContent>
@@ -397,28 +400,28 @@ export default function AdminDashboard() {
 function KpiCard({ title, value, icon: Icon, trend, trendUp, color, description }: any) {
     const colorStyles: any = {
         blue: "bg-blue-50 text-blue-600",
-        purple: "bg-purple-50 text-purple-600",
         indigo: "bg-indigo-50 text-indigo-600",
         green: "bg-emerald-50 text-emerald-600",
+        purple: "bg-indigo-50 text-indigo-600", // Standardizing
         amber: "bg-amber-50 text-amber-600",
     }
 
     return (
-        <Card className="border-none shadow-sm hover:shadow-md transition-all duration-300 group bg-white/80 backdrop-blur-sm">
+        <Card className="border border-slate-200 shadow-sm rounded-2xl bg-white overflow-hidden group hover:shadow-md transition-shadow">
             <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-4">
-                    <div className={`h-12 w-12 rounded-2xl flex items-center justify-center ${colorStyles[color] || colorStyles.blue} group-hover:scale-110 transition-transform duration-300`}>
-                        <Icon className="h-6 w-6" />
+                    <div className={`p-3 rounded-xl ${colorStyles[color] || colorStyles.blue}`}>
+                        <Icon className="h-5 w-5" />
                     </div>
-                    <div className={`flex items-center text-xs font-medium px-2.5 py-1 rounded-full border ${trendUp ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>
-                        {trendUp ? <ArrowUpRight className="h-3 w-3 mr-1" /> : <TrendingUp className="h-3 w-3 mr-1 rotate-180" />}
+                    <div className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${trendUp ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
+                        {trendUp ? <TrendingUp className="h-3 w-3" /> : <TrendingUp className="h-3 w-3 rotate-180" />}
                         {trend}
                     </div>
                 </div>
                 <div>
-                    <p className="text-sm font-medium text-gray-500">{title}</p>
-                    <h3 className="text-3xl font-bold text-gray-900 mt-1 tracking-tight">{value}</h3>
-                    {description && <p className="text-xs text-gray-400 mt-1">{description}</p>}
+                    <h3 className="text-2xl font-bold text-slate-900 tracking-tight">{value}</h3>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{title}</p>
+                    {description && <p className="text-[11px] text-slate-400 font-medium mt-1 truncate">{description}</p>}
                 </div>
             </CardContent>
         </Card>
@@ -427,11 +430,11 @@ function KpiCard({ title, value, icon: Icon, trend, trendUp, color, description 
 
 function StatusBadge({ status }: { status: string }) {
     const styles: any = {
-        scheduled: "bg-sky-50 text-sky-700 border-sky-200",
-        completed: "bg-emerald-50 text-emerald-700 border-emerald-200",
-        cancelled: "bg-rose-50 text-rose-700 border-rose-200",
-        active: "bg-violet-50 text-violet-700 border-violet-200",
-        dropped: "bg-gray-100 text-gray-700 border-gray-200"
+        scheduled: "bg-blue-50 text-blue-700 border-blue-100",
+        completed: "bg-emerald-50 text-emerald-700 border-emerald-100",
+        cancelled: "bg-slate-100 text-slate-600 border-slate-200",
+        active: "bg-indigo-50 text-indigo-700 border-indigo-100",
+        dropped: "bg-rose-50 text-rose-700 border-rose-100"
     }
 
     const icons: any = {
@@ -445,9 +448,9 @@ function StatusBadge({ status }: { status: string }) {
     const Icon = icons[status] || Clock
 
     return (
-        <Badge variant="outline" className={`${styles[status] || styles.scheduled} pl-1.5 pr-2.5 py-0.5 border shadow-sm`}>
+        <Badge variant="secondary" className={`${styles[status] || styles.scheduled} px-2 py-0.5 rounded font-bold text-[10px] uppercase tracking-wide border-0 flex items-center w-fit`}>
             <Icon className="h-3 w-3 mr-1.5" />
-            <span className="capitalize">{status}</span>
+            {status}
         </Badge>
     )
 }

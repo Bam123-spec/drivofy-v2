@@ -77,16 +77,12 @@ export default function SettingsPage() {
     }
 
     return (
-        <div className="max-w-7xl mx-auto space-y-10 py-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="max-w-7xl mx-auto space-y-8 py-4 animate-in fade-in duration-500">
             {/* Header Section */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 px-1">
-                <div className="space-y-1">
-                    <div className="flex items-center gap-2 mb-2">
-                        <div className="h-8 w-1 bg-blue-600 rounded-full" />
-                        <span className="text-blue-600 font-black text-xs uppercase tracking-[0.2em]">System</span>
-                    </div>
-                    <h1 className="text-4xl font-black text-slate-900 tracking-tight">General Settings</h1>
-                    <p className="text-slate-500 font-medium text-lg max-w-lg">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-1">
+                <div>
+                    <h1 className="text-2xl font-bold text-slate-900 tracking-tight">General Settings</h1>
+                    <p className="text-slate-500 font-medium text-base mt-1">
                         Manage your organization profile, branding, and system-wide preferences.
                     </p>
                 </div>
@@ -94,14 +90,14 @@ export default function SettingsPage() {
                 <Button
                     onClick={handleSave}
                     disabled={saving}
-                    className="h-14 px-8 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black text-lg shadow-xl shadow-blue-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                    className="h-11 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-sm transition-all"
                 >
                     {saving ? (
-                        <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
                     ) : (
-                        <Save className="h-5 w-5 mr-2" />
+                        <Save className="h-4 w-4 mr-2" />
                     )}
-                    {saving ? "Saving Changes..." : "Save Settings"}
+                    {saving ? "Saving..." : "Save Changes"}
                 </Button>
             </div>
 
@@ -109,88 +105,87 @@ export default function SettingsPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {[
                     { label: "System Status", value: "Optimal", icon: Zap, color: "blue", trend: "All systems go" },
-                    { label: "Plan Level", value: "Premium", icon: ShieldCheck, color: "purple", trend: "Professional" },
+                    { label: "Plan Level", value: "Premium", icon: ShieldCheck, color: "indigo", trend: "Professional" },
                     { label: "Integrations", value: "Active", icon: Globe, color: "emerald", trend: "Square Connected" },
                     { label: "Notifications", value: "Enabled", icon: Activity, color: "orange", trend: "Real-time alerts" },
                 ].map((stat, i) => (
-                    <Card key={i} className="border-0 shadow-2xl shadow-slate-200/50 rounded-[2rem] overflow-hidden group hover:scale-[1.02] transition-transform duration-300">
-                        <CardContent className="p-8">
+                    <Card key={i} className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden group hover:shadow-md transition-shadow">
+                        <CardContent className="p-6">
                             <div className="flex items-center justify-between mb-4">
-                                <div className={`p-4 bg-${stat.color}-500/10 text-${stat.color}-600 rounded-2xl group-hover:rotate-6 transition-transform`}>
-                                    <stat.icon className="h-6 w-6" />
+                                <div className={`p-3 bg-${stat.color}-50 text-${stat.color}-600 rounded-xl`}>
+                                    <stat.icon className="h-5 w-5" />
                                 </div>
-                                <div className="flex items-center gap-1 text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                                <div className="flex items-center gap-1 text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
                                     <TrendingUp className="h-3 w-3" />
                                     Live
                                 </div>
                             </div>
                             <div>
-                                <h3 className="text-4xl font-black text-slate-900 tracking-tight">{stat.value}</h3>
-                                <p className="text-slate-400 font-black text-xs uppercase tracking-widest mt-1">{stat.label}</p>
+                                <h3 className="text-2xl font-bold text-slate-900">{stat.value}</h3>
+                                <p className="text-slate-500 font-semibold text-[10px] uppercase tracking-wider mt-0.5">{stat.label}</p>
                             </div>
-                            <div className="mt-4 pt-4 border-t border-slate-50 flex items-center justify-between text-xs font-bold text-slate-400">
+                            <div className="mt-4 pt-4 border-t border-slate-50 flex items-center justify-between text-[10px] font-semibold text-slate-400">
                                 <span>{stat.trend}</span>
-                                <ArrowUpRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                             </div>
                         </CardContent>
                     </Card>
                 ))}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                <div className="space-y-10">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="space-y-8">
                     {/* Organization Settings */}
-                    <Card className="border-0 shadow-2xl shadow-slate-200/60 rounded-[2.5rem] overflow-hidden">
-                        <CardHeader className="p-8 bg-slate-50/50 border-b border-slate-100">
-                            <div className="flex items-center gap-4">
-                                <div className="p-4 bg-blue-600 text-white rounded-2xl shadow-lg shadow-blue-500/20">
-                                    <Building2 className="h-6 w-6" />
+                    <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
+                        <CardHeader className="p-6 bg-slate-50/30 border-b border-slate-100">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2.5 bg-blue-100 text-blue-600 rounded-lg">
+                                    <Building2 className="h-5 w-5" />
                                 </div>
                                 <div>
-                                    <CardTitle className="text-2xl font-black text-slate-900">Organization Profile</CardTitle>
-                                    <CardDescription className="text-slate-500 font-medium font-medium">Basic information about your driving school.</CardDescription>
+                                    <CardTitle className="text-lg font-bold text-slate-900">Organization Profile</CardTitle>
+                                    <CardDescription className="text-slate-500 text-sm">Basic information about your driving school.</CardDescription>
                                 </div>
                             </div>
                         </CardHeader>
-                        <CardContent className="p-8 space-y-6">
-                            <div className="grid grid-cols-1 gap-6">
-                                <div className="space-y-2">
-                                    <Label className="text-slate-900 font-black pl-1">School Name</Label>
+                        <CardContent className="p-6 space-y-5">
+                            <div className="grid grid-cols-1 gap-5">
+                                <div className="space-y-1.5">
+                                    <Label className="text-slate-700 font-semibold text-sm">School Name</Label>
                                     <Input
-                                        className="h-12 border-slate-100 bg-slate-50/50 rounded-xl focus:ring-blue-500 font-medium"
+                                        className="h-10 border-slate-200 bg-white rounded-lg focus:ring-blue-500"
                                         value={settings.orgName}
                                         onChange={(e) => handleChange("orgName", e.target.value)}
                                     />
                                 </div>
-                                <div className="space-y-2">
-                                    <Label className="text-slate-900 font-black pl-1">Default Email</Label>
+                                <div className="space-y-1.5">
+                                    <Label className="text-slate-700 font-semibold text-sm">Default Email</Label>
                                     <Input
-                                        className="h-12 border-slate-100 bg-slate-50/50 rounded-xl focus:ring-blue-500 font-medium"
+                                        className="h-10 border-slate-200 bg-white rounded-lg focus:ring-blue-500"
                                         type="email"
                                         value={settings.orgEmail}
                                         onChange={(e) => handleChange("orgEmail", e.target.value)}
                                     />
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-2">
-                                        <Label className="text-slate-900 font-black pl-1">Phone Number</Label>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                    <div className="space-y-1.5">
+                                        <Label className="text-slate-700 font-semibold text-sm">Phone Number</Label>
                                         <Input
-                                            className="h-12 border-slate-100 bg-slate-50/50 rounded-xl focus:ring-blue-500 font-medium"
+                                            className="h-10 border-slate-200 bg-white rounded-lg focus:ring-blue-500"
                                             value={settings.phone}
                                             onChange={(e) => handleChange("phone", e.target.value)}
                                         />
                                     </div>
-                                    <div className="space-y-2">
-                                        <Label className="text-slate-900 font-black pl-1">Timezone</Label>
+                                    <div className="space-y-1.5">
+                                        <Label className="text-slate-700 font-semibold text-sm">Timezone</Label>
                                         <Select value={settings.timezone} onValueChange={(val) => handleChange("timezone", val)}>
-                                            <SelectTrigger className="h-12 border-slate-100 bg-slate-50/50 rounded-xl focus:ring-blue-500 font-medium">
+                                            <SelectTrigger className="h-10 border-slate-200 bg-white rounded-lg focus:ring-blue-500">
                                                 <SelectValue />
                                             </SelectTrigger>
-                                            <SelectContent className="rounded-2xl border-0 shadow-2xl p-2">
-                                                <SelectItem value="America/New_York" className="rounded-xl">Eastern Time (ET)</SelectItem>
-                                                <SelectItem value="America/Chicago" className="rounded-xl">Central Time (CT)</SelectItem>
-                                                <SelectItem value="America/Denver" className="rounded-xl">Mountain Time (MT)</SelectItem>
-                                                <SelectItem value="America/Los_Angeles" className="rounded-xl">Pacific Time (PT)</SelectItem>
+                                            <SelectContent className="rounded-xl border border-slate-200 shadow-xl">
+                                                <SelectItem value="America/New_York">Eastern Time (ET)</SelectItem>
+                                                <SelectItem value="America/Chicago">Central Time (CT)</SelectItem>
+                                                <SelectItem value="America/Denver">Mountain Time (MT)</SelectItem>
+                                                <SelectItem value="America/Los_Angeles">Pacific Time (PT)</SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </div>
@@ -200,102 +195,101 @@ export default function SettingsPage() {
                     </Card>
 
                     {/* Branding Settings */}
-                    <Card className="border-0 shadow-2xl shadow-slate-200/60 rounded-[2.5rem] overflow-hidden">
-                        <CardHeader className="p-8 bg-slate-50/50 border-b border-slate-100">
-                            <div className="flex items-center gap-4">
-                                <div className="p-4 bg-purple-600 text-white rounded-2xl shadow-lg shadow-purple-500/20">
-                                    <Palette className="h-6 w-6" />
+                    <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
+                        <CardHeader className="p-6 bg-slate-50/30 border-b border-slate-100">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2.5 bg-purple-100 text-purple-600 rounded-lg">
+                                    <Palette className="h-5 w-5" />
                                 </div>
                                 <div>
-                                    <CardTitle className="text-2xl font-black text-slate-900">Branding</CardTitle>
-                                    <CardDescription className="text-slate-500 font-medium">Customize the look and feel of your portal.</CardDescription>
+                                    <CardTitle className="text-lg font-bold text-slate-900">Branding</CardTitle>
+                                    <CardDescription className="text-slate-500 text-sm">Customize the look and feel of your portal.</CardDescription>
                                 </div>
                             </div>
                         </CardHeader>
-                        <CardContent className="p-8 space-y-8">
-                            <div className="flex items-start gap-8">
-                                <div className="h-28 w-28 rounded-[2rem] bg-slate-50 border-4 border-white shadow-2xl flex items-center justify-center text-slate-300 shrink-0 group relative cursor-pointer overflow-hidden">
-                                    <Building2 className="h-10 w-10 group-hover:scale-110 transition-transform" />
-                                    <div className="absolute inset-0 bg-blue-600/0 group-hover:bg-blue-600/10 transition-colors flex items-center justify-center">
-                                        <Upload className="h-6 w-6 text-white opacity-0 group-hover:opacity-100" />
+                        <CardContent className="p-6 space-y-6">
+                            <div className="flex items-center gap-6">
+                                <div className="h-20 w-20 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-300 group relative cursor-pointer overflow-hidden shadow-sm">
+                                    <Building2 className="h-8 w-8 group-hover:scale-105 transition-transform" />
+                                    <div className="absolute inset-0 bg-slate-900/0 group-hover:bg-slate-900/40 transition-colors flex items-center justify-center">
+                                        <Upload className="h-5 w-5 text-white opacity-0 group-hover:opacity-100" />
                                     </div>
                                 </div>
-                                <div className="space-y-3">
-                                    <h4 className="text-lg font-black text-slate-900">School Logo</h4>
-                                    <p className="text-sm text-slate-500 font-medium leading-relaxed">
-                                        Upload your school's logo. Recommended size: 512x512px. JPG or PNG.
+                                <div className="space-y-1">
+                                    <h4 className="text-sm font-bold text-slate-900">School Logo</h4>
+                                    <p className="text-xs text-slate-500 max-w-[200px]">
+                                        JPG or PNG. Recommended size: 512x512px.
                                     </p>
-                                    <Button className="bg-slate-900 hover:bg-slate-800 text-white rounded-xl px-6 h-10 font-bold transition-all shadow-lg active:scale-95">
-                                        <Upload className="h-4 w-4 mr-2" /> Upload New
+                                    <Button variant="outline" className="h-8 text-xs mt-2 rounded-lg font-bold">
+                                        Choose File
                                     </Button>
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <div className="space-y-4">
-                                    <Label className="text-slate-900 font-black pl-1">Primary Color</Label>
-                                    <div className="grid grid-cols-4 gap-3">
-                                        {['blue', 'indigo', 'emerald', 'rose'].map((color) => (
-                                            <button
-                                                key={color}
-                                                onClick={() => handleChange("primaryColor", color)}
-                                                className={`h-12 rounded-2xl transition-all border-4 ${settings.primaryColor === color ? 'border-white shadow-xl scale-110 ring-2 ring-slate-100' : 'border-transparent opacity-60 hover:opacity-100'} 
-                                                    ${color === 'blue' ? 'bg-blue-600' :
-                                                        color === 'indigo' ? 'bg-indigo-600' :
-                                                            color === 'emerald' ? 'bg-emerald-600' : 'bg-rose-600'}`}
-                                            />
-                                        ))}
-                                    </div>
+                            <div className="space-y-3 pt-2">
+                                <Label className="text-slate-700 font-semibold text-sm">Primary Color Theme</Label>
+                                <div className="flex gap-3">
+                                    {['blue', 'indigo', 'emerald', 'rose'].map((color) => (
+                                        <button
+                                            key={color}
+                                            onClick={() => handleChange("primaryColor", color)}
+                                            className={`h-10 w-10 rounded-xl transition-all border-2 ${settings.primaryColor === color ? 'border-slate-900 scale-105 shadow-sm' : 'border-transparent opacity-60 hover:opacity-100'} 
+                                                ${color === 'blue' ? 'bg-blue-600' :
+                                                    color === 'indigo' ? 'bg-indigo-600' :
+                                                        color === 'emerald' ? 'bg-emerald-600' : 'bg-rose-600'}`}
+                                        />
+                                    ))}
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
                 </div>
 
-                <div className="space-y-10">
+                <div className="space-y-8">
                     {/* Billing Preferences */}
-                    <Card className="border-0 shadow-2xl shadow-slate-200/60 rounded-[2.5rem] overflow-hidden">
-                        <CardHeader className="p-8 bg-slate-50/50 border-b border-slate-100">
-                            <div className="flex items-center gap-4">
-                                <div className="p-4 bg-emerald-600 text-white rounded-2xl shadow-lg shadow-emerald-500/20">
-                                    <CreditCard className="h-6 w-6" />
+                    <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
+                        <CardHeader className="p-6 bg-slate-50/30 border-b border-slate-100">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2.5 bg-emerald-100 text-emerald-600 rounded-lg">
+                                    <CreditCard className="h-5 w-5" />
                                 </div>
                                 <div>
-                                    <CardTitle className="text-2xl font-black text-slate-900">Billing Preferences</CardTitle>
-                                    <CardDescription className="text-slate-500 font-medium">Configure currency and invoice details.</CardDescription>
+                                    <CardTitle className="text-lg font-bold text-slate-900">Billing Preferences</CardTitle>
+                                    <CardDescription className="text-slate-500 text-sm">Configure currency and invoice details.</CardDescription>
                                 </div>
                             </div>
                         </CardHeader>
-                        <CardContent className="p-8 space-y-6">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="space-y-2">
-                                    <Label className="text-slate-900 font-black pl-1">Currency</Label>
+                        <CardContent className="p-6 space-y-5">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                <div className="space-y-1.5">
+                                    <Label className="text-slate-700 font-semibold text-sm">Currency</Label>
                                     <Select value={settings.currency} onValueChange={(val) => handleChange("currency", val)}>
-                                        <SelectTrigger className="h-12 border-slate-100 bg-slate-50/50 rounded-xl focus:ring-blue-500 font-medium">
+                                        <SelectTrigger className="h-10 border-slate-200 bg-white rounded-lg focus:ring-blue-500">
                                             <SelectValue />
                                         </SelectTrigger>
-                                        <SelectContent className="rounded-2xl border-0 shadow-2xl p-2">
-                                            <SelectItem value="USD" className="rounded-xl">USD ($)</SelectItem>
-                                            <SelectItem value="CAD" className="rounded-xl">CAD ($)</SelectItem>
-                                            <SelectItem value="EUR" className="rounded-xl">EUR (€)</SelectItem>
-                                            <SelectItem value="GBP" className="rounded-xl">GBP (£)</SelectItem>
+                                        <SelectContent className="rounded-xl border border-slate-200 shadow-xl">
+                                            <SelectItem value="USD">USD ($)</SelectItem>
+                                            <SelectItem value="CAD">CAD ($)</SelectItem>
+                                            <SelectItem value="EUR">EUR (€)</SelectItem>
+                                            <SelectItem value="GBP">GBP (£)</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
-                                <div className="space-y-2">
-                                    <Label className="text-slate-900 font-black pl-1">Tax / VAT Rate (%)</Label>
+                                <div className="space-y-1.5">
+                                    <Label className="text-slate-700 font-semibold text-sm">Tax / VAT Rate (%)</Label>
                                     <Input
                                         type="number"
-                                        className="h-12 border-slate-100 bg-slate-50/50 rounded-xl focus:ring-blue-500 font-medium"
+                                        className="h-10 border-slate-200 bg-white rounded-lg focus:ring-blue-500"
                                         value={settings.taxRate}
                                         onChange={(e) => handleChange("taxRate", parseFloat(e.target.value))}
                                     />
                                 </div>
                             </div>
-                            <div className="space-y-2">
-                                <Label className="text-slate-900 font-black pl-1">Invoice Footer Text</Label>
+                            <div className="space-y-1.5">
+                                <Label className="text-slate-700 font-semibold text-sm">Invoice Footer Text</Label>
                                 <Textarea
-                                    className="min-h-[120px] border-slate-100 bg-slate-50/50 rounded-2xl focus:ring-blue-500 font-medium p-6 text-base leading-relaxed"
+                                    className="min-h-[100px] border-slate-200 bg-white rounded-xl focus:ring-blue-500 text-sm p-4"
+                                    placeholder="Thank you for choosing our driving school!"
                                     value={settings.invoiceFooter}
                                     onChange={(e) => handleChange("invoiceFooter", e.target.value)}
                                 />
@@ -304,33 +298,33 @@ export default function SettingsPage() {
                     </Card>
 
                     {/* Notification Settings */}
-                    <Card className="border-0 shadow-2xl shadow-slate-200/60 rounded-[2.5rem] overflow-hidden">
-                        <CardHeader className="p-8 bg-slate-50/50 border-b border-slate-100">
-                            <div className="flex items-center gap-4">
-                                <div className="p-4 bg-orange-600 text-white rounded-2xl shadow-lg shadow-orange-500/20">
-                                    <Bell className="h-6 w-6" />
+                    <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
+                        <CardHeader className="p-6 bg-slate-50/30 border-b border-slate-100">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2.5 bg-orange-100 text-orange-600 rounded-lg">
+                                    <Bell className="h-5 w-5" />
                                 </div>
                                 <div>
-                                    <CardTitle className="text-2xl font-black text-slate-900">Notifications</CardTitle>
-                                    <CardDescription className="text-slate-500 font-medium">Control what emails you receive.</CardDescription>
+                                    <CardTitle className="text-lg font-bold text-slate-900">Notifications</CardTitle>
+                                    <CardDescription className="text-slate-500 text-sm">Control what emails you receive.</CardDescription>
                                 </div>
                             </div>
                         </CardHeader>
-                        <CardContent className="p-8 space-y-8">
+                        <CardContent className="p-6 space-y-4">
                             {[
-                                { id: 'notifyFailedPayments', label: 'Failed Payments', desc: 'Receive an email when a student payment fails.' },
-                                { id: 'notifyNewEnrollments', label: 'New Enrollments', desc: 'Notify instructors when a new student is assigned.' },
-                                { id: 'notifyMonthlySummary', label: 'Monthly Summary', desc: 'Comprehensive financial report on the 1st.' },
+                                { id: 'notifyFailedPayments', label: 'Failed Payments', desc: 'Alert when a student payment fails.' },
+                                { id: 'notifyNewEnrollments', label: 'New Enrollments', desc: 'Alert when a new student joins.' },
+                                { id: 'notifyMonthlySummary', label: 'Monthly Summary', desc: 'Progress report on the 1st.' },
                             ].map((item) => (
-                                <div key={item.id} className="flex items-center justify-between p-4 bg-slate-50/50 rounded-2xl border border-slate-50 group hover:bg-white hover:shadow-xl transition-all">
-                                    <div className="space-y-1">
-                                        <Label className="text-lg font-black text-slate-900 group-hover:text-blue-600 transition-colors uppercase text-xs tracking-widest">{item.label}</Label>
-                                        <p className="text-sm text-slate-400 font-medium">{item.desc}</p>
+                                <div key={item.id} className="flex items-center justify-between p-4 bg-slate-50/50 rounded-xl border border-slate-100">
+                                    <div className="space-y-0.5">
+                                        <Label className="text-sm font-bold text-slate-800">{item.label}</Label>
+                                        <p className="text-xs text-slate-500">{item.desc}</p>
                                     </div>
                                     <Switch
                                         checked={(settings as any)[item.id]}
                                         onCheckedChange={(val) => handleChange(item.id as any, val)}
-                                        className="data-[state=checked]:bg-blue-600 shadow-xl"
+                                        className="scale-90"
                                     />
                                 </div>
                             ))}
