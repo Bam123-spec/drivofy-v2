@@ -15,7 +15,9 @@ import {
     Target,
     Sparkles,
     ArrowUpRight,
-    MousePointer2
+    MousePointer2,
+    Shield,
+    Star
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
@@ -90,13 +92,12 @@ export function PricingEditor() {
     const premiumBundle = offerings.find(o => o.slug === 'premium_bundle')
 
     // Start with driverEdPackage for preview if no specific selection logic (simplified for MVP)
-    // The user moves focus? or just static preview of "Driver Ed Package"?
-    // The original code static previewed "Driver Education". Let's stick to showing the popular one (Driver Ed) or allow switching?
-    // User requirement: "If admin edits “Driver Ed Package price”, the preview updates instantly."
-    // So if they type in DE package, update preview.
-    // Ideally preview matches the input they are focused on, or we just show the main package.
-    // Let's stick to showing the Driver Ed package in preview as per original design, but dynamic.
-    const previewItem = driverEdPackage || { price_numeric: 0, price_display: '$0' }
+    const previewItem = driverEdPackage || { price_numeric: 0, price_display: '$0', title: 'Driver Education', description: 'Complete classroom and road training.', features: [] }
+
+    // Icon mapping
+    const IconMap: any = {
+        CheckCircle2, Clock, Zap, Shield, Star, Target, Sparkles
+    }
 
     if (loading) {
         return <div className="p-10 text-center text-slate-500 animate-pulse">Loading pricing data...</div>
@@ -148,7 +149,7 @@ export function PricingEditor() {
                             <div className="grid gap-6">
                                 {drivingSession && (
                                     <div className="space-y-2 group">
-                                        <Label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1 group-focus-within:text-blue-600 transition-colors">Individual Session</Label>
+                                        <Label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1 group-focus-within:text-blue-600 transition-colors">{drivingSession.title || 'Individual Session'}</Label>
                                         <div className="relative">
                                             <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                                             <Input
@@ -163,7 +164,7 @@ export function PricingEditor() {
 
                                 {driverEdPackage && (
                                     <div className="space-y-2 group">
-                                        <Label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1 group-focus-within:text-indigo-600 transition-colors">Driver Ed Package (DE)</Label>
+                                        <Label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1 group-focus-within:text-indigo-600 transition-colors">{driverEdPackage.title || 'Driver Ed Package (DE)'}</Label>
                                         <div className="relative">
                                             <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                                             <Input
@@ -178,7 +179,7 @@ export function PricingEditor() {
 
                                 {premiumBundle && (
                                     <div className="space-y-2 group">
-                                        <Label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1 group-focus-within:text-violet-600 transition-colors">Premium Bundle (DE + Extra Sessions)</Label>
+                                        <Label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1 group-focus-within:text-violet-600 transition-colors">{premiumBundle.title || 'Premium Bundle (DE + Extra Sessions)'}</Label>
                                         <div className="relative">
                                             <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                                             <Input
@@ -229,11 +230,13 @@ export function PricingEditor() {
                                 <Card className="relative border-0 shadow-2xl rounded-[2.5rem] overflow-hidden bg-white">
                                     <div className="p-8 bg-slate-50/50 border-b border-slate-100">
                                         <div className="flex justify-between items-start mb-6">
-                                            <Badge className="bg-indigo-500 border-0 text-[10px] font-black px-3 py-1 uppercase tracking-widest text-white">Most Popular</Badge>
-                                            <ArrowUpRight className="h-5 w-5 text-slate-300" />
+                                            {previewItem.popular && (
+                                                <Badge className="bg-indigo-500 border-0 text-[10px] font-black px-3 py-1 uppercase tracking-widest text-white">Most Popular</Badge>
+                                            )}
+                                            <ArrowUpRight className="h-5 w-5 text-slate-300 ml-auto" />
                                         </div>
-                                        <h4 className="text-2xl font-black text-slate-900 tracking-tight mb-2">Driver Education</h4>
-                                        <p className="text-xs text-slate-500 font-medium">Complete classroom and road training.</p>
+                                        <h4 className="text-2xl font-black text-slate-900 tracking-tight mb-2">{previewItem.title}</h4>
+                                        <p className="text-xs text-slate-500 font-medium">{previewItem.description}</p>
                                     </div>
                                     <CardContent className="p-8 space-y-6">
                                         <div className="flex items-baseline gap-1">
@@ -242,18 +245,20 @@ export function PricingEditor() {
                                         </div>
 
                                         <div className="space-y-3">
-                                            {[
-                                                { icon: CheckCircle2, text: "30 Hours Classroom", color: "text-green-500" },
-                                                { icon: Clock, text: "6 Hours Behind-the-Wheel", color: "text-blue-500" },
-                                                { icon: Zap, text: "Instant Certificate", color: "text-amber-500" }
-                                            ].map((feature, i) => (
-                                                <div key={i} className="flex items-center gap-3">
-                                                    <div className={`p-1 rounded-full bg-slate-50 ${feature.color}`}>
-                                                        <feature.icon className="h-3.5 w-3.5" />
+                                            {previewItem.features?.map((feature: any, i: number) => {
+                                                const Icon = IconMap[feature.icon || 'CheckCircle2'] || CheckCircle2
+                                                return (
+                                                    <div key={i} className="flex items-center gap-3">
+                                                        <div className={`p-1 rounded-full bg-slate-50 ${feature.color || 'text-slate-600'}`}>
+                                                            <Icon className="h-3.5 w-3.5" />
+                                                        </div>
+                                                        <span className="text-xs font-bold text-slate-600">{feature.text}</span>
                                                     </div>
-                                                    <span className="text-xs font-bold text-slate-600">{feature.text}</span>
-                                                </div>
-                                            ))}
+                                                )
+                                            })}
+                                            {(!previewItem.features || previewItem.features.length === 0) && (
+                                                <div className="text-xs text-slate-400 italic">No features listed.</div>
+                                            )}
                                         </div>
 
                                         <div className="pt-2">
