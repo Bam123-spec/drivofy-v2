@@ -309,87 +309,57 @@ export default function AdminStudentsPage() {
                 </Dialog>
             </div>
 
-            {/* Stats Overview */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {[
-                    { label: "Total Students", value: stats.total, icon: Users, color: "blue", trend: stats.recent },
-                    { label: "Registered", value: stats.registered, icon: CheckCircle2, color: "emerald", trend: null },
-                    { label: "Website Leads", value: stats.leads, icon: TrendingUp, color: "orange", trend: null },
-                    { label: "Last 30 Days", value: stats.recent, icon: ArrowUpRight, color: "indigo", trend: null },
-                ].map((stat, i) => (
-                    <Card key={i} className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden group hover:shadow-md transition-shadow">
-                        <CardContent className="p-6">
-                            <div className="flex items-center justify-between mb-4">
-                                <div className={`p-3 bg-${stat.color}-50 text-${stat.color}-600 rounded-xl`}>
-                                    <stat.icon className="h-5 w-5" />
-                                </div>
-                                {stat.trend !== null && (
-                                    <div className="flex items-center gap-1 text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
-                                        Active
-                                    </div>
-                                )}
-                            </div>
-                            <div>
-                                <h3 className="text-2xl font-bold text-slate-900">{stat.value}</h3>
-                                <p className="text-slate-500 font-semibold text-[10px] uppercase tracking-wider mt-0.5">{stat.label}</p>
-                            </div>
-                        </CardContent>
-                    </Card>
-                ))}
-            </div>
+            {/* Main Content Area - Flattened */}
+            <div className="space-y-6">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 px-1">
+                    <div className="relative flex-1 max-w-xl group">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                        <Input
+                            placeholder="Search by name, email..."
+                            className="h-11 pl-11 pr-4 bg-white border-slate-200 rounded-xl shadow-sm focus:ring-blue-500 font-medium text-sm"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                    </div>
 
-            {/* Main Content Area */}
-            <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
-                <CardHeader className="bg-white p-6 border-b border-slate-100">
-                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                        <div className="relative flex-1 max-w-xl group">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
-                            <Input
-                                placeholder="Search by name, email..."
-                                className="h-11 pl-11 pr-4 bg-slate-50/50 border-slate-100 rounded-xl focus:ring-blue-500 font-medium text-sm"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                            />
+                    <div className="flex items-center gap-4">
+                        <div className="flex border border-slate-200 p-1 rounded-xl bg-white shadow-sm w-fit">
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className={`h-8 px-3 rounded-lg font-bold text-[10px] uppercase tracking-wider transition-all ${viewMode === 'table' ? 'bg-slate-100 text-slate-900' : 'text-slate-400 hover:text-slate-600'}`}
+                                onClick={() => setViewMode('table')}
+                            >
+                                <List className="h-3.5 w-3.5 mr-1.5" /> Table
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className={`h-8 px-3 rounded-lg font-bold text-[10px] uppercase tracking-wider transition-all ${viewMode === 'grid' ? 'bg-slate-100 text-slate-900' : 'text-slate-400 hover:text-slate-600'}`}
+                                onClick={() => setViewMode('grid')}
+                            >
+                                <LayoutGrid className="h-3.5 w-3.5 mr-1.5" /> Grid
+                            </Button>
                         </div>
 
-                        <div className="flex items-center gap-4">
-                            <div className="flex border border-slate-200 p-1 rounded-xl bg-slate-50/50 w-fit">
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className={`h-8 px-3 rounded-lg font-semibold text-xs transition-all ${viewMode === 'table' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-                                    onClick={() => setViewMode('table')}
+                        <div className="flex border border-slate-200 p-1 rounded-xl bg-white shadow-sm w-fit">
+                            {(['all', 'registered', 'leads'] as const).map((t) => (
+                                <button
+                                    key={t}
+                                    onClick={() => setFilter(t)}
+                                    className={`px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${filter === t
+                                        ? 'bg-slate-100 text-slate-900'
+                                        : 'text-slate-400 hover:text-slate-600'
+                                        }`}
                                 >
-                                    <List className="h-3.5 w-3.5 mr-1.5" /> Table
-                                </Button>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className={`h-8 px-3 rounded-lg font-semibold text-xs transition-all ${viewMode === 'grid' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-                                    onClick={() => setViewMode('grid')}
-                                >
-                                    <LayoutGrid className="h-3.5 w-3.5 mr-1.5" /> Grid
-                                </Button>
-                            </div>
-
-                            <div className="flex border border-slate-200 p-1 rounded-xl bg-slate-50/50 w-fit">
-                                {(['all', 'registered', 'leads'] as const).map((t) => (
-                                    <button
-                                        key={t}
-                                        onClick={() => setFilter(t)}
-                                        className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${filter === t
-                                            ? 'bg-white text-blue-600 shadow-sm'
-                                            : 'text-slate-400 hover:text-slate-600'
-                                            }`}
-                                    >
-                                        {t.charAt(0).toUpperCase() + t.slice(1)}
-                                    </button>
-                                ))}
-                            </div>
+                                    {t.toUpperCase()}
+                                </button>
+                            ))}
                         </div>
                     </div>
-                </CardHeader>
-                <CardContent className="p-0">
+                </div>
+
+                <div className={viewMode === 'table' ? "bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden" : ""}>
                     {viewMode === 'table' ? (
                         <Table>
                             <TableHeader>
@@ -580,8 +550,8 @@ export default function AdminStudentsPage() {
                             </div>
                         </div>
                     )}
-                </CardContent>
-            </Card>
+                </div>
+            </div>
 
             {/* Edit Dialog - Reused and restyled */}
             <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
