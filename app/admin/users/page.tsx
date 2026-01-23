@@ -30,7 +30,8 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
-import { UserPlus, MoreHorizontal, Shield, Mail, Clock, Loader2, Edit2, Trash2, Key, Ban, CheckCircle2, Copy } from "lucide-react"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { UserPlus, MoreHorizontal, Shield, Mail, Clock, Loader2, Edit2, Trash2, Key, Ban, CheckCircle2, Copy, ArrowUpRight, TrendingUp, ShieldCheck, Users, Activity } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { toast } from "sonner"
 import {
@@ -194,135 +195,205 @@ export default function AdminUsersPage() {
 
     if (loading) {
         return (
-            <div className="h-[50vh] flex items-center justify-center">
-                <Loader2 className="h-10 w-10 animate-spin text-primary" />
+            <div className="h-[80vh] flex flex-col items-center justify-center gap-4">
+                <div className="relative h-16 w-16">
+                    <Loader2 className="h-16 w-16 animate-spin text-blue-600 absolute inset-0 opacity-20" />
+                    <Loader2 className="h-16 w-16 animate-spin text-blue-600 absolute inset-0" style={{ animationDirection: 'reverse', animationDuration: '2s' }} />
+                </div>
+                <p className="text-slate-500 font-medium animate-pulse">Loading staff records...</p>
             </div>
         )
     }
 
+    const stats = {
+        total: admins.length,
+        managers: admins.filter(a => a.role === 'manager').length,
+        staff: admins.filter(a => a.role === 'staff').length,
+        admins: admins.filter(a => a.role === 'admin' || a.role === 'owner').length
+    }
+
     return (
-        <div className="space-y-8">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Admin Users</h1>
-                    <p className="text-gray-500 mt-1">Manage staff access and permissions.</p>
+        <div className="max-w-7xl mx-auto space-y-10 py-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            {/* Header Section */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 px-1">
+                <div className="space-y-1">
+                    <div className="flex items-center gap-2 mb-2">
+                        <div className="h-8 w-1 bg-blue-600 rounded-full" />
+                        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Admin Users</h1>
+                    </div>
+                    <p className="text-slate-500 font-medium max-w-lg">
+                        Manage your team, roles, and permissions in one centralized dashboard.
+                    </p>
                 </div>
+
                 <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
                     <DialogTrigger asChild>
-                        <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20">
+                        <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20 px-6 h-11 transition-all hover:scale-[1.02] active:scale-[0.98]">
                             <UserPlus className="h-4 w-4 mr-2" /> Invite Admin
                         </Button>
                     </DialogTrigger>
-                    <DialogContent>
+                    <DialogContent className="sm:max-w-md">
                         <DialogHeader>
-                            <DialogTitle>Invite New Admin</DialogTitle>
-                            <DialogDescription>
-                                Send an invitation to a new staff member to join the admin portal.
+                            <DialogTitle className="text-2xl font-bold text-slate-900">Invite New Admin</DialogTitle>
+                            <DialogDescription className="text-slate-500">
+                                Send a welcome invitation to a new staff member.
                             </DialogDescription>
                         </DialogHeader>
-                        <form onSubmit={handleInvite} className="space-y-4 py-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="name">Full Name</Label>
-                                <Input
-                                    id="name"
-                                    placeholder="e.g. Jane Doe"
-                                    value={inviteData.name}
-                                    onChange={(e) => setInviteData({ ...inviteData, name: e.target.value })}
-                                    required
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="email">Email Address</Label>
-                                <Input
-                                    id="email"
-                                    type="email"
-                                    placeholder="e.g. jane@drivofy.com"
-                                    value={inviteData.email}
-                                    onChange={(e) => setInviteData({ ...inviteData, email: e.target.value })}
-                                    required
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="role">Role</Label>
-                                <Select
-                                    value={inviteData.role}
-                                    onValueChange={(val) => setInviteData({ ...inviteData, role: val })}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select role" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="manager">Manager</SelectItem>
-                                        <SelectItem value="staff">Staff</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                <p className="text-xs text-gray-500">
-                                    Managers can manage classes and students. Staff have limited view-only access.
-                                </p>
+                        <form onSubmit={handleInvite} className="space-y-6 py-4">
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="name" className="text-slate-700 font-medium">Full Name</Label>
+                                    <Input
+                                        id="name"
+                                        placeholder="Jane Doe"
+                                        value={inviteData.name}
+                                        onChange={(e) => setInviteData({ ...inviteData, name: e.target.value })}
+                                        className="h-11 border-slate-200 focus:ring-blue-500"
+                                        required
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="email" className="text-slate-700 font-medium">Email Address</Label>
+                                    <Input
+                                        id="email"
+                                        type="email"
+                                        placeholder="jane@drivofy.com"
+                                        value={inviteData.email}
+                                        onChange={(e) => setInviteData({ ...inviteData, email: e.target.value })}
+                                        className="h-11 border-slate-200 focus:ring-blue-500"
+                                        required
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="role" className="text-slate-700 font-medium">System Role</Label>
+                                    <Select
+                                        value={inviteData.role}
+                                        onValueChange={(val) => setInviteData({ ...inviteData, role: val })}
+                                    >
+                                        <SelectTrigger className="h-11 border-slate-200">
+                                            <SelectValue placeholder="Select role" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="manager">Manager</SelectItem>
+                                            <SelectItem value="staff">Staff Member</SelectItem>
+                                            <SelectItem value="admin">Administrator</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <p className="text-[11px] text-slate-400 mt-1 pl-1 italic">
+                                        * Managers can manage classes. Staff have limited operational access.
+                                    </p>
+                                </div>
                             </div>
                             <DialogFooter>
-                                <Button type="submit">Send Invite</Button>
+                                <Button
+                                    type="submit"
+                                    className="w-full bg-blue-600 hover:bg-blue-700 h-11 text-lg font-semibold shadow-md"
+                                    disabled={isActionLoading}
+                                >
+                                    {isActionLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Send invitation"}
+                                </Button>
                             </DialogFooter>
                         </form>
                     </DialogContent>
                 </Dialog>
             </div>
 
+            {/* Stats Overview */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {[
+                    { label: "Total Team", value: stats.total, icon: Users, color: "blue", trend: "+2 this month" },
+                    { label: "Administrators", value: stats.admins, icon: ShieldCheck, color: "purple", trend: "High Access" },
+                    { label: "Managers", value: stats.managers, icon: Activity, iconColor: "blue", color: "blue", trend: "Course Lead" },
+                    { label: "Operations Staff", value: stats.staff, icon: Activity, color: "slate", trend: "Support Role" },
+                ].map((stat, i) => (
+                    <Card key={i} className="border-none shadow-sm bg-white overflow-hidden group hover:shadow-md transition-all duration-300">
+                        <CardContent className="p-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <div className={`p-2.5 rounded-xl bg-${stat.color}-50 text-${stat.color}-600 group-hover:scale-110 transition-transform`}>
+                                    <stat.icon className="h-6 w-6" />
+                                </div>
+                                <div className="flex items-center gap-1 text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                                    <TrendingUp className="h-3 w-3" />
+                                    Active
+                                </div>
+                            </div>
+                            <div className="space-y-1">
+                                <h3 className="text-3xl font-bold text-slate-900">{stat.value}</h3>
+                                <p className="text-slate-500 font-medium text-sm">{stat.label}</p>
+                            </div>
+                            <div className="mt-4 pt-4 border-t border-slate-50 flex items-center justify-between text-xs">
+                                <span className="text-slate-400 font-medium">{stat.trend}</span>
+                                <ArrowUpRight className="h-3 w-3 text-slate-300" />
+                            </div>
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
+
             {/* Filters & Table */}
-            <Card className="border-gray-200 shadow-sm">
-                <CardHeader className="pb-4 border-b border-gray-100">
-                    <div className="flex flex-wrap gap-3">
-                        <Select value={roleFilter} onValueChange={setRoleFilter}>
-                            <SelectTrigger className="w-[140px] bg-gray-50 border-gray-200">
-                                <SelectValue placeholder="Role" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Roles</SelectItem>
-                                <SelectItem value="admin">Admin</SelectItem>
-                                <SelectItem value="owner">Owner</SelectItem>
-                                <SelectItem value="manager">Manager</SelectItem>
-                                <SelectItem value="staff">Staff</SelectItem>
-                                <SelectItem value="instructor">Instructor</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <Select value={statusFilter} onValueChange={setStatusFilter}>
-                            <SelectTrigger className="w-[140px] bg-gray-50 border-gray-200">
-                                <SelectValue placeholder="Status" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Statuses</SelectItem>
-                                <SelectItem value="active">Active</SelectItem>
-                                <SelectItem value="pending">Pending</SelectItem>
-                                <SelectItem value="suspended">Suspended</SelectItem>
-                            </SelectContent>
-                        </Select>
+            <Card className="border-none shadow-sm bg-white overflow-hidden">
+                <CardHeader className="pb-6 border-b border-slate-50 space-y-4">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="flex flex-wrap gap-2">
+                            {['all', 'admin', 'manager', 'staff', 'instructor'].map((r) => (
+                                <button
+                                    key={r}
+                                    onClick={() => setRoleFilter(r)}
+                                    className={`
+                                        px-4 py-1.5 rounded-full text-xs font-semibold transition-all
+                                        ${roleFilter === r
+                                            ? 'bg-blue-600 text-white shadow-md'
+                                            : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+                                        }
+                                    `}
+                                >
+                                    {r === 'all' ? 'All Roles' : r.charAt(0).toUpperCase() + r.slice(1)}
+                                </button>
+                            ))}
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="text-xs text-slate-400 font-medium mr-2">Status:</div>
+                            <Select value={statusFilter} onValueChange={setStatusFilter}>
+                                <SelectTrigger className="w-[140px] h-9 border-slate-200 text-xs bg-slate-50/50">
+                                    <SelectValue placeholder="Status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Statuses</SelectItem>
+                                    <SelectItem value="active">Active</SelectItem>
+                                    <SelectItem value="pending">Pending</SelectItem>
+                                    <SelectItem value="suspended">Suspended</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
                 </CardHeader>
                 <CardContent className="p-0">
                     <Table>
                         <TableHeader>
                             <TableRow className="bg-gray-50/50">
-                                <TableHead className="font-semibold text-gray-600">User</TableHead>
-                                <TableHead className="font-semibold text-gray-600">Role</TableHead>
-                                <TableHead className="font-semibold text-gray-600">Status</TableHead>
-                                <TableHead className="font-semibold text-gray-600">Last Active</TableHead>
-                                <TableHead className="font-semibold text-gray-600 text-right">Actions</TableHead>
+                                <TableHead className="font-semibold text-slate-600 px-6 py-4">User</TableHead>
+                                <TableHead className="font-semibold text-slate-600 px-6 py-4">Role</TableHead>
+                                <TableHead className="font-semibold text-slate-600 px-6 py-4">Status</TableHead>
+                                <TableHead className="font-semibold text-slate-600 px-6 py-4 text-center">Last Active</TableHead>
+                                <TableHead className="font-semibold text-slate-600 px-6 py-4 text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {filteredAdmins.map((admin) => (
                                 <TableRow key={admin.id} className="hover:bg-gray-50/50">
-                                    <TableCell>
+                                    <TableCell className="px-6 py-4">
                                         <div className="flex items-center gap-3">
-                                            <div className="h-9 w-9 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 font-medium text-sm">
-                                                {admin.name.charAt(0)}
-                                            </div>
-                                            <div>
-                                                <div className="font-medium text-gray-900">{admin.name}</div>
-                                                <div className="text-xs text-gray-500 flex items-center gap-1">
-                                                    <Mail className="h-3 w-3" /> {admin.email}
-                                                </div>
+                                            <Avatar className="h-9 w-9 border border-slate-100">
+                                                <AvatarFallback className="bg-blue-50 text-blue-600 font-bold uppercase text-xs">
+                                                    {admin.name.charAt(0)}
+                                                </AvatarFallback>
+                                            </Avatar>
+                                            <div className="flex flex-col">
+                                                <span className="font-bold text-slate-900 group-hover:text-blue-600 transition-colors uppercase text-xs tracking-tight">{admin.name}</span>
+                                                <span className="text-[10px] text-slate-400 font-medium flex items-center gap-1">
+                                                    <Mail className="h-2.5 w-2.5" />
+                                                    {admin.email}
+                                                </span>
                                             </div>
                                         </div>
                                     </TableCell>
@@ -344,10 +415,15 @@ export default function AdminUsersPage() {
                                             {admin.status}
                                         </Badge>
                                     </TableCell>
-                                    <TableCell className="text-gray-500 text-sm">
-                                        <div className="flex items-center gap-1.5">
-                                            <Clock className="h-3.5 w-3.5 text-gray-400" />
-                                            {formatDistanceToNow(new Date(admin.lastActive), { addSuffix: true })}
+                                    <TableCell className="px-6 py-4 text-center">
+                                        <div className="flex flex-col items-center">
+                                            <div className="flex items-center gap-1.5 font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded text-[10px] uppercase tracking-wider mb-0.5">
+                                                <Activity className="h-2.5 w-2.5" />
+                                                Online
+                                            </div>
+                                            <div className="text-[10px] text-slate-400 font-medium whitespace-nowrap">
+                                                {formatDistanceToNow(new Date(admin.lastActive), { addSuffix: true })}
+                                            </div>
                                         </div>
                                     </TableCell>
                                     <TableCell className="text-right">
