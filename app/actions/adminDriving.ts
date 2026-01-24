@@ -202,3 +202,14 @@ export async function updateSessionNotes(id: string, notes: string) {
     return { success: true }
 }
 
+export async function deleteDrivingSession(id: string) {
+    const { error } = await supabase
+        .from('driving_sessions')
+        .delete()
+        .eq('id', id)
+
+    if (error) throw new Error(error.message)
+    revalidatePath('/admin/driving')
+    return { success: true }
+}
+

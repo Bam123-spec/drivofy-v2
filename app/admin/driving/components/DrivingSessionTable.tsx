@@ -20,6 +20,8 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
+import { deleteDrivingSession, updateSessionStatus } from "@/app/actions/adminDriving"
+import { toast } from "sonner"
 
 interface DrivingSessionTableProps {
     sessions: any[]
@@ -123,11 +125,20 @@ export function DrivingSessionTable({ sessions, onSelectSession }: DrivingSessio
                                             {session.status === 'scheduled' && (
                                                 <DropdownMenuItem
                                                     className="text-orange-600 focus:text-orange-700 focus:bg-orange-50"
-                                                    onClick={(e) => {
+                                                    onClick={async (e) => {
                                                         e.stopPropagation();
                                                         if (confirm('Cancel this session?')) {
-                                                            // TODO: implement cancel
-                                                            console.log('Cancel session', session.id)
+                                                            try {
+                                                                const res = await updateSessionStatus(session.id, 'cancelled');
+                                                                if (res.success) {
+                                                                    toast.success("Session cancelled");
+                                                                } else {
+                                                                    toast.error("Failed to cancel session");
+                                                                }
+                                                            } catch (err) {
+                                                                toast.error("An error occurred");
+                                                                console.error(err);
+                                                            }
                                                         }
                                                     }}
                                                 >
@@ -136,11 +147,20 @@ export function DrivingSessionTable({ sessions, onSelectSession }: DrivingSessio
                                             )}
                                             <DropdownMenuItem
                                                 className="text-red-600 focus:text-red-700 focus:bg-red-50"
-                                                onClick={(e) => {
+                                                onClick={async (e) => {
                                                     e.stopPropagation();
                                                     if (confirm('Permanently delete this session?')) {
-                                                        // TODO: implement delete
-                                                        console.log('Delete session', session.id)
+                                                        try {
+                                                            const res = await deleteDrivingSession(session.id);
+                                                            if (res.success) {
+                                                                toast.success("Session deleted");
+                                                            } else {
+                                                                toast.error("Failed to delete session");
+                                                            }
+                                                        } catch (err) {
+                                                            toast.error("An error occurred");
+                                                            console.error(err);
+                                                        }
                                                     }
                                                 }}
                                             >
