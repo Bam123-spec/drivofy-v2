@@ -69,13 +69,14 @@ export async function POST(request: Request) {
         console.log('[API] Profile upsert successful')
 
         // 3. Generate Link for Password Setup
-        let setupLink = `${process.env.NEXT_PUBLIC_APP_URL || 'https://selamdriving.drivofy.com'}/forgot-password`;
+        const liveUrl = 'https://selamdriving.drivofy.com';
+        let setupLink = `${liveUrl}/forgot-password`;
         try {
             const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
                 type: 'recovery',
                 email: email,
                 options: {
-                    redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'https://selamdriving.drivofy.com'}/update-password`
+                    redirectTo: `${liveUrl}/update-password`
                 }
             });
 

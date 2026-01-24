@@ -68,11 +68,12 @@ export async function updateAdminUser(userId: string, data: { full_name?: string
 export async function sendPasswordReset(email: string) {
     try {
         const supabase = createAdminClient()
+        const liveUrl = 'https://selamdriving.drivofy.com';
         const { error } = await supabase.auth.admin.generateLink({
             type: 'recovery',
             email: email,
             options: {
-                redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/reset-password`
+                redirectTo: `${liveUrl}/update-password`
             }
         })
 
