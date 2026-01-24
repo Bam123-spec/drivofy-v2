@@ -68,7 +68,28 @@ export async function POST(request: Request) {
 
         console.log('[API] Profile upsert successful')
 
-        // 3. Send Invite Email via Brevo
+        // 3. Generate Link for Password Setup
+        let setupLink = `${process.env.NEXT_PUBLIC_APP_URL || 'https://selamdriving.drivofy.com'}/forgot-password`;
+        try {
+            const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+                type: 'recovery',
+                email: email,
+                options: {
+                    redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'https://selamdriving.drivofy.com'}/update-password`
+                }
+            });
+
+            if (linkError) {
+                console.error('[API] Error generating recovery link:', linkError);
+            } else if (linkData?.properties?.action_link) {
+                setupLink = linkData.properties.action_link;
+                console.log('[API] Recovery link generated successfully');
+            }
+        } catch (e) {
+            console.error('[API] Unexpected error generating link:', e);
+        }
+
+        // 4. Send Invite Email via Brevo
         try {
             const { sendTransactionalEmail } = await import('@/lib/brevo');
             const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://selamdriving.drivofy.com';
@@ -84,9 +105,9 @@ export async function POST(request: Request) {
                         </p>
                         <p style="color: #475569; font-size: 16px; line-height: 1.6; margin-bottom: 24px;">
                             You can now log in to the portal using your email: <strong>${email}</strong>. 
-                            Since this is your first time, you'll need to set your password.
+                            Since this is your first time, you'll need to set your password using the secure link below.
                         </p>
-                        <a href="${baseUrl}/forgot-password" style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">
+                        <a href="${setupLink}" style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">
                             Set Your Password
                         </a>
                         <p style="color: #64748b; font-size: 14px; margin-top: 32px; border-top: 1px solid #e2e8f0; pt: 16px;">
