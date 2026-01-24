@@ -21,35 +21,41 @@ export default function UpdatePasswordPage() {
 
     useEffect(() => {
         let mounted = true
+        let timeoutId: NodeJS.Timeout
+        let authSubscription: { unsubscribe: () => void } | null = null
 
         const initSession = async () => {
             try {
-                // First, handle the auth callback - this exchanges the recovery token
-                const { data: { session } } = await supabase.auth.getSession()
-
-                // If no session yet, wait for the onAuthStateChange to handle the token
-                // This happens when the user clicks the recovery link
-                const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+                // 1. Set up listener FIRST to catch any events including those during initial load
+                const { data } = supabase.auth.onAuthStateChange((_event, session) => {
                     if (!mounted) return
 
                     if (session) {
                         setIsCheckingSession(false)
+                        if (timeoutId) clearTimeout(timeoutId)
                     } else if (_event === 'PASSWORD_RECOVERY') {
-                        // Recovery event detected, session will be created
                         setIsCheckingSession(false)
+                        if (timeoutId) clearTimeout(timeoutId)
                     }
                 })
+                authSubscription = data.subscription
 
-                // If we already have a session (refresh/revisit), proceed
+                // 2. Check current session
+                const { data: { session } } = await supabase.auth.getSession()
+
                 if (session && mounted) {
                     setIsCheckingSession(false)
+                    if (timeoutId) clearTimeout(timeoutId)
                 }
 
-                // Cleanup
-                return () => {
-                    mounted = false
-                    subscription.unsubscribe()
-                }
+                // 3. Set a safety timeout - if no session after 4s, something went wrong
+                timeoutId = setTimeout(() => {
+                    if (mounted && isCheckingSession) {
+                        toast.error("Unable to verify reset link. Please try sending a new one.")
+                        router.push("/forgot-password")
+                    }
+                }, 4000)
+
             } catch (error) {
                 console.error('Session init error:', error)
                 if (mounted) {
@@ -60,6 +66,13 @@ export default function UpdatePasswordPage() {
         }
 
         initSession()
+
+        // Cleanup
+        return () => {
+            mounted = false
+            if (timeoutId) clearTimeout(timeoutId)
+            if (authSubscription) authSubscription.unsubscribe()
+        }
     }, [router])
 
     const handleSubmit = async (e: React.FormEvent) => {
