@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { isSameDay, parseISO } from "date-fns"
 import { getInstructorCourses } from "@/app/actions/instructor"
 import { supabase } from "@/lib/supabaseClient"
+import { SessionList } from "./components/SessionList"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { ClassesFilterBar } from "./components/ClassesFilterBar"
@@ -30,7 +31,7 @@ export default function LessonsPage() {
 
     // Filter State
     const [searchQuery, setSearchQuery] = useState("")
-    const [statusFilter, setStatusFilter] = useState("all")
+    const [statusFilter, setStatusFilter] = useState("upcoming")
     const [modeFilter, setModeFilter] = useState("all")
     const [dateFilter, setDateFilter] = useState<Date | undefined>(undefined)
     const [viewMode, setViewMode] = useState<'card' | 'table'>('card')
@@ -61,61 +62,58 @@ export default function LessonsPage() {
         }
     }
 
-    // 1. Flatten Courses into Sessions for easier processing
-    const allSessions = useMemo(() => {
-        return courses.flatMap(course => {
-            return (course.class_days || []).map((day: any) => ({
-                id: day.id,
-                date: day.date,
-                start_time: day.start_datetime.split('T')[1],
-                end_time: day.end_datetime.split('T')[1],
-                status: day.status,
-                class_id: course.id,
-                class_name: course.name,
-                class_type: course.class_type || 'Uncategorized', // Use class_type
-                enrolled_count: course.enrolledCount,
-                total_sessions: course.totalSessions,
-                completed_sessions: course.completedSessions,
-                mode: course.zoom_url ? 'zoom' : 'in-person', // Infer mode
-                instructor_name: course.instructors?.full_name
-            }))
-        })
-    }, [courses])
-
-    // 2. Apply Filters
-    const filteredSessions = useMemo(() => {
-        return allSessions.filter(session => {
+    // 1. Apply Filters to Courses directly
+    const filteredCourses = useMemo(() => {
+        return courses.filter(course => {
             // Search
             const matchesSearch =
-                session.class_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                session.class_type.toLowerCase().includes(searchQuery.toLowerCase())
+                course.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (course.class_type || '').toLowerCase().includes(searchQuery.toLowerCase())
 
-            // Status
+            // Status - Logic might vary if status isn't on course object, but purely based on dates?
+            // Assuming getInstructorCourses returns a status or we infer it.
+            // Let's assume course.status exists or infer it.
+            // Infer status helper:
+            const todayStr = new Date().toISOString().split('T')[0]
+            const isCompleted = course.end_date < todayStr
+            const isActive = course.start_date <= todayStr && course.end_date >= todayStr
+            const isScheduled = course.start_date > todayStr
+
+            const inferredStatus = isCompleted ? 'completed' : isActive ? 'active' : 'upcoming'
+
+            // If explicit status exists, use it? Or use inferred for consistent filtering?
+            // Let's use inferred for robust filtering unless DB provides it.
+            // Actually, let's check matchesStatus based on what user expects.
+
             const matchesStatus = statusFilter === 'all' ||
-                (statusFilter === 'upcoming' && session.status === 'scheduled') ||
-                (statusFilter === 'active' && session.status === 'in_progress') ||
-                (statusFilter === 'completed' && session.status === 'completed')
+                (statusFilter === 'upcoming' && inferredStatus === 'upcoming') ||
+                (statusFilter === 'active' && inferredStatus === 'active') ||
+                (statusFilter === 'completed' && inferredStatus === 'completed')
 
             // Mode
-            const matchesMode = modeFilter === 'all' || session.mode === modeFilter
+            const inferredMode = course.zoom_url ? 'zoom' : 'in-person'
+            const matchesMode = modeFilter === 'all' || inferredMode === modeFilter
 
-            // Date
-            const matchesDate = !dateFilter || isSameDay(parseISO(session.date), dateFilter)
+            // Date - "Active on this date" logic
+            const matchesDate = !dateFilter || (
+                course.start_date <= format(dateFilter, 'yyyy-MM-dd') &&
+                course.end_date >= format(dateFilter, 'yyyy-MM-dd')
+            )
 
             return matchesSearch && matchesStatus && matchesMode && matchesDate
         })
-    }, [allSessions, searchQuery, statusFilter, modeFilter, dateFilter])
+    }, [courses, searchQuery, statusFilter, modeFilter, dateFilter])
 
-    // 3. Group by Course Type
-    const sessionsByType = useMemo(() => {
+    // 2. Group by Course Type
+    const coursesByType = useMemo(() => {
         const groups: { [key: string]: any[] } = {}
-        filteredSessions.forEach(session => {
-            const type = session.class_type || 'Other'
+        filteredCourses.forEach(course => {
+            const type = course.class_type || 'Other'
             if (!groups[type]) groups[type] = []
-            groups[type].push(session)
+            groups[type].push(course)
         })
         return groups
-    }, [filteredSessions])
+    }, [filteredCourses])
 
     // Get unique types for tabs
     const courseTypes = useMemo(() => {
@@ -197,7 +195,7 @@ export default function LessonsPage() {
                         >
                             All Courses
                             <Badge variant="secondary" className="ml-2 bg-gray-100 text-gray-600">
-                                {filteredSessions.length}
+                                {filteredCourses.length}
                             </Badge>
                         </TabsTrigger>
                         {courseTypes.map(type => (
@@ -208,7 +206,7 @@ export default function LessonsPage() {
                             >
                                 {type}
                                 <Badge variant="secondary" className="ml-2 bg-gray-100 text-gray-600">
-                                    {sessionsByType[type]?.length || 0}
+                                    {coursesByType[type]?.length || 0}
                                 </Badge>
                             </TabsTrigger>
                         ))}
@@ -219,23 +217,21 @@ export default function LessonsPage() {
                 <TabsContent value="all" className="mt-0 focus-visible:outline-none">
                     {viewMode === 'card' ? (
                         <div className="space-y-6">
-                            {Object.entries(sessionsByType).map(([type, sessions]) => (
-                                <CourseTypeRow
-                                    key={type}
-                                    type={type}
-                                    sessions={sessions}
-                                    expanded={expandedTypes.has(type)}
-                                    onToggle={() => toggleExpand(type)}
-                                    onAddClass={() => setIsCreateClassOpen(true)}
+                            <div className="space-y-6">
+                                {/* Flat List for All Courses */}
+                                <SessionList
+                                    sessions={filteredCourses.sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime())}
+                                    limit={10}
                                 />
-                            ))}
-                            {Object.keys(sessionsByType).length === 0 && (
-                                <div className="text-center py-12 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-                                    <BookOpen className="h-10 w-10 text-gray-300 mx-auto mb-3" />
-                                    <h3 className="text-lg font-medium text-gray-900">No classes found</h3>
-                                    <p className="text-gray-500">Try adjusting your filters.</p>
-                                </div>
-                            )}
+                                {/* REMOVED: Grouping by type for All Courses tab as per user request */}
+                                {filteredCourses.length === 0 && (
+                                    <div className="text-center py-12 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                                        <BookOpen className="h-10 w-10 text-gray-300 mx-auto mb-3" />
+                                        <h3 className="text-lg font-medium text-gray-900">No classes found</h3>
+                                        <p className="text-gray-500">Try adjusting your filters.</p>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     ) : (
                         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
@@ -252,34 +248,34 @@ export default function LessonsPage() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {filteredSessions.map((session) => (
-                                        <TableRow key={session.id} className="hover:bg-gray-50">
-                                            <TableCell className="font-medium text-gray-900">{session.class_type}</TableCell>
-                                            <TableCell>{session.class_name}</TableCell>
+                                    {filteredCourses.map((course) => (
+                                        <TableRow key={course.id} className="hover:bg-gray-50">
+                                            <TableCell className="font-medium text-gray-900">{course.class_type}</TableCell>
+                                            <TableCell>{course.name}</TableCell>
                                             <TableCell>
                                                 <div className="flex flex-col text-xs">
-                                                    <span className="font-medium">{format(parseISO(session.date), "MMM d, yyyy")}</span>
-                                                    <span className="text-gray-500">{session.start_time.slice(0, 5)} - {session.end_time.slice(0, 5)}</span>
+                                                    <span className="font-medium">{format(parseISO(course.start_date), "MMM d")} - {format(parseISO(course.end_date), "MMM d, yyyy")}</span>
+                                                    <span className="text-gray-500">{course.time_slot}</span>
                                                 </div>
                                             </TableCell>
-                                            <TableCell>{session.enrolled_count}</TableCell>
+                                            <TableCell>{course.enrolledCount}</TableCell>
                                             <TableCell>
                                                 <Badge variant="outline" className="bg-white">
-                                                    {session.mode === 'zoom' ? 'Zoom' : 'In-Person'}
+                                                    {course.zoom_url ? 'Zoom' : 'In-Person'}
                                                 </Badge>
                                             </TableCell>
                                             <TableCell>
                                                 <Badge variant="secondary" className={
-                                                    session.status === 'scheduled' ? 'bg-blue-50 text-blue-700' :
-                                                        session.status === 'in_progress' ? 'bg-green-50 text-green-700' :
+                                                    course.status === 'scheduled' ? 'bg-blue-50 text-blue-700' :
+                                                        course.status === 'in_progress' ? 'bg-green-50 text-green-700' :
                                                             'bg-gray-100 text-gray-600'
                                                 }>
-                                                    {session.status}
+                                                    {course.status}
                                                 </Badge>
                                             </TableCell>
                                             <TableCell className="text-right">
                                                 <Button asChild variant="ghost" size="sm" className="text-purple-600">
-                                                    <Link href={`/instructor/lessons/${session.class_id}`}>Manage</Link>
+                                                    <Link href={`/instructor/lessons/${course.id}`}>Manage</Link>
                                                 </Button>
                                             </TableCell>
                                         </TableRow>
@@ -296,10 +292,9 @@ export default function LessonsPage() {
                         {viewMode === 'card' ? (
                             <CourseTypeRow
                                 type={type}
-                                sessions={sessionsByType[type] || []}
+                                courses={coursesByType[type] || []}
                                 expanded={true} // Always expanded in specific tab
                                 onToggle={() => { }} // No toggle needed
-                                onAddClass={() => setIsCreateClassOpen(true)}
                             />
                         ) : (
                             <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
@@ -315,33 +310,33 @@ export default function LessonsPage() {
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {(sessionsByType[type] || []).map((session) => (
-                                            <TableRow key={session.id} className="hover:bg-gray-50">
-                                                <TableCell className="font-medium text-gray-900">{session.class_name}</TableCell>
+                                        {(coursesByType[type] || []).map((course) => (
+                                            <TableRow key={course.id} className="hover:bg-gray-50">
+                                                <TableCell className="font-medium text-gray-900">{course.name}</TableCell>
                                                 <TableCell>
                                                     <div className="flex flex-col text-xs">
-                                                        <span className="font-medium">{format(parseISO(session.date), "MMM d, yyyy")}</span>
-                                                        <span className="text-gray-500">{session.start_time.slice(0, 5)} - {session.end_time.slice(0, 5)}</span>
+                                                        <span className="font-medium">{format(parseISO(course.start_date), "MMM d")} - {format(parseISO(course.end_date), "MMM d, yyyy")}</span>
+                                                        <span className="text-gray-500">{course.time_slot}</span>
                                                     </div>
                                                 </TableCell>
-                                                <TableCell>{session.enrolled_count}</TableCell>
+                                                <TableCell>{course.enrolledCount}</TableCell>
                                                 <TableCell>
                                                     <Badge variant="outline" className="bg-white">
-                                                        {session.mode === 'zoom' ? 'Zoom' : 'In-Person'}
+                                                        {course.zoom_url ? 'Zoom' : 'In-Person'}
                                                     </Badge>
                                                 </TableCell>
                                                 <TableCell>
                                                     <Badge variant="secondary" className={
-                                                        session.status === 'scheduled' ? 'bg-blue-50 text-blue-700' :
-                                                            session.status === 'in_progress' ? 'bg-green-50 text-green-700' :
+                                                        course.status === 'scheduled' ? 'bg-blue-50 text-blue-700' :
+                                                            course.status === 'in_progress' ? 'bg-green-50 text-green-700' :
                                                                 'bg-gray-100 text-gray-600'
                                                     }>
-                                                        {session.status}
+                                                        {course.status}
                                                     </Badge>
                                                 </TableCell>
                                                 <TableCell className="text-right">
                                                     <Button asChild variant="ghost" size="sm" className="text-purple-600">
-                                                        <Link href={`/instructor/lessons/${session.class_id}`}>Manage</Link>
+                                                        <Link href={`/instructor/lessons/${course.id}`}>Manage</Link>
                                                     </Button>
                                                 </TableCell>
                                             </TableRow>

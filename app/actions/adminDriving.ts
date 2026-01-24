@@ -81,7 +81,7 @@ export async function createDrivingSession(data: {
             console.warn(`⚠️ No profile_id found for instructor ${data.instructorId}, skipping GCal sync.`)
         }
 
-        // 1. Conflict Check (Internal)
+        // 1. Conflict Check (Internal) - Allow only 1 booking per time slot
         const { data: internalConflicts } = await supabase
             .from('driving_sessions')
             .select('id')
@@ -91,7 +91,7 @@ export async function createDrivingSession(data: {
             .gt('end_time', startDateTime.toISOString())
 
         if (internalConflicts && internalConflicts.length > 0) {
-            return { success: false, error: "It conflicts with another scheduled time (Internal)" }
+            return { success: false, error: "Instructor is already booked for that time" }
         }
 
         // 2. Conflict Check (Google Calendar)
@@ -201,3 +201,4 @@ export async function updateSessionNotes(id: string, notes: string) {
     revalidatePath('/admin/driving')
     return { success: true }
 }
+

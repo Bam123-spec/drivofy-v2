@@ -54,7 +54,6 @@ export function CreateClassDialog({ open, onOpenChange, onSuccess }: CreateClass
         recurrence_enabled: false,
         recurrence_interval_value: 1,
         recurrence_interval_unit: "weeks" as "days" | "weeks",
-        recurrence_interval_unit: "weeks" as "days" | "weeks",
         recurrence_count: 1,
         // Package fields
         include_package: false,
@@ -85,10 +84,6 @@ export function CreateClassDialog({ open, onOpenChange, onSuccess }: CreateClass
             toast.error("Class name is required")
             return
         }
-        if (!formData.instructor_id) {
-            toast.error("Please select an instructor")
-            return
-        }
         if (!formData.start_date) {
             toast.error("Start date is required")
             return
@@ -114,11 +109,9 @@ export function CreateClassDialog({ open, onOpenChange, onSuccess }: CreateClass
                 name: formData.name,
                 class_type: formData.class_type,
                 category_id: formData.category_id || null,
-                instructor_id: formData.instructor_id,
+                instructor_id: formData.instructor_id || null,
                 start_date: formData.start_date,
                 end_date: finalEndDate,
-                daily_start_time: formData.daily_start_time,
-                daily_end_time: formData.daily_end_time,
                 daily_start_time: formData.daily_start_time,
                 daily_end_time: formData.daily_end_time,
                 status: 'active',
@@ -314,6 +307,7 @@ export function CreateClassDialog({ open, onOpenChange, onSuccess }: CreateClass
                                     <SelectValue placeholder="Select instructor" />
                                 </SelectTrigger>
                                 <SelectContent>
+                                    <SelectItem value="unassigned font-bold">Unassigned</SelectItem>
                                     {instructors.map(inst => (
                                         <SelectItem key={inst.id} value={inst.id}>{inst.full_name}</SelectItem>
                                     ))}

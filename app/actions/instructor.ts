@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache'
 import { cookies } from 'next/headers'
 import { logAuditAction } from "@/app/actions/audit"
 import { getGoogleAccessToken } from '@/lib/googleCalendar'
+import { sendTransactionalEmail } from "@/lib/brevo"
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -477,12 +478,22 @@ export async function getCourseDetails(classId: string) {
     const expectedDates: string[] = []
 
     // Loop from start to end
-    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-        const dayOfWeek = d.getDay()
+    // Loop from start to end
+    // Use UTC dates to avoid timezone shifts
+    const start = new Date(course.start_date) // This parses as UTC midnight
+    const end = new Date(course.end_date)
+
+    // We'll iterate using a new Date object derived from start
+    const d = new Date(start)
+
+    while (d <= end) {
+        const dayOfWeek = d.getUTCDay()
         // 0 = Sunday, 6 = Saturday. We want 1-5 (Mon-Fri)
         if (dayOfWeek !== 0 && dayOfWeek !== 6) {
             expectedDates.push(d.toISOString().split('T')[0])
         }
+        // Increment by 1 day
+        d.setUTCDate(d.getUTCDate() + 1)
     }
 
     // Fetch existing class_days
@@ -587,6 +598,16 @@ export async function getCourseDetails(classId: string) {
         }
     })
 
+    // 7. Fetch Quizzes and Scores
+    const { data: quizzes } = await supabase
+        .from('quizzes')
+        .select(`
+            *,
+            quiz_scores (*)
+        `)
+        .eq('class_id', classId)
+        .order('created_at', { ascending: true })
+
     return {
         course: {
             ...course,
@@ -601,8 +622,70 @@ export async function getCourseDetails(classId: string) {
             grade: s.grade,
             certification_status: s.certification_status
         })),
-        attendanceRecords: attendance
+        attendanceRecords: attendance,
+        quizzes: quizzes || []
     }
+}
+
+export async function createQuiz(classId: string, title: string, maxScore: number) {
+    const instructor = await getCurrentInstructor()
+    if (!instructor) throw new Error("Unauthorized")
+
+    const { error } = await supabase
+        .from('quizzes')
+        .insert({
+            class_id: classId,
+            title,
+            max_score: maxScore
+        })
+
+    if (error) throw error
+    revalidatePath(`/instructor/lessons/${classId}`)
+    return { success: true }
+}
+
+export async function deleteQuiz(quizId: string) {
+    const instructor = await getCurrentInstructor()
+    if (!instructor) throw new Error("Unauthorized")
+
+    const { error } = await supabase
+        .from('quizzes')
+        .delete()
+        .eq('id', quizId)
+
+    if (error) throw error
+    revalidatePath('/instructor/lessons/[classId]') // Might need explicit path if possible
+    // Since we don't have classId easily here, we might just return success and let client revalidate or use generic path.
+    // Ideally we pass classId or fetch it, but let's try generic revalidate or none if client handles optimistic.
+    // Actually, client calls revalidate on current path usually.
+    return { success: true }
+}
+
+export async function updateQuizScore(quizId: string, studentId: string, score: number) {
+    const instructor = await getCurrentInstructor()
+    if (!instructor) throw new Error("Unauthorized")
+
+    const { error } = await supabase
+        .from('quiz_scores')
+        .upsert({
+            quiz_id: quizId,
+            student_id: studentId,
+            score,
+            updated_at: new Date().toISOString()
+        }, { onConflict: 'quiz_id, student_id' })
+
+    if (error) throw error
+
+    // Low usage, maybe no need to log audit? Or log batch updates?
+    // Let's log for safety.
+    await logAuditAction('update_student', {
+        studentId,
+        quizId,
+        score
+    }, `Quiz Score Updated: ${score}`)
+
+    revalidatePath('/instructor/lessons/[classId]')
+    return { success: true }
 }
 
 export async function updateStudentGrade(enrollmentId: string, grade: string) {
@@ -613,7 +696,26 @@ export async function updateStudentGrade(enrollmentId: string, grade: string) {
     // For simplicity/speed, we'll trust the RLS policies we set up, 
     // but explicit check is safer.
 
-    const { error } = await supabase
+    // Use Service Role for updating grade
+    const supabaseAdmin = getServiceSupabase()
+
+    // Verify ownership
+    // Get class from enrollment
+    const { data: enrollment } = await supabaseAdmin
+        .from('enrollments')
+        .select('class_id, course:classes(instructor_id)')
+        .eq('id', enrollmentId)
+        .single()
+
+    if (!enrollment) throw new Error("Enrollment not found")
+
+    // Check instructor
+    const course = Array.isArray(enrollment.course) ? enrollment.course[0] : enrollment.course
+    if (course?.instructor_id !== instructor.id) {
+        throw new Error("Unauthorized")
+    }
+
+    const { error } = await supabaseAdmin
         .from('enrollments')
         .update({ grade, updated_at: new Date().toISOString() })
         .eq('id', enrollmentId)
@@ -629,38 +731,66 @@ export async function updateStudentGrade(enrollmentId: string, grade: string) {
     return { success: true }
 }
 
+// Helper for service role
+function getServiceSupabase() {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+    return createClient(supabaseUrl, supabaseServiceKey)
+}
+
 export async function updateStudentCertification(enrollmentId: string, status: string) {
     const instructor = await getCurrentInstructor()
     if (!instructor) throw new Error("Unauthorized")
 
+    // Use Service Role to bypass RLS for updating another user's enrollment if needed,
+    // or just to ensure we can write even if RLS is strict.
+    // Ideally we use RLS, but for quick fix/guarantee:
+    const supabaseAdmin = getServiceSupabase()
+
     // Fetch enrollment to get class_id and student_id
-    const { data: enrollment } = await supabase
+    const { data: enrollment } = await supabaseAdmin
         .from('enrollments')
-        .select('class_id, student_id, certification_status')
+        .select(`
+            class_id, 
+            student_id, 
+            certification_status,
+            course:classes(name),
+            student:profiles(email, full_name)
+        `)
         .eq('id', enrollmentId)
         .single()
 
     if (!enrollment) throw new Error("Enrollment not found")
 
-    const { error } = await supabase
+    // Verify instructor owns the class (still enforce logic)
+    const { data: classCheck } = await supabaseAdmin
+        .from('classes')
+        .select('instructor_id')
+        .eq('id', enrollment.class_id)
+        .single()
+
+    if (classCheck?.instructor_id !== instructor.id) {
+        throw new Error("Unauthorized: You do not teach this class")
+    }
+
+    const { error } = await supabaseAdmin
         .from('enrollments')
         .update({ certification_status: status, updated_at: new Date().toISOString() })
         .eq('id', enrollmentId)
 
     if (error) throw error
 
-    // If becoming certified and wasn't before, apply package
+    // If becoming certified and wasn't before, apply package AND send email
     if (status === 'certified' && enrollment.certification_status !== 'certified') {
-        // Fetch class package details
-        const { data: cls } = await supabase
+        // 1. Apply Package (Credit Logic)
+        const { data: cls } = await supabaseAdmin
             .from('classes')
             .select('package_hours, package_sessions')
             .eq('id', enrollment.class_id)
             .single()
 
         if (cls && (cls.package_hours > 0 || cls.package_sessions > 0)) {
-            // Fetch current profile balance
-            const { data: profile } = await supabase
+            const { data: profile } = await supabaseAdmin
                 .from('profiles')
                 .select('driving_balance_hours, driving_balance_sessions')
                 .eq('id', enrollment.student_id)
@@ -670,7 +800,7 @@ export async function updateStudentCertification(enrollmentId: string, status: s
                 const newHours = (profile.driving_balance_hours || 0) + (cls.package_hours || 0)
                 const newSessions = (profile.driving_balance_sessions || 0) + (cls.package_sessions || 0)
 
-                await supabase
+                await supabaseAdmin
                     .from('profiles')
                     .update({
                         driving_balance_hours: newHours,
@@ -678,6 +808,44 @@ export async function updateStudentCertification(enrollmentId: string, status: s
                         updated_at: new Date().toISOString()
                     })
                     .eq('id', enrollment.student_id)
+            }
+        }
+
+        // 2. Send Congratulatory Email
+        // Supabase returns arrays for relations unless !inner or single() logic is perfect. 
+        // Safely handle both array and object.
+        const student = Array.isArray(enrollment.student) ? enrollment.student[0] : enrollment.student
+        const course = Array.isArray(enrollment.course) ? enrollment.course[0] : enrollment.course
+
+        if (student?.email) {
+            try {
+                await sendTransactionalEmail({
+                    to: [{ email: student.email, name: student.full_name }],
+                    subject: `Congratulations! You've completed ${course?.name}`,
+                    htmlContent: `
+                        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px;">
+                            <h2 style="color: #1e293b; margin-bottom: 16px;">Course Completed! 🎉</h2>
+                            <p style="color: #475569; font-size: 16px; line-height: 1.6;">
+                                Hi ${student.full_name},
+                            </p>
+                            <p style="color: #475569; font-size: 16px; line-height: 1.6;">
+                                Congratulations on successfully completing <strong>${course?.name}</strong>! 
+                                Your instructor has certified your completion.
+                            </p>
+                            <div style="background-color: #f0fdf4; padding: 16px; border-radius: 8px; margin: 24px 0; border: 1px solid #bbf7d0;">
+                                <p style="margin: 0; color: #166534; font-weight: bold; text-align: center;">
+                                    Certification Status: CERTIFIED
+                                </p>
+                            </div>
+                            <p style="color: #475569; font-size: 14px; margin-top: 32px; border-top: 1px solid #e2e8f0; padding-top: 16px;">
+                                Any credits associated with this course have been added to your account.
+                            </p>
+                        </div>
+                    `
+                })
+                console.log(`✅ Completion email sent to ${student.email}`)
+            } catch (e) {
+                console.error("Failed to send completion email", e)
             }
         }
     }
@@ -711,7 +879,7 @@ export async function removeStudentFromCourse(enrollmentId: string) {
     return { success: true }
 }
 
-export async function updateBatchAttendance(classId: string, updates: { classDayId: string, studentId: string, status: string }[]) {
+export async function updateBatchAttendance(classId: string, updates: { classDayId: string, studentId: string, status: string, quizScore?: number | null }[]) {
     const instructor = await getCurrentInstructor()
     if (!instructor) throw new Error("Unauthorized")
 
@@ -722,13 +890,13 @@ export async function updateBatchAttendance(classId: string, updates: { classDay
                 class_day_id: u.classDayId,
                 student_id: u.studentId,
                 status: u.status,
+                quiz_score: u.quizScore,
                 marked_by_instructor_id: instructor.id,
                 updated_at: new Date().toISOString()
             })),
             { onConflict: 'class_day_id, student_id' }
         )
 
-    if (error) throw error
     if (error) throw error
 
     await logAuditAction('update_class', {
@@ -809,6 +977,7 @@ export async function getSessionDetails(classDayId: string) {
             email: e.profiles.email,
             avatarUrl: e.profiles.avatar_url,
             attendanceStatus: record?.status || 'unmarked',
+            quizScore: record?.quiz_score || null,
             attendanceRecordId: record?.id
         }
     })
@@ -821,27 +990,69 @@ export async function getSessionDetails(classDayId: string) {
     }
 }
 
-export async function updateAttendance(classDayId: string, studentId: string, status: string) {
+export async function updateAttendance(classDayId: string, studentId: string, status: string, quizScore?: number | null) {
     const instructor = await getCurrentInstructor()
     if (!instructor) throw new Error("Unauthorized")
 
-    const { error } = await supabase
-        .from('attendance_records')
-        .upsert({
-            class_day_id: classDayId,
-            student_id: studentId,
-            status,
-            marked_by_instructor_id: instructor.id,
-            updated_at: new Date().toISOString()
-        }, { onConflict: 'class_day_id, student_id' })
+    // If quizScore is undefined, we don't want to overwrite existing score with null if we are just updating status.
+    // However, upsert replaces the row.
+    // So we should probably fetch existing record if we want partial updates, OR the client matches the state.
+    // Assuming client sends full state or we merge.
+    // Actually, simple upsert might wipe quiz_score if we don't pass it.
+    // Let's modify the query to update partial if possible or Fetch first?
+    // UPSERT in Supabase/Postgres requires all not-null columns or full row.
+    // Let's rely on the client passing both if they are both present, OR assume we are updating one field.
+    // To be safe, let's just accept both and let the client manage state.
 
-    if (error) throw error
+    // Better approach: Use .update() if record exists, .insert() if not.
+    // But since it's one atomic action from UI usually, let's keep it simple.
+    // The previous implementation was a simple upsert.
+    // To avoid wiping quiz_score when only status changes (if client doesn't send it),
+    // we should be careful.
+    // BUT, the client WILL have the current state.
+    // Let's update the signature to options object for clarity, or just add optional arg.
+
+    const payload: any = {
+        class_day_id: classDayId,
+        student_id: studentId,
+        status,
+        marked_by_instructor_id: instructor.id,
+        updated_at: new Date().toISOString()
+    }
+    if (quizScore !== undefined) {
+        payload.quiz_score = quizScore
+    }
+
+    // IF quizScore is undefined, we risk clearing it if we use simple upsert?
+    // No, upsert overwrites.
+    // If we want to preserve existing quiz_score when only updating status, we need to know it.
+    // The safest way is to fetch first or use a patch-like approach (update match class_day_id, student_id).
+    // If update fails (no rows), then insert.
+
+    // Attempt Update first
+    const { data: updated, error: updateError } = await supabase
+        .from('attendance_records')
+        .update(payload)
+        .match({ class_day_id: classDayId, student_id: studentId })
+        .select()
+
+    if (updateError) throw updateError
+
+    if (!updated || updated.length === 0) {
+        // Insert
+        const { error: insertError } = await supabase
+            .from('attendance_records')
+            .insert(payload)
+
+        if (insertError) throw insertError
+    }
 
     await logAuditAction('update_class', {
         classDayId,
         studentId,
-        status
-    }, `Attendance Updated: ${status}`)
+        status,
+        quizScore
+    }, `Attendance Updated: ${status} (Score: ${quizScore})`)
 
     revalidatePath(`/instructor/lessons`)
     return { success: true }

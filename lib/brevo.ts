@@ -1,12 +1,4 @@
-import * as SibApiV3Sdk from '@getbrevo/brevo';
-
-const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
-
-const apiKey = process.env.BREVO_API_KEY;
-
-if (apiKey) {
-    apiInstance.setApiKey(SibApiV3Sdk.TransactionalEmailsApiApiKeys.apiKey, apiKey);
-}
+// Brevo Email API using fetch (Edge Runtime compatible)
 
 export interface EmailRecipient {
     email: string;
@@ -21,27 +13,45 @@ export interface SendEmailParams {
 }
 
 export async function sendTransactionalEmail({ to, subject, htmlContent, sender }: SendEmailParams) {
+    const apiKey = process.env.BREVO_API_KEY;
+
     if (!apiKey) {
         console.error('BREVO_API_KEY is not set');
         return { success: false, error: 'API key missing' };
     }
 
-    const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
-
-    sendSmtpEmail.subject = subject;
-    sendSmtpEmail.htmlContent = htmlContent;
-    sendSmtpEmail.sender = sender || {
-        email: process.env.BREVO_SENDER_EMAIL || 'noreply@drivofy.com',
-        name: process.env.BREVO_SENDER_NAME || 'Drivofy',
+    const payload = {
+        sender: sender || {
+            email: process.env.BREVO_SENDER_EMAIL || 'noreply@drivofy.com',
+            name: process.env.BREVO_SENDER_NAME || 'Drivofy',
+        },
+        to,
+        subject,
+        htmlContent
     };
-    sendSmtpEmail.to = to;
 
     try {
-        const data = await apiInstance.sendTransacEmail(sendSmtpEmail);
-        console.log('API called successfully. Returned data: ', data);
+        const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+            method: 'POST',
+            headers: {
+                'accept': 'application/json',
+                'api-key': apiKey,
+                'content-type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.error('Brevo API Error:', errorData);
+            return { success: false, error: errorData.message || 'Failed to send email' };
+        }
+
+        const data = await response.json();
+        console.log('✅ Brevo email sent successfully:', data);
         return { success: true, data };
     } catch (error: any) {
-        console.error('Error while calling Brevo API:', error.response ? error.response.body : error);
+        console.error('Error calling Brevo API:', error);
         return { success: false, error: error.message || 'Failed to send email' };
     }
 }

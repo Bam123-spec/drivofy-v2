@@ -28,8 +28,11 @@ import {
     Zap,
     TrendingUp,
     ArrowUpRight,
-    Loader2
+    Loader2,
+    Calendar as CalendarIcon
 } from "lucide-react"
+import { GoogleCalendarConnect } from "@/app/instructor/profile/components/GoogleCalendarConnect"
+import { Suspense } from "react"
 
 interface GeneralSettingsFormValues {
     orgName: string
@@ -328,6 +331,26 @@ export default function SettingsPage() {
                                     />
                                 </div>
                             ))}
+                        </CardContent>
+                    </Card>
+
+                    {/* Google Calendar Integration */}
+                    <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
+                        <CardHeader className="p-6 bg-slate-50/30 border-b border-slate-100">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2.5 bg-blue-100 text-blue-600 rounded-lg">
+                                    <CalendarIcon className="h-5 w-5" />
+                                </div>
+                                <div>
+                                    <CardTitle className="text-lg font-bold text-slate-900">Google Calendar</CardTitle>
+                                    <CardDescription className="text-slate-500 text-sm">Sync with your Google Calendar.</CardDescription>
+                                </div>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="p-6">
+                            <Suspense fallback={<div className="h-10 animate-pulse bg-gray-100 rounded-lg" />}>
+                                <GoogleCalendarConnect instructorId="" />
+                            </Suspense>
                         </CardContent>
                     </Card>
                 </div>

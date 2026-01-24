@@ -37,7 +37,10 @@ import {
     Filter,
     LayoutGrid,
     List,
-    Pencil
+    Pencil,
+    User,
+    Settings2,
+    AlertTriangle
 } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { toast } from "sonner"
@@ -256,48 +259,60 @@ export default function AdminUsersPage() {
                             </Button>
                         </div>
                     </DialogTrigger>
-                    <DialogContent className="rounded-2xl border-0 shadow-2xl p-0 overflow-hidden max-w-md">
-                        <div className="bg-blue-600 px-6 py-8 text-white">
-                            <DialogTitle className="text-xl font-bold mb-1">Invite New Admin</DialogTitle>
-                            <DialogDescription className="text-blue-100 text-sm">
-                                Send an invitation to a new staff member.
+                    <DialogContent className="rounded-[2.5rem] border-0 shadow-2xl p-0 overflow-hidden max-w-md bg-white">
+                        <div className="px-8 pt-10 pb-2">
+                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-600 border border-blue-100 text-[10px] font-black uppercase tracking-[0.2em] mb-6">
+                                <UserPlus className="h-3 w-3" />
+                                Management
+                            </div>
+                            <DialogTitle className="text-4xl font-black text-slate-900 tracking-tight leading-none">
+                                Invite <span className="text-blue-600">Admin</span>
+                            </DialogTitle>
+                            <DialogDescription className="text-slate-500 font-medium text-sm mt-4 leading-relaxed">
+                                Create a secure invitation for a new staff member to join your management team.
                             </DialogDescription>
                         </div>
-                        <form onSubmit={handleInvite} className="p-6 space-y-5">
-                            <div className="grid gap-5">
-                                <div className="space-y-1.5">
-                                    <Label htmlFor="name" className="text-slate-700 font-semibold text-sm">Full Name</Label>
-                                    <Input
-                                        id="name"
-                                        placeholder="Jane Doe"
-                                        value={inviteData.name}
-                                        onChange={(e) => setInviteData({ ...inviteData, name: e.target.value })}
-                                        className="h-10 border-slate-200 bg-white rounded-lg focus:ring-blue-500"
-                                        required
-                                    />
+                        <form onSubmit={handleInvite} className="p-8 pt-4 space-y-6">
+                            <div className="grid gap-6">
+                                <div className="space-y-2 group">
+                                    <Label htmlFor="name" className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1 group-focus-within:text-blue-600 transition-colors">Full Name</Label>
+                                    <div className="relative">
+                                        <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                        <Input
+                                            id="name"
+                                            placeholder="Jane Doe"
+                                            value={inviteData.name}
+                                            onChange={(e) => setInviteData({ ...inviteData, name: e.target.value })}
+                                            className="h-14 pl-12 border-transparent bg-slate-50 rounded-2xl focus:bg-white focus:border-blue-500/20 focus:ring-4 focus:ring-blue-500/5 transition-all text-slate-900 font-bold"
+                                            required
+                                        />
+                                    </div>
                                 </div>
-                                <div className="space-y-1.5">
-                                    <Label htmlFor="email" className="text-slate-700 font-semibold text-sm">Email Address</Label>
-                                    <Input
-                                        id="email"
-                                        type="email"
-                                        placeholder="jane@drivofy.com"
-                                        value={inviteData.email}
-                                        onChange={(e) => setInviteData({ ...inviteData, email: e.target.value })}
-                                        className="h-10 border-slate-200 bg-white rounded-lg focus:ring-blue-500"
-                                        required
-                                    />
+                                <div className="space-y-2 group">
+                                    <Label htmlFor="email" className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1 group-focus-within:text-blue-600 transition-colors">Email Address</Label>
+                                    <div className="relative">
+                                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                        <Input
+                                            id="email"
+                                            type="email"
+                                            placeholder="jane@drivofy.com"
+                                            value={inviteData.email}
+                                            onChange={(e) => setInviteData({ ...inviteData, email: e.target.value })}
+                                            className="h-14 pl-12 border-transparent bg-slate-50 rounded-2xl focus:bg-white focus:border-blue-500/20 focus:ring-4 focus:ring-blue-500/5 transition-all text-slate-900 font-bold"
+                                            required
+                                        />
+                                    </div>
                                 </div>
-                                <div className="space-y-1.5">
-                                    <Label htmlFor="role" className="text-slate-700 font-semibold text-sm">System Role</Label>
+                                <div className="space-y-2 group">
+                                    <Label htmlFor="role" className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1 group-focus-within:text-blue-600 transition-colors">System Role</Label>
                                     <Select
                                         value={inviteData.role}
                                         onValueChange={(val) => setInviteData({ ...inviteData, role: val })}
                                     >
-                                        <SelectTrigger className="h-10 border-slate-200 bg-white rounded-lg">
+                                        <SelectTrigger className="h-14 border-transparent bg-slate-50 rounded-2xl focus:bg-white focus:border-blue-500/20 focus:ring-4 focus:ring-blue-500/5 transition-all text-slate-900 font-bold px-4">
                                             <SelectValue placeholder="Select role" />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent className="rounded-2xl border-slate-100 shadow-xl">
                                             <SelectItem value="manager">Manager</SelectItem>
                                             <SelectItem value="staff">Staff Member</SelectItem>
                                             <SelectItem value="admin">Administrator</SelectItem>
@@ -308,10 +323,10 @@ export default function AdminUsersPage() {
                             <DialogFooter className="pt-2">
                                 <Button
                                     type="submit"
-                                    className="w-full bg-blue-600 hover:bg-blue-700 h-10 rounded-lg font-semibold shadow-sm"
+                                    className="w-full bg-slate-900 hover:bg-black text-white h-14 rounded-2xl font-bold text-lg shadow-xl shadow-slate-100 transition-all active:scale-[0.98]"
                                     disabled={isActionLoading}
                                 >
-                                    {isActionLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <UserPlus className="h-4 w-4 mr-2" />}
+                                    {isActionLoading ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <UserPlus className="h-5 w-5 mr-2" />}
                                     Send invitation
                                 </Button>
                             </DialogFooter>
@@ -558,36 +573,45 @@ export default function AdminUsersPage() {
 
             {/* Edit User Dialog */}
             <Dialog open={!!editUser} onOpenChange={(open) => !open && setEditUser(null)}>
-                <DialogContent className="rounded-2xl border-0 shadow-2xl p-0 overflow-hidden max-w-md">
-                    <div className="bg-slate-900 px-6 py-8 text-white">
-                        <DialogTitle className="text-xl font-bold mb-1">Edit User</DialogTitle>
-                        <DialogDescription className="text-slate-400 text-sm">
-                            Update profile for {editUser?.name}.
+                <DialogContent className="rounded-[2.5rem] border-0 shadow-2xl p-0 overflow-hidden max-w-md bg-white">
+                    <div className="px-8 pt-10 pb-2">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-50 text-slate-600 border border-slate-100 text-[10px] font-black uppercase tracking-[0.2em] mb-6">
+                            <Settings2 className="h-3 w-3" />
+                            Configuration
+                        </div>
+                        <DialogTitle className="text-4xl font-black text-slate-900 tracking-tight leading-none">
+                            Edit <span className="text-blue-600">User</span>
+                        </DialogTitle>
+                        <DialogDescription className="text-slate-500 font-medium text-sm mt-4 leading-relaxed">
+                            Update account details and system permissions for <span className="font-bold text-slate-900">{editUser?.name}</span>.
                         </DialogDescription>
                     </div>
                     {editUser && (
-                        <form onSubmit={handleUpdateUser} className="p-6 space-y-5">
-                            <div className="grid gap-5">
-                                <div className="space-y-1.5">
-                                    <Label htmlFor="edit-name" className="text-slate-700 font-semibold text-sm">Full Name</Label>
-                                    <Input
-                                        id="edit-name"
-                                        className="h-10 border-slate-200 bg-white rounded-lg focus:ring-blue-500"
-                                        value={editUser.name}
-                                        onChange={(e) => setEditUser({ ...editUser, name: e.target.value })}
-                                        required
-                                    />
+                        <form onSubmit={handleUpdateUser} className="p-8 pt-4 space-y-6">
+                            <div className="grid gap-6">
+                                <div className="space-y-2 group">
+                                    <Label htmlFor="edit-name" className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1 group-focus-within:text-blue-600 transition-colors">Full Name</Label>
+                                    <div className="relative">
+                                        <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                        <Input
+                                            id="edit-name"
+                                            className="h-14 pl-12 border-transparent bg-slate-50 rounded-2xl focus:bg-white focus:border-blue-500/20 focus:ring-4 focus:ring-blue-500/5 transition-all text-slate-900 font-bold"
+                                            value={editUser.name}
+                                            onChange={(e) => setEditUser({ ...editUser, name: e.target.value })}
+                                            required
+                                        />
+                                    </div>
                                 </div>
-                                <div className="space-y-1.5">
-                                    <Label htmlFor="edit-role" className="text-slate-700 font-semibold text-sm">Role</Label>
+                                <div className="space-y-2 group">
+                                    <Label htmlFor="edit-role" className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1 group-focus-within:text-blue-600 transition-colors">Role</Label>
                                     <Select
                                         value={editUser.role}
                                         onValueChange={(val) => setEditUser({ ...editUser, role: val as AdminRole })}
                                     >
-                                        <SelectTrigger className="h-10 border-slate-200 bg-white rounded-lg">
+                                        <SelectTrigger className="h-14 border-transparent bg-slate-50 rounded-2xl focus:bg-white focus:border-blue-500/20 focus:ring-4 focus:ring-blue-500/5 transition-all text-slate-900 font-bold px-4">
                                             <SelectValue placeholder="Select role" />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent className="rounded-2xl border-slate-100 shadow-xl">
                                             <SelectItem value="admin">Admin</SelectItem>
                                             <SelectItem value="owner">Owner</SelectItem>
                                             <SelectItem value="manager">Manager</SelectItem>
@@ -597,12 +621,12 @@ export default function AdminUsersPage() {
                                     </Select>
                                 </div>
                             </div>
-                            <DialogFooter className="gap-2 pt-2">
-                                <Button type="button" variant="ghost" onClick={() => setEditUser(null)} className="rounded-lg font-semibold h-10">
+                            <DialogFooter className="gap-3 pt-2">
+                                <Button type="button" variant="ghost" onClick={() => setEditUser(null)} className="flex-1 rounded-2xl font-bold h-14 border border-slate-100 bg-white hover:bg-slate-50 text-slate-600">
                                     Cancel
                                 </Button>
-                                <Button type="submit" disabled={isActionLoading} className="bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold h-10 px-6 shadow-sm">
-                                    {isActionLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                                <Button type="submit" disabled={isActionLoading} className="flex-[2] bg-slate-900 hover:bg-black text-white h-14 rounded-2xl font-bold text-lg shadow-xl shadow-slate-100 transition-all active:scale-[0.98]">
+                                    {isActionLoading && <Loader2 className="h-5 w-5 mr-2 animate-spin" />}
                                     Save Changes
                                 </Button>
                             </DialogFooter>
@@ -613,29 +637,37 @@ export default function AdminUsersPage() {
 
             {/* Delete User Dialog */}
             <Dialog open={!!deleteUser} onOpenChange={(open) => !open && setDeleteUser(null)}>
-                <DialogContent className="rounded-2xl border-0 shadow-2xl p-0 overflow-hidden max-w-md">
-                    <div className="bg-rose-600 px-6 py-8 text-white">
-                        <DialogTitle className="text-xl font-bold mb-1">Delete User</DialogTitle>
-                        <DialogDescription className="text-rose-100 text-sm">
-                            This action is permanent and cannot be undone.
+                <DialogContent className="rounded-[2.5rem] border-0 shadow-2xl p-0 overflow-hidden max-w-md bg-white">
+                    <div className="px-8 pt-10 pb-2">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-50 text-rose-600 border border-rose-100 text-[10px] font-black uppercase tracking-[0.2em] mb-6">
+                            <AlertTriangle className="h-3 w-3" />
+                            Security Action
+                        </div>
+                        <DialogTitle className="text-4xl font-black text-slate-900 tracking-tight leading-none">
+                            Delete <span className="text-rose-600">User</span>
+                        </DialogTitle>
+                        <DialogDescription className="text-slate-500 font-medium text-sm mt-4 leading-relaxed">
+                            This action is permanent and cannot be undone. All data for <span className="font-bold text-slate-900">{deleteUser?.name}</span> will be removed.
                         </DialogDescription>
                     </div>
-                    <div className="p-6">
-                        <p className="text-slate-600 text-sm leading-relaxed mb-6">
-                            Are you sure you want to delete <strong>{deleteUser?.name}</strong>? This will permanently remove their account and all associated access.
-                        </p>
-                        <DialogFooter className="gap-2">
-                            <Button variant="ghost" onClick={() => setDeleteUser(null)} className="rounded-lg font-semibold h-10">
+                    <div className="p-8 pt-4">
+                        <div className="p-4 rounded-2xl bg-rose-50 border border-rose-100 mb-8">
+                            <p className="text-rose-900 text-xs font-bold leading-relaxed">
+                                Are you sure you want to delete this user? This will permanently revoke their access to the management platform.
+                            </p>
+                        </div>
+                        <DialogFooter className="gap-3">
+                            <Button variant="ghost" onClick={() => setDeleteUser(null)} className="flex-1 rounded-2xl font-bold h-14 border border-slate-100 bg-white hover:bg-slate-50 text-slate-600">
                                 Cancel
                             </Button>
                             <Button
                                 variant="destructive"
                                 onClick={handleDeleteUser}
                                 disabled={isActionLoading}
-                                className="rounded-lg font-semibold h-10 px-6 shadow-sm bg-rose-600 hover:bg-rose-700"
+                                className="flex-1 bg-rose-600 hover:bg-rose-700 text-white h-14 rounded-2xl font-bold text-lg shadow-xl shadow-rose-100 transition-all active:scale-[0.98]"
                             >
-                                {isActionLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                                Delete Permanently
+                                {isActionLoading ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <Trash2 className="h-5 w-5 mr-2" />}
+                                Delete User
                             </Button>
                         </DialogFooter>
                     </div>

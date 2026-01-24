@@ -66,6 +66,25 @@ export function DrivingSessionTable({ sessions, onSelectSession }: DrivingSessio
                                     </div>
                                 </TableCell>
                                 <TableCell>
+                                    {session.slotCapacity ? (
+                                        <Badge
+                                            variant="outline"
+                                            className={
+                                                session.slotCapacity.booked >= 2
+                                                    ? 'bg-orange-100 text-orange-800 border-orange-200'
+                                                    : session.slotCapacity.booked === 1
+                                                        ? 'bg-yellow-100 text-yellow-800 border-yellow-200'
+                                                        : 'bg-green-100 text-green-800 border-green-200'
+                                            }
+                                        >
+                                            {session.slotCapacity.booked}/{session.slotCapacity.capacity}
+                                            {session.slotCapacity.isFull && ' (Full)'}
+                                        </Badge>
+                                    ) : (
+                                        <span className="text-xs text-gray-400">-</span>
+                                    )}
+                                </TableCell>
+                                <TableCell>
                                     {session.vehicles ? (
                                         <div className="flex items-center text-xs text-gray-600">
                                             <Car className="h-3 w-3 mr-1" />
@@ -91,8 +110,8 @@ export function DrivingSessionTable({ sessions, onSelectSession }: DrivingSessio
                                 <TableCell className="text-right">
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <MoreHorizontal className="h-4 w-4 text-gray-400" />
+                                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                <MoreHorizontal className="h-4 w-4 text-gray-500" />
                                             </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
@@ -100,6 +119,32 @@ export function DrivingSessionTable({ sessions, onSelectSession }: DrivingSessio
                                             <DropdownMenuSeparator />
                                             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onSelectSession(session) }}>
                                                 View Details
+                                            </DropdownMenuItem>
+                                            {session.status === 'scheduled' && (
+                                                <DropdownMenuItem
+                                                    className="text-orange-600 focus:text-orange-700 focus:bg-orange-50"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        if (confirm('Cancel this session?')) {
+                                                            // TODO: implement cancel
+                                                            console.log('Cancel session', session.id)
+                                                        }
+                                                    }}
+                                                >
+                                                    Cancel Session
+                                                </DropdownMenuItem>
+                                            )}
+                                            <DropdownMenuItem
+                                                className="text-red-600 focus:text-red-700 focus:bg-red-50"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (confirm('Permanently delete this session?')) {
+                                                        // TODO: implement delete
+                                                        console.log('Delete session', session.id)
+                                                    }
+                                                }}
+                                            >
+                                                Delete Session
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>

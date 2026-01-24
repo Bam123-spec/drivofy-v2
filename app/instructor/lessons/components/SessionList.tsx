@@ -14,22 +14,24 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-interface Session {
+interface Course {
     id: string
-    date: string
-    start_time: string
-    end_time: string
+    name: string
+    start_date: string
+    end_date: string
     status: string
-    class_id: string
-    class_name: string
-    enrolled_count: number
-    total_sessions: number
-    completed_sessions: number
-    mode?: 'zoom' | 'in-person'
+    enrolledCount: number
+    totalSessions: number
+    completedSessions: number
+    nextSession?: {
+        date: string
+        start_datetime: string
+    }
+    class_days: any[]
 }
 
 interface SessionListProps {
-    sessions: Session[]
+    sessions: Course[]
     limit?: number
 }
 
@@ -42,7 +44,7 @@ export function SessionList({ sessions, limit = 10 }: SessionListProps) {
     if (sessions.length === 0) {
         return (
             <div className="text-center py-8 text-gray-500 text-sm italic">
-                No upcoming sessions found.
+                No active courses found.
             </div>
         )
     }
@@ -50,24 +52,27 @@ export function SessionList({ sessions, limit = 10 }: SessionListProps) {
     return (
         <div className="space-y-4 animate-in fade-in duration-300">
             <div className="grid gap-3 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
-                {displayedSessions.map((session) => {
-                    const progress = session.total_sessions > 0
-                        ? (session.completed_sessions / session.total_sessions) * 100
+                {displayedSessions.map((course) => {
+                    const progress = course.totalSessions > 0
+                        ? (course.completedSessions / course.totalSessions) * 100
                         : 0
 
-                    const isZoom = session.mode === 'zoom' || !session.mode // Default to zoom if undefined
+                    // const isZoom = course.mode === 'zoom' || !course.mode // Need logic for zoom if available at course level
+                    // defaulting to checking first session? Or just assume In-Person unless flagged.
+                    // Let's assume In-Person for now or check if there's a property.
+                    const isZoom = false
 
                     return (
                         <div
-                            key={session.id}
+                            key={course.id}
                             className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-all group relative overflow-hidden"
                         >
                             <div className="absolute top-0 left-0 w-1 h-full bg-purple-500/10 group-hover:bg-purple-500 transition-colors" />
 
                             <div className="flex justify-between items-start mb-3 pl-2">
                                 <div>
-                                    <h4 className="font-semibold text-gray-900 text-sm line-clamp-1" title={session.class_name}>
-                                        {session.class_name}
+                                    <h4 className="font-semibold text-gray-900 text-sm line-clamp-1" title={course.name}>
+                                        {course.name}
                                     </h4>
                                     <div className="flex items-center gap-2 mt-1">
                                         <Badge variant="secondary" className="text-[10px] px-1.5 h-5 bg-gray-100 text-gray-600 font-normal">
@@ -75,7 +80,7 @@ export function SessionList({ sessions, limit = 10 }: SessionListProps) {
                                         </Badge>
                                         <span className="text-xs text-gray-400">•</span>
                                         <span className="text-xs text-gray-500">
-                                            {session.enrolled_count} Students
+                                            {course.enrolledCount} Students
                                         </span>
                                     </div>
                                 </div>
@@ -87,9 +92,9 @@ export function SessionList({ sessions, limit = 10 }: SessionListProps) {
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
                                         <DropdownMenuItem asChild>
-                                            <Link href={`/instructor/lessons/${session.class_id}`}>Manage Class</Link>
+                                            <Link href={`/instructor/lessons/${course.id}`}>Manage Class</Link>
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem>View Attendance</DropdownMenuItem>
+                                        <DropdownMenuItem>View Schedule</DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                             </div>
@@ -98,15 +103,18 @@ export function SessionList({ sessions, limit = 10 }: SessionListProps) {
                                 <div className="flex items-center gap-2 text-xs text-gray-600">
                                     <Calendar className="h-3.5 w-3.5 text-purple-500" />
                                     <span className="font-medium">
-                                        {format(parseISO(session.date), "MMM d, yyyy")}
+                                        {format(parseISO(course.start_date), "MMM d")} - {format(parseISO(course.end_date), "MMM d, yyyy")}
                                     </span>
                                 </div>
-                                <div className="flex items-center gap-2 text-xs text-gray-600">
-                                    <Clock className="h-3.5 w-3.5 text-blue-500" />
-                                    <span>
-                                        {session.start_time.slice(0, 5)} – {session.end_time.slice(0, 5)}
-                                    </span>
-                                </div>
+                                {/* Show Next Session if available, otherwise just dates */}
+                                {course.nextSession && (
+                                    <div className="flex items-center gap-2 text-xs text-gray-600">
+                                        <Clock className="h-3.5 w-3.5 text-blue-500" />
+                                        <span>
+                                            Next: {format(parseISO(course.nextSession.date), "MMM d")}
+                                        </span>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="mt-4 pl-2">
@@ -119,7 +127,7 @@ export function SessionList({ sessions, limit = 10 }: SessionListProps) {
 
                             <div className="mt-4 pt-3 border-t border-gray-50 flex justify-end pl-2">
                                 <Button asChild size="sm" variant="ghost" className="h-7 text-xs text-purple-600 hover:text-purple-700 hover:bg-purple-50 px-2">
-                                    <Link href={`/instructor/lessons/${session.class_id}`}>
+                                    <Link href={`/instructor/lessons/${course.id}`}>
                                         Manage Class <ChevronRight className="h-3 w-3 ml-1" />
                                     </Link>
                                 </Button>
@@ -136,7 +144,7 @@ export function SessionList({ sessions, limit = 10 }: SessionListProps) {
                         onClick={() => setPage(p => p + 1)}
                         className="text-xs"
                     >
-                        Show Next {limit} Sessions
+                        Show Next {limit} Courses
                     </Button>
                 </div>
             )}

@@ -62,10 +62,8 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
-import { Suspense } from "react"
 import { format, isValid, isSameDay, addDays, isBefore } from "date-fns"
 import { CreateClassDialog } from "./components/CreateClassDialog"
-import { GoogleCalendarConnect } from "@/app/instructor/profile/components/GoogleCalendarConnect"
 
 const formatDateSafe = (dateStr: string | null | undefined, formatStr: string) => {
     if (!dateStr) return "N/A"
@@ -434,39 +432,32 @@ export default function AdminClassesPage() {
                     <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Classes</h1>
                     <p className="text-gray-500 mt-1">Manage theory sessions and schedules.</p>
                 </div>
-                <div className="flex items-center gap-4">
-                    <div className="hidden lg:block w-64">
-                        <Suspense fallback={<div className="h-10 animate-pulse bg-gray-100 rounded-lg" />}>
-                            <GoogleCalendarConnect instructorId="" />
-                        </Suspense>
+                <div className="flex items-center gap-3">
+                    <div className="flex items-center bg-gray-100 p-1 rounded-lg mr-2">
+                        <button
+                            onClick={() => setShowArchived(false)}
+                            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${!showArchived ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
+                        >
+                            Active
+                        </button>
+                        <button
+                            onClick={() => setShowArchived(true)}
+                            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${showArchived ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
+                        >
+                            Archived
+                        </button>
                     </div>
-                    <div className="flex items-center gap-3">
-                        <div className="flex items-center bg-gray-100 p-1 rounded-lg mr-2">
-                            <button
-                                onClick={() => setShowArchived(false)}
-                                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${!showArchived ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
-                            >
-                                Active
-                            </button>
-                            <button
-                                onClick={() => setShowArchived(true)}
-                                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${showArchived ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
-                            >
-                                Archived
-                            </button>
-                        </div>
-                        {isAdmin && (
-                            <>
-                                <Button variant="outline" onClick={() => setIsManageCategoriesOpen(true)}>
-                                    Create Row
-                                </Button>
-                                <Button onClick={() => setIsCreateOpen(true)} className="shadow-lg shadow-primary/25">
-                                    <Plus className="mr-2 h-4 w-4" />
-                                    Create Class
-                                </Button>
-                            </>
-                        )}
-                    </div>
+                    {isAdmin && (
+                        <>
+                            <Button variant="outline" onClick={() => setIsManageCategoriesOpen(true)}>
+                                Create Row
+                            </Button>
+                            <Button onClick={() => setIsCreateOpen(true)} className="shadow-lg shadow-primary/25">
+                                <Plus className="mr-2 h-4 w-4" />
+                                Create Class
+                            </Button>
+                        </>
+                    )}
                 </div>
             </div>
 
@@ -618,6 +609,6 @@ export default function AdminClassesPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-        </div>
+        </div >
     )
 }

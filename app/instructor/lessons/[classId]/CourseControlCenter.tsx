@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { getCourseDetails, updateBatchAttendance, updateStudentGrade, updateStudentCertification, removeStudentFromCourse } from "@/app/actions/instructor"
-import { Loader2, Calendar, Users, Clock, CheckCircle2, XCircle, AlertCircle, ChevronLeft, Save, Trash2, Award, GraduationCap, MoreHorizontal, User } from "lucide-react"
+import { getCourseDetails, updateBatchAttendance, updateStudentGrade, updateStudentCertification, removeStudentFromCourse, createQuiz, deleteQuiz, updateQuizScore } from "@/app/actions/instructor"
+import { Loader2, Calendar, Users, Clock, CheckCircle2, XCircle, AlertCircle, ChevronLeft, Save, Trash2, Award, GraduationCap, MoreHorizontal, User, Plus, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { format, parseISO } from "date-fns"
 import Link from "next/link"
 import { toast } from "sonner"
@@ -113,6 +114,47 @@ export default function CourseControlCenter() {
         }
     }
 
+    // Quiz Functions
+    const handleCreateQuiz = async (title: string, maxScore: number) => {
+        try {
+            await createQuiz(classId, title, maxScore)
+            toast.success("Quiz created")
+            loadData()
+            setNewQuizOpen(false)
+        } catch (error) {
+            toast.error("Failed to create quiz")
+        }
+    }
+
+    const handleDeleteQuiz = async (quizId: string) => {
+        if (!confirm("Are you sure? This will delete all student scores for this quiz.")) return
+        try {
+            await deleteQuiz(quizId)
+            toast.success("Quiz deleted")
+            loadData()
+        } catch (error) {
+            toast.error("Failed to delete quiz")
+        }
+    }
+
+    const handleUpdateQuizScore = async (quizId: string, studentId: string, score: number) => {
+        try {
+            await updateQuizScore(quizId, studentId, score)
+            // Optimistic update for better UX? Or just silent?
+            // Assuming loadData is called or just a toast
+            // For now, let's just toast and maybe reload?
+            // Realtime would be better, but explicit save or onBlur is fine.
+            // Let's just toast success.
+            toast.success("Score saved")
+        } catch (error) {
+            toast.error("Failed to save score")
+        }
+    }
+
+    const [newQuizOpen, setNewQuizOpen] = useState(false)
+    const [newQuizTitle, setNewQuizTitle] = useState("")
+    const [newQuizMax, setNewQuizMax] = useState(10)
+
     if (loading) {
         return (
             <div className="h-[50vh] flex items-center justify-center">
@@ -161,7 +203,9 @@ export default function CourseControlCenter() {
         )
     }
 
-    const { course, sessions, students, attendanceRecords } = data
+
+
+    const { course, sessions, students, attendanceRecords, quizzes } = data
 
     // Helper to get current status
     const getStatus = (studentId: string, sessionId: string) => {
@@ -170,6 +214,11 @@ export default function CourseControlCenter() {
         }
         const record = attendanceRecords.find((r: any) => r.student_id === studentId && r.class_day_id === sessionId)
         return record?.status || 'unmarked'
+    }
+
+    const getScore = (studentId: string, sessionId: string) => {
+        const record = attendanceRecords.find((r: any) => r.student_id === studentId && r.class_day_id === sessionId)
+        return record?.quiz_score
     }
 
     return (
@@ -207,84 +256,204 @@ export default function CourseControlCenter() {
                 </div>
             </div>
 
-            {/* Attendance Grid */}
-            <Card className="overflow-hidden border-border shadow-sm">
-                <CardHeader className="flex flex-row items-center justify-between bg-muted/30 border-b border-border">
-                    <div>
-                        <CardTitle>Attendance Grid</CardTitle>
-                        <CardDescription>Track attendance for all sessions.</CardDescription>
-                    </div>
-                    {attendanceChanges.size > 0 && (
-                        <Button onClick={saveAttendance} disabled={savingAttendance} className="bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-600/20">
-                            {savingAttendance ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-                            Save Changes ({attendanceChanges.size})
-                        </Button>
-                    )}
-                </CardHeader>
-                <div className="overflow-x-auto">
-                    <table className="w-full text-sm text-left">
-                        <thead className="text-xs text-muted-foreground uppercase bg-muted/30 border-b border-border">
-                            <tr>
-                                <th className="px-6 py-4 font-medium text-foreground sticky left-0 bg-muted/30 z-10 w-[250px]">Student</th>
-                                {sessions.map((session: any) => (
-                                    <th key={session.id} className="px-4 py-3 min-w-[120px] text-center">
-                                        <div className="font-semibold text-gray-900">{format(parseISO(session.date), "MMM d")}</div>
-                                        <div className="text-[10px] text-gray-500 font-normal">{format(parseISO(session.date), "EEE")}</div>
-                                    </th>
-                                ))}
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-border bg-card">
-                            {students.map((student: any) => (
-                                <tr key={student.id} className="hover:bg-muted/20 transition-colors">
-                                    <td className="px-6 py-4 sticky left-0 bg-card group-hover:bg-muted/20 z-10 border-r border-border">
-                                        <div className="flex items-center gap-3">
-                                            <Avatar className="h-8 w-8 border border-gray-200">
-                                                <AvatarImage src={student.avatar_url} />
-                                                <AvatarFallback className="bg-purple-100 text-purple-600 text-xs">
-                                                    {student.full_name?.[0]}
-                                                </AvatarFallback>
-                                            </Avatar>
-                                            <div className="font-medium text-gray-900 truncate max-w-[150px]" title={student.full_name}>
-                                                {student.full_name}
-                                            </div>
-                                        </div>
-                                    </td>
-                                    {sessions.map((session: any) => {
-                                        const status = getStatus(student.id, session.id)
-                                        return (
-                                            <td key={session.id} className="px-4 py-3 text-center">
-                                                <Select
-                                                    value={status}
-                                                    onValueChange={(val) => handleAttendanceChange(student.id, session.id, val)}
-                                                >
-                                                    <SelectTrigger className={`
-                                                        h-8 w-[100px] mx-auto border-transparent focus:ring-0 focus:ring-offset-0
-                                                        ${status === 'present' ? 'bg-green-50 text-green-700 hover:bg-green-100' :
-                                                            status === 'absent' ? 'bg-red-50 text-red-700 hover:bg-red-100' :
-                                                                status === 'late' ? 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100' :
-                                                                    status === 'excused' ? 'bg-blue-50 text-blue-700 hover:bg-blue-100' :
-                                                                        'bg-gray-100 text-gray-500 hover:bg-gray-200'}
-                                                    `}>
-                                                        <SelectValue />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="unmarked">Unmarked</SelectItem>
-                                                        <SelectItem value="present">Present</SelectItem>
-                                                        <SelectItem value="absent">Absent</SelectItem>
-                                                        <SelectItem value="late">Late</SelectItem>
-                                                        <SelectItem value="excused">Excused</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
+            {/* Main Tabs */}
+            <Tabs defaultValue="attendance" className="space-y-6">
+                <TabsList className="bg-white border border-gray-200 p-1 rounded-xl h-auto inline-flex">
+                    <TabsTrigger value="attendance" className="rounded-lg px-4 py-2 data-[state=active]:bg-purple-50 data-[state=active]:text-purple-700">
+                        Attendance
+                    </TabsTrigger>
+                    <TabsTrigger value="grades" className="rounded-lg px-4 py-2 data-[state=active]:bg-purple-50 data-[state=active]:text-purple-700">
+                        Students & Grades
+                    </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="attendance">
+                    {/* Attendance Grid */}
+                    <Card className="overflow-hidden border-border shadow-sm">
+                        <CardHeader className="flex flex-row items-center justify-between bg-muted/30 border-b border-border">
+                            <div>
+                                <CardTitle>Attendance Grid</CardTitle>
+                                <CardDescription>Track attendance for all sessions.</CardDescription>
+                            </div>
+                            {attendanceChanges.size > 0 && (
+                                <Button onClick={saveAttendance} disabled={savingAttendance} className="bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-600/20">
+                                    {savingAttendance ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+                                    Save Changes ({attendanceChanges.size})
+                                </Button>
+                            )}
+                        </CardHeader>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm text-left">
+                                <thead className="text-xs text-muted-foreground uppercase bg-muted/30 border-b border-border">
+                                    <tr>
+                                        <th className="px-6 py-4 font-medium text-foreground sticky left-0 bg-muted/30 z-10 w-[250px]">Student</th>
+                                        {sessions.map((session: any) => (
+                                            <th key={session.id} className="px-4 py-3 min-w-[120px] text-center">
+                                                <div className="font-semibold text-gray-900">{format(parseISO(session.date), "MMM d")}</div>
+                                                <div className="text-[10px] text-gray-500 font-normal">{format(parseISO(session.date), "EEE")}</div>
+                                            </th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-border bg-card">
+                                    {students.map((student: any) => (
+                                        <tr key={student.id} className="hover:bg-muted/20 transition-colors">
+                                            <td className="px-6 py-4 sticky left-0 bg-card group-hover:bg-muted/20 z-10 border-r border-border">
+                                                <div className="flex items-center gap-3">
+                                                    <Avatar className="h-8 w-8 border border-gray-200">
+                                                        <AvatarImage src={student.avatar_url} />
+                                                        <AvatarFallback className="bg-purple-100 text-purple-600 text-xs">
+                                                            {student.full_name?.[0]}
+                                                        </AvatarFallback>
+                                                    </Avatar>
+                                                    <div className="font-medium text-gray-900 truncate max-w-[150px]" title={student.full_name}>
+                                                        {student.full_name}
+                                                    </div>
+                                                </div>
                                             </td>
-                                        )
-                                    })}
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            </Card>
+                                            {sessions.map((session: any) => {
+                                                const status = getStatus(student.id, session.id)
+                                                return (
+                                                    <td key={session.id} className="px-4 py-3 text-center">
+                                                        <Select
+                                                            value={status}
+                                                            onValueChange={(val) => handleAttendanceChange(student.id, session.id, val)}
+                                                        >
+                                                            <SelectTrigger className={`
+                                                                h-8 w-[100px] mx-auto border-transparent focus:ring-0 focus:ring-offset-0
+                                                                ${status === 'present' ? 'bg-green-50 text-green-700 hover:bg-green-100' :
+                                                                    status === 'absent' ? 'bg-red-50 text-red-700 hover:bg-red-100' :
+                                                                        status === 'late' ? 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100' :
+                                                                            status === 'excused' ? 'bg-blue-50 text-blue-700 hover:bg-blue-100' :
+                                                                                'bg-gray-100 text-gray-500 hover:bg-gray-200'}
+                                                            `}>
+                                                                <SelectValue />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem value="unmarked">Unmarked</SelectItem>
+                                                                <SelectItem value="present">Present</SelectItem>
+                                                                <SelectItem value="absent">Absent</SelectItem>
+                                                                <SelectItem value="late">Late</SelectItem>
+                                                                <SelectItem value="excused">Excused</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                        {/* Removed: Daily Quiz Score Display - Replaced by New System */}
+                                                    </td>
+                                                )
+                                            })}
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </Card>
+                </TabsContent>
+
+                <TabsContent value="grades">
+                    {/* Enhanced Quiz Grid */}
+                    <Card className="overflow-hidden border-border shadow-sm">
+                        <CardHeader className="flex flex-row items-center justify-between bg-muted/30 border-b border-border">
+                            <div>
+                                <CardTitle>Students & Grades</CardTitle>
+                                <CardDescription>Manage quizzes and student results.</CardDescription>
+                            </div>
+                            <Button onClick={() => setNewQuizOpen(true)} className="bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-600/20">
+                                <Plus className="h-4 w-4 mr-2" /> Add Quiz
+                            </Button>
+                        </CardHeader>
+
+                        {/* Add Quiz Dialog (Simple for now) */}
+                        {newQuizOpen && (
+                            <div className="p-4 bg-purple-50 border-b border-purple-100 flex items-center gap-4 animate-in fade-in slide-in-from-top-2">
+                                <Input
+                                    placeholder="Quiz Title (e.g. Quiz 1)"
+                                    className="max-w-[200px] bg-white"
+                                    value={newQuizTitle}
+                                    onChange={e => setNewQuizTitle(e.target.value)}
+                                />
+                                <Input
+                                    type="number"
+                                    placeholder="Max Score"
+                                    className="max-w-[100px] bg-white"
+                                    value={newQuizMax}
+                                    onChange={e => setNewQuizMax(parseInt(e.target.value))}
+                                />
+                                <Button size="sm" onClick={() => handleCreateQuiz(newQuizTitle, newQuizMax)}>Create</Button>
+                                <Button size="sm" variant="ghost" onClick={() => setNewQuizOpen(false)}><X className="h-4 w-4" /></Button>
+                            </div>
+                        )}
+
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm text-left">
+                                <thead className="text-xs text-muted-foreground uppercase bg-muted/30 border-b border-border">
+                                    <tr>
+                                        <th className="px-6 py-4 font-medium text-foreground sticky left-0 bg-muted/30 z-10 w-[250px]">Student</th>
+                                        {quizzes?.map((quiz: any) => (
+                                            <th key={quiz.id} className="px-4 py-3 min-w-[120px] text-center group relative">
+                                                <div className="font-semibold text-gray-900">{quiz.title}</div>
+                                                <div className="text-[10px] text-gray-500 font-normal">Max: {quiz.max_score}</div>
+                                                <button
+                                                    onClick={() => handleDeleteQuiz(quiz.id)}
+                                                    className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 text-red-500 rounded"
+                                                    title="Delete Quiz"
+                                                >
+                                                    <Trash2 className="h-3 w-3" />
+                                                </button>
+                                            </th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-border bg-card">
+                                    {students.map((student: any) => (
+                                        <tr key={student.id} className="hover:bg-muted/20 transition-colors">
+                                            <td className="px-6 py-4 sticky left-0 bg-card group-hover:bg-muted/20 z-10 border-r border-border">
+                                                <div className="flex items-center gap-3">
+                                                    <Avatar className="h-8 w-8 border border-gray-200">
+                                                        <AvatarImage src={student.avatar_url} />
+                                                        <AvatarFallback className="bg-purple-100 text-purple-600 text-xs">
+                                                            {student.full_name?.[0]}
+                                                        </AvatarFallback>
+                                                    </Avatar>
+                                                    <div className="font-medium text-gray-900 truncate max-w-[150px]" title={student.full_name}>
+                                                        {student.full_name}
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            {quizzes?.map((quiz: any) => {
+                                                const scoreEntry = quiz.quiz_scores?.find((s: any) => s.student_id === student.id)
+                                                return (
+                                                    <td key={quiz.id} className="px-4 py-3 text-center">
+                                                        <Input
+                                                            type="number"
+                                                            placeholder="-"
+                                                            className="h-8 w-16 mx-auto text-center bg-transparent border-transparent hover:bg-white hover:border-gray-200 focus:bg-white focus:border-purple-500 transition-all"
+                                                            defaultValue={scoreEntry?.score ?? ""}
+                                                            onBlur={(e) => {
+                                                                const val = e.target.value
+                                                                if (val === "") return // Should handle delete?
+                                                                const num = parseFloat(val)
+                                                                if (isNaN(num)) return
+                                                                if (num > quiz.max_score) {
+                                                                    toast.error(`Max score is ${quiz.max_score}`)
+                                                                    e.target.value = quiz.max_score.toString() // Reset to max visually
+                                                                    handleUpdateQuizScore(quiz.id, student.id, quiz.max_score)
+                                                                    return
+                                                                }
+                                                                handleUpdateQuizScore(quiz.id, student.id, num)
+                                                            }}
+                                                        />
+                                                    </td>
+                                                )
+                                            })}
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </Card>
+                </TabsContent>
+            </Tabs>
+
 
             {/* Students Panel */}
             <Card className="border-border shadow-sm">

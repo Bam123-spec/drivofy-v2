@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Textarea } from "@/components/ui/textarea"
+import { Input } from "@/components/ui/input"
 import { format, parseISO } from "date-fns"
 import Link from "next/link"
 import { toast } from "sonner"
@@ -63,6 +64,37 @@ export default function SessionControlCenter() {
         }
     }
 
+    const handleQuizScoreChange = async (studentId: string, scoreStr: string) => {
+        const score = scoreStr === "" ? null : parseFloat(scoreStr)
+        if (score !== null && (isNaN(score) || score < 0 || score > 100)) {
+            toast.error("Invalid score (0-100)")
+            return
+        }
+
+        // Optimistic update
+        const updatedStudents = data.students.map((s: any) =>
+            s.studentId === studentId ? { ...s, quizScore: score } : s
+        )
+        setData({ ...data, students: updatedStudents })
+
+        // Find current status
+        const student = data.students.find((s: any) => s.studentId === studentId)
+        const currentStatus = student?.attendanceStatus || 'unmarked'
+
+        try {
+            await updateAttendance(classDayId, studentId, currentStatus, score)
+            // Silent success for typing, or debounce? 
+            // Ideally we debounce this or update on blur. 
+            // For now, let's update on blur or use a local state for input if it's too jittery.
+            // But simpler to just update.
+            toast.success("Score saved")
+        } catch (error) {
+            console.error("Failed to save score", error)
+            toast.error("Failed to save score")
+            loadData()
+        }
+    }
+
     const handleSaveNote = async () => {
         setSavingNote(true)
         try {
@@ -105,6 +137,12 @@ export default function SessionControlCenter() {
     const presentCount = students.filter((s: any) => s.attendanceStatus === 'present').length
     const absentCount = students.filter((s: any) => s.attendanceStatus === 'absent').length
     const lateCount = students.filter((s: any) => s.attendanceStatus === 'late').length
+
+    // Determine if this is the final exam (last day of course)
+    // Compare dates (YYYY-MM-DD)
+    const sessionDate = format(parseISO(session.start_datetime), 'yyyy-MM-dd')
+    const endDate = course.end_date // Assuming YYYY-MM-DD format from DB or date object
+    const isFinalExam = sessionDate === endDate || format(parseISO(course.end_date), 'yyyy-MM-dd') === sessionDate
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500 pb-20">
@@ -227,6 +265,27 @@ export default function SessionControlCenter() {
                                         </div>
 
                                         <div className="flex items-center gap-4">
+                                            <div className="flex items-center gap-2">
+                                                <span className={`text-sm font-medium ${isFinalExam ? 'text-purple-700 font-bold' : 'text-gray-500'}`}>
+                                                    {isFinalExam ? 'Final Exam:' : 'Quiz:'}
+                                                </span>
+                                                <Input
+                                                    type="number"
+                                                    min="0"
+                                                    max="100"
+                                                    placeholder="-"
+                                                    className="w-16 h-8 text-center bg-white"
+                                                    value={student.quizScore ?? ""}
+                                                    onChange={(e: any) => {
+                                                        const val = e.target.value
+                                                        const updatedStudents = data.students.map((s: any) =>
+                                                            s.studentId === student.studentId ? { ...s, quizScore: val === "" ? null : parseFloat(val) } : s
+                                                        )
+                                                        setData({ ...data, students: updatedStudents })
+                                                    }}
+                                                    onBlur={(e: any) => handleQuizScoreChange(student.studentId, e.target.value)}
+                                                />
+                                            </div>
                                             <Select
                                                 defaultValue={student.attendanceStatus}
                                                 onValueChange={(val) => handleAttendanceChange(student.studentId, val)}
