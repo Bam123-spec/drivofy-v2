@@ -94,19 +94,38 @@ export default function UpdatePasswordPage() {
         setIsLoading(true)
 
         try {
-            const { error } = await supabase.auth.updateUser({
+            // Check if we have a session first
+            const { data: { session } } = await supabase.auth.getSession()
+
+            if (!session) {
+                toast.error("Session expired. Please request a new password reset link.")
+                router.push("/forgot-password")
+                return
+            }
+
+            console.log('[UPDATE_PASSWORD] Updating password for user:', session.user.id)
+
+            const { data, error } = await supabase.auth.updateUser({
                 password: password
             })
 
             if (error) {
+                console.error('[UPDATE_PASSWORD] Error:', error)
                 throw error
             }
 
-            toast.success("Password updated successfully")
-            router.push("/login")
+            console.log('[UPDATE_PASSWORD] Password updated successfully')
+            toast.success("Password updated successfully! Redirecting to login...")
+
+            // Sign out after password update to force fresh login
+            await supabase.auth.signOut()
+
+            setTimeout(() => {
+                router.push("/login")
+            }, 1500)
         } catch (error: any) {
             console.error("Error updating password:", error)
-            toast.error(error.message || "Failed to update password")
+            toast.error(error.message || "Failed to update password. Please try again.")
         } finally {
             setIsLoading(false)
         }
