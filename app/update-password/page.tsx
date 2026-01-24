@@ -20,15 +20,46 @@ export default function UpdatePasswordPage() {
     const router = useRouter()
 
     useEffect(() => {
-        const checkSession = async () => {
-            const { data: { session } } = await supabase.auth.getSession()
-            if (!session) {
-                toast.error("Invalid or expired reset link. Please try again.")
-                router.push("/forgot-password")
+        let mounted = true
+
+        const initSession = async () => {
+            try {
+                // First, handle the auth callback - this exchanges the recovery token
+                const { data: { session } } = await supabase.auth.getSession()
+
+                // If no session yet, wait for the onAuthStateChange to handle the token
+                // This happens when the user clicks the recovery link
+                const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+                    if (!mounted) return
+
+                    if (session) {
+                        setIsCheckingSession(false)
+                    } else if (_event === 'PASSWORD_RECOVERY') {
+                        // Recovery event detected, session will be created
+                        setIsCheckingSession(false)
+                    }
+                })
+
+                // If we already have a session (refresh/revisit), proceed
+                if (session && mounted) {
+                    setIsCheckingSession(false)
+                }
+
+                // Cleanup
+                return () => {
+                    mounted = false
+                    subscription.unsubscribe()
+                }
+            } catch (error) {
+                console.error('Session init error:', error)
+                if (mounted) {
+                    toast.error("Invalid or expired reset link. Please try again.")
+                    router.push("/forgot-password")
+                }
             }
-            setIsCheckingSession(false)
         }
-        checkSession()
+
+        initSession()
     }, [router])
 
     const handleSubmit = async (e: React.FormEvent) => {
