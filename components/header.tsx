@@ -48,11 +48,11 @@ export function Header() {
         <div className="flex h-16 items-center justify-between">
           <Link href="/" className="flex items-center gap-2 transition-opacity hover:opacity-80">
             <Image
-              src="/logo.jpg"
+              src="/drivofy-logo.png"
               alt="Drivofy"
               width={140}
               height={40}
-              className="h-9 w-auto"
+              className="h-10 w-auto"
               priority
             />
           </Link>
