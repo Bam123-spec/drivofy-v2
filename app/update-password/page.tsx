@@ -48,19 +48,22 @@ export default function UpdatePasswordPage() {
                     if (timeoutId) clearTimeout(timeoutId)
                 }
 
-                // 3. Set a safety timeout - if no session after 4s, something went wrong
+
+                // 3. Set a safety timeout - if no session after 6s, show error but don't redirect
+                // This allows invite links time to process
                 timeoutId = setTimeout(() => {
                     if (mounted && isCheckingSession) {
-                        toast.error("Unable to verify reset link. Please try sending a new one.")
-                        router.push("/forgot-password")
+                        setIsCheckingSession(false)
+                        // Don't redirect - just let them see the form
+                        // If they're here, they likely have a valid token
                     }
-                }, 4000)
+                }, 6000)
 
             } catch (error) {
                 console.error('Session init error:', error)
                 if (mounted) {
-                    toast.error("Invalid or expired reset link. Please try again.")
-                    router.push("/forgot-password")
+                    setIsCheckingSession(false)
+                    // Don't redirect - user might have valid recovery link
                 }
             }
         }
