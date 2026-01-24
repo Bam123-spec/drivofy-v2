@@ -17,18 +17,14 @@ export async function POST(request: Request) {
 
         const supabaseAdmin = createAdminClient()
 
-        console.log(`[API] Creating user: ${email} as ${role}`)
+        console.log(`[API] Inviting user: ${email} as ${role}`)
 
-        // 1. Create User (skip invite email)
-        // We use createUser with email_confirm: true to auto-confirm them.
-        // We set a temporary password or leave it. If we don't set a password, they can't login with password until they reset it.
-        // Since the user wants to manage comms via Brevo, they probably will send a "Set Password" link or similar.
-        // Or we can set a random password.
-        // Let's set email_confirm: true.
-        const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-            email,
-            email_confirm: true,
-            user_metadata: {
+        // 1. Invite User with Supabase's native email system
+        // This creates the user AND sends an invitation email automatically
+        const liveUrl = 'https://selamdriving.drivofy.com';
+        const { data: authData, error: authError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
+            redirectTo: `${liveUrl}/update-password`,
+            data: {
                 full_name: full_name,
                 phone: phone,
                 role: role
@@ -36,14 +32,14 @@ export async function POST(request: Request) {
         })
 
         if (authError) {
-            console.error('Auth Create Error:', authError)
+            console.error('Auth Invite Error:', authError)
             return NextResponse.json(
                 { error: authError.message },
                 { status: 500 }
             )
         }
 
-        console.log('[API] Auth create successful, user ID:', authData.user.id)
+        console.log('[API] User invited successfully, user ID:', authData.user.id)
 
         const userId = authData.user.id
 
@@ -67,61 +63,6 @@ export async function POST(request: Request) {
         }
 
         console.log('[API] Profile upsert successful')
-
-        // 3. Generate Link for Password Setup
-        const liveUrl = 'https://selamdriving.drivofy.com';
-        let setupLink = `${liveUrl}/forgot-password`;
-        try {
-            const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
-                type: 'recovery',
-                email: email,
-                options: {
-                    redirectTo: `${liveUrl}/update-password`
-                }
-            });
-
-            if (linkError) {
-                console.error('[API] Error generating recovery link:', linkError);
-            } else if (linkData?.properties?.action_link) {
-                setupLink = linkData.properties.action_link;
-                console.log('[API] Recovery link generated successfully');
-            }
-        } catch (e) {
-            console.error('[API] Unexpected error generating link:', e);
-        }
-
-        // 4. Send Invite Email via Brevo
-        try {
-            const { sendTransactionalEmail } = await import('@/lib/brevo');
-            const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://selamdriving.drivofy.com';
-
-            await sendTransactionalEmail({
-                to: [{ email, name: full_name }],
-                subject: `Welcome to Drivofy - Your ${role} Account is Ready`,
-                htmlContent: `
-                    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; rounded: 12px;">
-                        <h1 style="color: #1e293b; font-size: 24px; font-weight: bold; margin-bottom: 16px;">Welcome to Drivofy!</h1>
-                        <p style="color: #475569; font-size: 16px; line-height: 1.6; margin-bottom: 24px;">
-                            Hi ${full_name}, your account as a <strong>${role}</strong> has been created.
-                        </p>
-                        <p style="color: #475569; font-size: 16px; line-height: 1.6; margin-bottom: 24px;">
-                            You can now log in to the portal using your email: <strong>${email}</strong>. 
-                            Since this is your first time, you'll need to set your password using the secure link below.
-                        </p>
-                        <a href="${setupLink}" style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">
-                            Set Your Password
-                        </a>
-                        <p style="color: #64748b; font-size: 14px; margin-top: 32px; border-top: 1px solid #e2e8f0; pt: 16px;">
-                            If you have any questions, just reply to this email.
-                        </p>
-                    </div>
-                `
-            });
-            console.log('[API] Invite email sent successfully');
-        } catch (emailError) {
-            console.error('[API] Failed to send invite email:', emailError);
-            // We don't return error here because the user was already created successfully
-        }
 
         // 4. If Instructor, add to 'instructors' table
         if (role === 'instructor') {
