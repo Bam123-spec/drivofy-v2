@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import {  Loader2, Lock } from "lucide-react"
+import { Loader2, Lock } from "lucide-react"
 import { toast } from "sonner"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
@@ -26,7 +26,7 @@ export default function UpdatePasswordPage() {
         const initSession = async () => {
             try {
                 console.log('[UPDATE_PASSWORD] Checking for session...')
-                
+
                 // Check if there's a hash fragment with tokens (from invite/recovery links)
                 const hashParams = new URLSearchParams(window.location.hash.substring(1))
                 const accessToken = hashParams.get('access_token')
@@ -80,11 +80,11 @@ export default function UpdatePasswordPage() {
                 }
 
                 console.log('[UPDATE_PASSWORD] No session found')
-                
+
                 // Set up listener for auth state changes
                 const { data } = supabase.auth.onAuthStateChange((event, session) => {
                     console.log('[UPDATE_PASSWORD] Auth event:', event, session?.user?.id)
-                    
+
                     if (!mounted) return
 
                     if (session) {
@@ -135,29 +135,29 @@ export default function UpdatePasswordPage() {
 
         try {
             console.log('[UPDATE_PASSWORD] Attempting password update...')
-            
+
             const { error } = await supabase.auth.updateUser({
                 password: password
             })
 
             if (error) {
                 console.error('[UPDATE_PASSWORD] Error:', error)
-                
+
                 if (error.message.includes('session_not_found') || error.message.includes('Auth session missing')) {
                     toast.error("Invalid or expired link. Please request a new password reset.")
                     setTimeout(() => router.push('/forgot-password'), 2000)
                     return
                 }
-                
+
                 throw error
             }
 
             console.log('[UPDATE_PASSWORD] Password updated successfully')
             toast.success("Password updated successfully! Redirecting to login...")
-            
+
             // Sign out to force fresh login with new password
             await supabase.auth.signOut()
-            
+
             setTimeout(() => {
                 router.push("/login")
             }, 1500)
@@ -234,9 +234,9 @@ export default function UpdatePasswordPage() {
                                 </div>
                             </div>
                         </CardContent>
-                        <CardFooter>
-                            <Button 
-                                type="submit" 
+                        <CardFooter className="mt-6">
+                            <Button
+                                type="submit"
                                 className="w-full"
                                 disabled={isLoading}
                             >
