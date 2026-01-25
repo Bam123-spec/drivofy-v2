@@ -209,7 +209,7 @@ export default function AdminLayout({
                 </ScrollArea>
 
                 {/* Collapse Toggle (Desktop Only) */}
-                <div className="hidden lg:flex items-center justify-center p-2 border-t border-sidebar-border bg-sidebar-accent/5">
+                <div className="hidden lg:flex items-center justify-center p-2 border-t border-sidebar-border bg-sidebar-accent/5 shrink-0">
                     <Button
                         variant="ghost"
                         size="sm"
