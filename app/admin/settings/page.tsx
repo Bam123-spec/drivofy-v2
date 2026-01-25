@@ -51,8 +51,7 @@ interface GeneralSettingsFormValues {
     notifyNewEnrollments: boolean
     notifyMonthlySummary: boolean
     primaryColor: string
-    stripeStatus: 'connected' | 'disconnected'
-    stripeAccountId: string | null
+    primaryColor: string
     orgId: string | null
 }
 
@@ -68,8 +67,7 @@ const INITIAL_SETTINGS: GeneralSettingsFormValues = {
     notifyNewEnrollments: true,
     notifyMonthlySummary: false,
     primaryColor: "blue",
-    stripeStatus: 'disconnected',
-    stripeAccountId: null,
+    primaryColor: "blue",
     orgId: null
 }
 
@@ -125,8 +123,7 @@ function SettingsContent() {
                     notifyNewEnrollments: org.notify_new_enrollments ?? true,
                     notifyMonthlySummary: org.notify_monthly_summary ?? false,
                     primaryColor: org.primary_color || "blue",
-                    stripeStatus: org.stripe_status || 'disconnected',
-                    stripeAccountId: org.stripe_account_id,
+                    primaryColor: org.primary_color || "blue",
                     orgId: org.id
                 })
             }
@@ -170,14 +167,7 @@ function SettingsContent() {
         }
     }
 
-    const handleConnectStripe = () => {
-        if (!settings.orgId) {
-            toast.error("Organization ID missing")
-            return
-        }
-        // Redirect to our connect endpoint
-        window.location.href = `/api/stripe/connect?organization_id=${settings.orgId}`
-    }
+
 
     const handleChange = (field: keyof GeneralSettingsFormValues, value: any) => {
         setSettings(prev => ({ ...prev, [field]: value }))
@@ -222,13 +212,8 @@ function SettingsContent() {
                     { label: "System Status", value: "Optimal", icon: Zap, color: "blue", trend: "All systems go" },
                     { label: "Plan Level", value: "Premium", icon: ShieldCheck, color: "indigo", trend: "Professional" },
                     {
-                        label: "Payments", // Updated from Integrations
-                        value: settings.stripeStatus === 'connected' ? "Active" : "Inactive",
-                        icon: CreditCard,
-                        color: settings.stripeStatus === 'connected' ? "emerald" : "slate",
-                        trend: settings.stripeStatus === 'connected' ? "Stripe Connected" : "Connect Stripe"
+                        label: "Notifications", value: "Enabled", icon: Activity, color: "orange", trend: "Real-time alerts"
                     },
-                    { label: "Notifications", value: "Enabled", icon: Activity, color: "orange", trend: "Real-time alerts" },
                 ].map((stat, i) => (
                     <Card key={i} className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden group hover:shadow-md transition-shadow">
                         <CardContent className="p-6">
@@ -381,44 +366,7 @@ function SettingsContent() {
                             </div>
                         </CardHeader>
                         <CardContent className="p-6 space-y-5">
-                            {/* NEW: Stripe Connect Section */}
-                            <div className="rounded-xl border border-slate-200 p-4 bg-slate-50/50">
-                                <div className="flex items-center justify-between">
-                                    <div className="space-y-1">
-                                        <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                                            Stripe Integration
-                                            {settings.stripeStatus === 'connected' && (
-                                                <span className="inline-flex items-center px-2 py-0.5 rounded textxs font-medium bg-emerald-100 text-emerald-800">
-                                                    <CheckCircle2 className="w-3 h-3 mr-1" />
-                                                    Connected
-                                                </span>
-                                            )}
-                                        </h4>
-                                        <p className="text-xs text-slate-500">Enable payments for your students.</p>
-                                    </div>
 
-                                    {settings.stripeStatus === 'connected' ? (
-                                        <div className="flex gap-2">
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                className="h-8 text-xs font-bold"
-                                                onClick={() => window.open('https://dashboard.stripe.com', '_blank')}
-                                            >
-                                                Dashboard <ExternalLink className="ml-2 h-3 w-3" />
-                                            </Button>
-                                        </div>
-                                    ) : (
-                                        <Button
-                                            size="sm"
-                                            className="h-9 bg-[#635BFF] hover:bg-[#5851E9] text-white font-bold"
-                                            onClick={handleConnectStripe}
-                                        >
-                                            Connect Stripe
-                                        </Button>
-                                    )}
-                                </div>
-                            </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                 <div className="space-y-1.5">
