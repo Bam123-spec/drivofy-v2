@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Loader2, Lock } from "lucide-react"
+import {  Loader2, Lock } from "lucide-react"
 import { toast } from "sonner"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
@@ -26,44 +26,78 @@ export default function UpdatePasswordPage() {
         const initSession = async () => {
             try {
                 console.log('[UPDATE_PASSWORD] Checking for session...')
+                
+                // Check if there's a hash fragment with tokens (from invite/recovery links)
+                const hashParams = new URLSearchParams(window.location.hash.substring(1))
+                const accessToken = hashParams.get('access_token')
+                const refreshToken = hashParams.get('refresh_token')
+                const error = hashParams.get('error')
+                const errorDescription = hashParams.get('error_description')
 
-                // Supabase client automatically processes hash fragments from invite links
-                // when the page loads. We just need to wait a bit for it to complete.
-
-                // First check if we already have a session
-                const { data: { session }, error } = await supabase.auth.getSession()
-
+                // Check for errors in the URL
                 if (error) {
-                    console.error('[UPDATE_PASSWORD] Session error:', error)
-                }
-
-                if (session && mounted) {
-                    console.log('[UPDATE_PASSWORD] Session found for user:', session.user.id)
+                    console.error('[UPDATE_PASSWORD] Error in URL:', error, errorDescription)
+                    toast.error(errorDescription || 'Invalid or expired link')
+                    setTimeout(() => router.push('/forgot-password'), 2000)
                     setIsCheckingSession(false)
                     return
                 }
 
-                console.log('[UPDATE_PASSWORD] No session yet, waiting for auth state change...')
+                // If we have tokens in the hash, set the session manually
+                if (accessToken) {
+                    console.log('[UPDATE_PASSWORD] Found tokens in URL, setting session...')
+                    const { data, error } = await supabase.auth.setSession({
+                        access_token: accessToken,
+                        refresh_token: refreshToken || ''
+                    })
 
+                    if (error) {
+                        console.error('[UPDATE_PASSWORD] Error setting session:', error)
+                        toast.error('Failed to verify link. Please try again.')
+                        setTimeout(() => router.push('/forgot-password'), 2000)
+                        setIsCheckingSession(false)
+                        return
+                    }
+
+                    if (data.session) {
+                        console.log('[UPDATE_PASSWORD] Session established from URL tokens')
+                        setIsCheckingSession(false)
+                        return
+                    }
+                }
+
+                // Otherwise, check if we already have a session
+                const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+
+                if (sessionError) {
+                    console.error('[UPDATE_PASSWORD] Session error:', sessionError)
+                }
+
+                if (session && mounted) {
+                    console.log('[UPDATE_PASSWORD] Existing session found:', session.user.id)
+                    setIsCheckingSession(false)
+                    return
+                }
+
+                console.log('[UPDATE_PASSWORD] No session found')
+                
                 // Set up listener for auth state changes
-                // The Supabase client will trigger this when it processes the hash fragment
                 const { data } = supabase.auth.onAuthStateChange((event, session) => {
                     console.log('[UPDATE_PASSWORD] Auth event:', event, session?.user?.id)
-
+                    
                     if (!mounted) return
 
                     if (session) {
-                        console.log('[UPDATE_PASSWORD] Session established')
+                        console.log('[UPDATE_PASSWORD] Session established via auth state change')
                         setIsCheckingSession(false)
                     }
                 })
                 authSubscription = data.subscription
 
-                // Safety timeout - if no session after 3 seconds, stop loading
-                // The password update will fail with a clear error if there's no valid token
+                // Safety timeout
                 setTimeout(() => {
                     if (mounted) {
-                        console.log('[UPDATE_PASSWORD] Timeout - proceeding anyway')
+                        console.log('[UPDATE_PASSWORD] Timeout - stopping check')
                         setIsCheckingSession(false)
                     }
                 }, 3000)
@@ -82,7 +116,7 @@ export default function UpdatePasswordPage() {
             mounted = false
             if (authSubscription) authSubscription.unsubscribe()
         }
-    }, [])
+    }, [router])
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -101,29 +135,29 @@ export default function UpdatePasswordPage() {
 
         try {
             console.log('[UPDATE_PASSWORD] Attempting password update...')
-
+            
             const { error } = await supabase.auth.updateUser({
                 password: password
             })
 
             if (error) {
                 console.error('[UPDATE_PASSWORD] Error:', error)
-
+                
                 if (error.message.includes('session_not_found') || error.message.includes('Auth session missing')) {
                     toast.error("Invalid or expired link. Please request a new password reset.")
                     setTimeout(() => router.push('/forgot-password'), 2000)
                     return
                 }
-
+                
                 throw error
             }
 
             console.log('[UPDATE_PASSWORD] Password updated successfully')
             toast.success("Password updated successfully! Redirecting to login...")
-
+            
             // Sign out to force fresh login with new password
             await supabase.auth.signOut()
-
+            
             setTimeout(() => {
                 router.push("/login")
             }, 1500)
@@ -201,8 +235,8 @@ export default function UpdatePasswordPage() {
                             </div>
                         </CardContent>
                         <CardFooter>
-                            <Button
-                                type="submit"
+                            <Button 
+                                type="submit" 
                                 className="w-full"
                                 disabled={isLoading}
                             >
