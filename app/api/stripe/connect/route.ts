@@ -39,13 +39,19 @@ export async function GET(request: Request) {
             return NextResponse.json({ error: 'Unauthorized access to organization' }, { status: 403 })
         }
 
-        // 3. Check for Stripe environment variables
+        // 3. Check for required environment variables
         const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY
         const STRIPE_CONNECT_CLIENT_ID = process.env.STRIPE_CONNECT_CLIENT_ID
-        const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000'
+        const BASE_URL = process.env.NEXT_PUBLIC_APP_URL
 
         if (!STRIPE_SECRET_KEY || !STRIPE_CONNECT_CLIENT_ID) {
             console.error('Missing Stripe environment variables')
+            return NextResponse.json({ error: 'System configuration error' }, { status: 500 })
+        }
+
+        if (!BASE_URL) {
+            console.error('Missing NEXT_PUBLIC_APP_URL environment variable')
+            console.error('Please set NEXT_PUBLIC_APP_URL=https://selamdriving.drivofy.com')
             return NextResponse.json({ error: 'System configuration error' }, { status: 500 })
         }
 

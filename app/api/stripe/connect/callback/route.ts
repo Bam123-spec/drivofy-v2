@@ -13,7 +13,13 @@ export async function GET(request: Request) {
         const error = searchParams.get('error')
         const errorDescription = searchParams.get('error_description')
 
-        const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000'
+        const BASE_URL = process.env.NEXT_PUBLIC_APP_URL
+
+        if (!BASE_URL) {
+            console.error('Missing NEXT_PUBLIC_APP_URL environment variable')
+            console.error('Please set NEXT_PUBLIC_APP_URL=https://selamdriving.drivofy.com')
+            return NextResponse.json({ error: 'System configuration error' }, { status: 500 })
+        }
 
         if (error) {
             console.error('Stripe OAuth error:', error, errorDescription)
@@ -83,7 +89,7 @@ export async function GET(request: Request) {
 
     } catch (error) {
         console.error('Error in Stripe Connect callback:', error)
-        const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000'
+        const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://selamdriving.drivofy.com'
         return NextResponse.redirect(`${BASE_URL}/admin/settings/payments?error=server_error`)
     }
 }
