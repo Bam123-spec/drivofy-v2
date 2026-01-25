@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { useState, useEffect } from "react"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -29,10 +29,15 @@ import {
     TrendingUp,
     ArrowUpRight,
     Loader2,
-    Calendar as CalendarIcon
+    Calendar as CalendarIcon,
+    CheckCircle2,
+    AlertCircle,
+    ExternalLink
 } from "lucide-react"
 import { GoogleCalendarConnect } from "@/app/instructor/profile/components/GoogleCalendarConnect"
 import { Suspense } from "react"
+import { supabase } from "@/lib/supabaseClient"
+import { useSearchParams } from "next/navigation"
 
 interface GeneralSettingsFormValues {
     orgName: string
@@ -46,37 +51,143 @@ interface GeneralSettingsFormValues {
     notifyNewEnrollments: boolean
     notifyMonthlySummary: boolean
     primaryColor: string
+    stripeStatus: 'connected' | 'disconnected'
+    stripeAccountId: string | null
+    orgId: string | null
 }
 
 const INITIAL_SETTINGS: GeneralSettingsFormValues = {
-    orgName: "Drivofy Driving School",
-    orgEmail: "admin@drivofy.com",
-    phone: "+1 (555) 123-4567",
+    orgName: "",
+    orgEmail: "",
+    phone: "",
     timezone: "America/New_York",
     currency: "USD",
-    taxRate: 8.5,
-    invoiceFooter: "Thank you for choosing Drivofy! Please contact support for any billing questions.",
+    taxRate: 0,
+    invoiceFooter: "",
     notifyFailedPayments: true,
     notifyNewEnrollments: true,
     notifyMonthlySummary: false,
-    primaryColor: "blue"
+    primaryColor: "blue",
+    stripeStatus: 'disconnected',
+    stripeAccountId: null,
+    orgId: null
 }
 
 export default function SettingsPage() {
     const [settings, setSettings] = useState<GeneralSettingsFormValues>(INITIAL_SETTINGS)
     const [saving, setSaving] = useState(false)
+    const [loading, setLoading] = useState(true)
+    const searchParams = useSearchParams()
+
+    useEffect(() => {
+        fetchSettings()
+
+        // Check for Stripe connection status in URL
+        const connected = searchParams.get('connected')
+        const error = searchParams.get('error')
+
+        if (connected) {
+            toast.success("Stripe account connected successfully!")
+            // Remove params from URL
+            window.history.replaceState({}, '', '/admin/settings')
+        }
+
+        if (error) {
+            toast.error(`Stripe connection failed: ${error}`)
+            window.history.replaceState({}, '', '/admin/settings')
+        }
+    }, [searchParams])
+
+    const fetchSettings = async () => {
+        try {
+            const { data: { user } } = await supabase.auth.getUser()
+            if (!user) return
+
+            const { data: org, error } = await supabase
+                .from('organizations')
+                .select('*')
+                .eq('owner_user_id', user.id)
+                .single()
+
+            if (error) throw error
+
+            if (org) {
+                setSettings({
+                    orgName: org.org_name || "",
+                    orgEmail: org.org_email || user.email || "",
+                    phone: org.phone || "",
+                    timezone: org.timezone || "America/New_York",
+                    currency: org.currency || "USD",
+                    taxRate: org.tax_rate || 0,
+                    invoiceFooter: org.invoice_footer || "",
+                    notifyFailedPayments: org.notify_failed_payments ?? true,
+                    notifyNewEnrollments: org.notify_new_enrollments ?? true,
+                    notifyMonthlySummary: org.notify_monthly_summary ?? false,
+                    primaryColor: org.primary_color || "blue",
+                    stripeStatus: org.stripe_status || 'disconnected',
+                    stripeAccountId: org.stripe_account_id,
+                    orgId: org.id
+                })
+            }
+        } catch (error) {
+            console.error('Error fetching settings:', error)
+            toast.error("Failed to load settings")
+        } finally {
+            setLoading(false)
+        }
+    }
 
     const handleSave = async () => {
+        if (!settings.orgId) return
         setSaving(true)
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 800))
-        console.log("Saving settings:", settings)
-        toast.success("Settings saved successfully")
-        setSaving(false)
+
+        try {
+            const { error } = await supabase
+                .from('organizations')
+                .update({
+                    org_name: settings.orgName,
+                    org_email: settings.orgEmail,
+                    phone: settings.phone,
+                    timezone: settings.timezone,
+                    currency: settings.currency,
+                    tax_rate: settings.taxRate,
+                    invoice_footer: settings.invoiceFooter,
+                    notify_failed_payments: settings.notifyFailedPayments,
+                    notify_new_enrollments: settings.notifyNewEnrollments,
+                    notify_monthly_summary: settings.notifyMonthlySummary,
+                    primary_color: settings.primaryColor
+                })
+                .eq('id', settings.orgId)
+
+            if (error) throw error
+            toast.success("Settings saved successfully")
+        } catch (error) {
+            console.error('Error saving settings:', error)
+            toast.error("Failed to save settings")
+        } finally {
+            setSaving(false)
+        }
+    }
+
+    const handleConnectStripe = () => {
+        if (!settings.orgId) {
+            toast.error("Organization ID missing")
+            return
+        }
+        // Redirect to our connect endpoint
+        window.location.href = `/api/stripe/connect?organization_id=${settings.orgId}`
     }
 
     const handleChange = (field: keyof GeneralSettingsFormValues, value: any) => {
         setSettings(prev => ({ ...prev, [field]: value }))
+    }
+
+    if (loading) {
+        return (
+            <div className="flex h-96 items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+            </div>
+        )
     }
 
     return (
@@ -109,7 +220,13 @@ export default function SettingsPage() {
                 {[
                     { label: "System Status", value: "Optimal", icon: Zap, color: "blue", trend: "All systems go" },
                     { label: "Plan Level", value: "Premium", icon: ShieldCheck, color: "indigo", trend: "Professional" },
-                    { label: "Integrations", value: "Active", icon: Globe, color: "emerald", trend: "Square Connected" },
+                    {
+                        label: "Payments", // Updated from Integrations
+                        value: settings.stripeStatus === 'connected' ? "Active" : "Inactive",
+                        icon: CreditCard,
+                        color: settings.stripeStatus === 'connected' ? "emerald" : "slate",
+                        trend: settings.stripeStatus === 'connected' ? "Stripe Connected" : "Connect Stripe"
+                    },
                     { label: "Notifications", value: "Enabled", icon: Activity, color: "orange", trend: "Real-time alerts" },
                 ].map((stat, i) => (
                     <Card key={i} className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden group hover:shadow-md transition-shadow">
@@ -258,11 +375,50 @@ export default function SettingsPage() {
                                 </div>
                                 <div>
                                     <CardTitle className="text-lg font-bold text-slate-900">Billing Preferences</CardTitle>
-                                    <CardDescription className="text-slate-500 text-sm">Configure currency and invoice details.</CardDescription>
+                                    <CardDescription className="text-slate-500 text-sm">Configure payments and invoices.</CardDescription>
                                 </div>
                             </div>
                         </CardHeader>
                         <CardContent className="p-6 space-y-5">
+                            {/* NEW: Stripe Connect Section */}
+                            <div className="rounded-xl border border-slate-200 p-4 bg-slate-50/50">
+                                <div className="flex items-center justify-between">
+                                    <div className="space-y-1">
+                                        <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                                            Stripe Integration
+                                            {settings.stripeStatus === 'connected' && (
+                                                <span className="inline-flex items-center px-2 py-0.5 rounded textxs font-medium bg-emerald-100 text-emerald-800">
+                                                    <CheckCircle2 className="w-3 h-3 mr-1" />
+                                                    Connected
+                                                </span>
+                                            )}
+                                        </h4>
+                                        <p className="text-xs text-slate-500">Enable payments for your students.</p>
+                                    </div>
+
+                                    {settings.stripeStatus === 'connected' ? (
+                                        <div className="flex gap-2">
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="h-8 text-xs font-bold"
+                                                onClick={() => window.open('https://dashboard.stripe.com', '_blank')}
+                                            >
+                                                Dashboard <ExternalLink className="ml-2 h-3 w-3" />
+                                            </Button>
+                                        </div>
+                                    ) : (
+                                        <Button
+                                            size="sm"
+                                            className="h-9 bg-[#635BFF] hover:bg-[#5851E9] text-white font-bold"
+                                            onClick={handleConnectStripe}
+                                        >
+                                            Connect Stripe
+                                        </Button>
+                                    )}
+                                </div>
+                            </div>
+
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                 <div className="space-y-1.5">
                                     <Label className="text-slate-700 font-semibold text-sm">Currency</Label>
