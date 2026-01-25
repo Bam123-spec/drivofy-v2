@@ -73,7 +73,8 @@ const INITIAL_SETTINGS: GeneralSettingsFormValues = {
     orgId: null
 }
 
-export default function SettingsPage() {
+
+function SettingsContent() {
     const [settings, setSettings] = useState<GeneralSettingsFormValues>(INITIAL_SETTINGS)
     const [saving, setSaving] = useState(false)
     const [loading, setLoading] = useState(true)
@@ -512,5 +513,13 @@ export default function SettingsPage() {
                 </div>
             </div>
         </div>
+    )
+}
+
+export default function SettingsPage() {
+    return (
+        <Suspense fallback={<div className="flex h-96 items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-slate-400" /></div>}>
+            <SettingsContent />
+        </Suspense>
     )
 }
