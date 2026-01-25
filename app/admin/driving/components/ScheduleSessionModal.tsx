@@ -25,7 +25,7 @@ export function ScheduleSessionModal({ open, onClose, instructors, students, veh
     const [formData, setFormData] = useState({
         studentId: "",
         instructorId: "",
-        vehicleId: "",
+        vehicleId: undefined as string | undefined,
         date: "",
         time: "",
         duration: "2",
@@ -42,6 +42,7 @@ export function ScheduleSessionModal({ open, onClose, instructors, students, veh
         try {
             const result = await createDrivingSession({
                 ...formData,
+                vehicleId: formData.vehicleId || undefined,
                 duration: parseFloat(formData.duration)
             })
 
@@ -53,7 +54,7 @@ export function ScheduleSessionModal({ open, onClose, instructors, students, veh
                 setFormData({
                     studentId: "",
                     instructorId: "",
-                    vehicleId: "",
+                    vehicleId: undefined,
                     date: "",
                     time: "",
                     duration: "2",

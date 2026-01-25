@@ -116,7 +116,7 @@ export async function createDrivingSession(data: {
             .insert([{
                 student_id: data.studentId,
                 instructor_id: data.instructorId,
-                vehicle_id: data.vehicleId,
+                vehicle_id: data.vehicleId || null,
                 start_time: startDateTime.toISOString(),
                 end_time: endDateTime.toISOString(),
                 duration_minutes: durationMinutes,
