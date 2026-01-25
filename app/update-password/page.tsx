@@ -96,7 +96,6 @@ export default function UpdatePasswordPage() {
         try {
             console.log('[UPDATE_PASSWORD] Updating password...')
 
-            console.log('[UPDATE_PASSWORD] Updating password for user:', session.user.id)
 
             const { data, error } = await supabase.auth.updateUser({
                 password: password
