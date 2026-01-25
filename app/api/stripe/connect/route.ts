@@ -1,6 +1,7 @@
 import Stripe from 'stripe'
-import { createClient } from '@/utils/supabase/server'
+import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
 import crypto from 'crypto'
 
 export const dynamic = 'force-dynamic'
@@ -15,7 +16,8 @@ export async function GET(request: Request) {
         }
 
         // 1. Verify user authentication
-        const supabase = await createClient()
+        const cookieStore = await cookies()
+        const supabase = createClient(cookieStore)
         const { data: { user }, error: authError } = await supabase.auth.getUser()
 
         if (authError || !user) {

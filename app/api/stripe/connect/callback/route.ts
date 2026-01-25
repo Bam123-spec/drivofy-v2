@@ -1,6 +1,7 @@
 import Stripe from 'stripe'
-import { createClient } from '@/utils/supabase/server'
+import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
 
 export const dynamic = 'force-dynamic'
 
@@ -40,9 +41,7 @@ export async function GET(request: Request) {
             return NextResponse.redirect(`${BASE_URL}/admin/settings/payments?error=config_error`)
         }
 
-        const stripe = new Stripe(STRIPE_SECRET_KEY, {
-            apiVersion: '2025-01-27.acacia',
-        })
+        const stripe = new Stripe(STRIPE_SECRET_KEY)
 
         // 3. Exchange code for access token
         const response = await stripe.oauth.token({
@@ -57,7 +56,8 @@ export async function GET(request: Request) {
         }
 
         // 4. Update database
-        const supabase = await createClient()
+        const cookieStore = await cookies()
+        const supabase = createClient(cookieStore)
 
         // We use service role bypass or ensure the user is authenticated?
         // Ideally we should verify the user again, but we are in a callback.
