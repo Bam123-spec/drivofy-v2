@@ -94,14 +94,7 @@ export default function UpdatePasswordPage() {
         setIsLoading(true)
 
         try {
-            // Check if we have a session first
-            const { data: { session } } = await supabase.auth.getSession()
-
-            if (!session) {
-                toast.error("Session expired. Please request a new password reset link.")
-                router.push("/forgot-password")
-                return
-            }
+            console.log('[UPDATE_PASSWORD] Updating password...')
 
             console.log('[UPDATE_PASSWORD] Updating password for user:', session.user.id)
 
