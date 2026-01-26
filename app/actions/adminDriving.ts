@@ -1,6 +1,8 @@
 'use server'
 
-import { createClient } from '@supabase/supabase-js'
+import { createClient as createServiceClient } from '@supabase/supabase-js'
+import { createClient } from '@/lib/supabase/server'
+import { cookies } from 'next/headers'
 import { revalidatePath } from 'next/cache'
 import { format } from 'date-fns'
 import { getInstructorBusyTimes, createCalendarEvent } from '@/lib/googleCalendar'
@@ -8,7 +10,7 @@ import { sendTransactionalEmail } from '@/lib/brevo'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
-const supabase = createClient(supabaseUrl, supabaseServiceKey)
+const supabaseService = createServiceClient(supabaseUrl, supabaseServiceKey)
 
 export async function getDrivingSessions(filters?: {
     instructorId?: string,
@@ -17,7 +19,7 @@ export async function getDrivingSessions(filters?: {
     startDate?: string,
     endDate?: string
 }) {
-    let query = supabase
+    let query = supabaseService
         .from('driving_sessions')
         .select(`
             *,
@@ -39,19 +41,19 @@ export async function getDrivingSessions(filters?: {
 }
 
 export async function getInstructors() {
-    const { data, error } = await supabase.from('instructors').select('*').eq('status', 'active').order('full_name')
+    const { data, error } = await supabaseService.from('instructors').select('*').eq('status', 'active').order('full_name')
     if (error) throw new Error(error.message)
     return data
 }
 
 export async function getStudents() {
-    const { data, error } = await supabase.from('profiles').select('*').eq('role', 'student').order('full_name')
+    const { data, error } = await supabaseService.from('profiles').select('*').eq('role', 'student').order('full_name')
     if (error) throw new Error(error.message)
     return data
 }
 
 export async function getVehicles() {
-    const { data, error } = await supabase.from('vehicles').select('*').eq('status', 'active').order('name')
+    const { data, error } = await supabaseService.from('vehicles').select('*').eq('status', 'active').order('name')
     if (error) throw new Error(error.message)
     return data
 }
@@ -72,10 +74,23 @@ export async function createDrivingSession(data: {
 
         console.log("📋 Creating driving session for instructor:", data.instructorId)
 
-        // 0. Resolve Profile ID (Required for Google Sync)
-        const { data: instructor, error: instructorError } = await supabase
+        // 0. Get authenticated admin user for calendar sync
+        const cookieStore = await cookies()
+        const supabase = createClient(cookieStore)
+        const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+        if (authError || !user) {
+            console.error("❌ Failed to get authenticated user:", authError)
+        } else {
+            console.log("👤 Admin user authenticated:", user.id)
+        }
+
+        let calendarSyncWarning: string | null = null
+
+        // 1. Fetch instructor details for display
+        const { data: instructor, error: instructorError } = await supabaseService
             .from('instructors')
-            .select('profile_id, full_name, email')
+            .select('full_name, email')
             .eq('id', data.instructorId)
             .single()
 
@@ -84,21 +99,10 @@ export async function createDrivingSession(data: {
             return { success: false, error: "Failed to fetch instructor details" }
         }
 
-        console.log("👨‍🏫 Instructor details:", {
-            name: instructor.full_name,
-            profile_id: instructor.profile_id,
-            has_profile_link: !!instructor.profile_id
-        })
+        console.log("👨‍🏫 Instructor details:", instructor.full_name)
 
-        let calendarSyncWarning: string | null = null
-
-        if (!instructor?.profile_id) {
-            console.warn(`⚠️ No profile_id found for instructor ${data.instructorId}. Google Calendar sync will be skipped.`)
-            calendarSyncWarning = `${instructor.full_name} doesn't have a linked account. Calendar sync skipped.`
-        }
-
-        // 1. Conflict Check (Internal) - Allow only 1 booking per time slot
-        const { data: internalConflicts } = await supabase
+        // 2. Conflict Check (Internal DB only - no Google Calendar check needed)
+        const { data: internalConflicts } = await supabaseService
             .from('driving_sessions')
             .select('id')
             .eq('instructor_id', data.instructorId)
@@ -110,30 +114,8 @@ export async function createDrivingSession(data: {
             return { success: false, error: "Instructor is already booked for that time" }
         }
 
-        // 2. Conflict Check (Google Calendar)
-        if (instructor?.profile_id) {
-            try {
-                console.log("🔍 Checking Google Calendar conflicts for profile:", instructor.profile_id)
-                const busySlots = await getInstructorBusyTimes(
-                    instructor.profile_id,
-                    startDateTime.toISOString(),
-                    endDateTime.toISOString()
-                )
-                if (busySlots && busySlots.length > 0) {
-                    console.warn("⚠️ Google Calendar conflict detected", busySlots)
-                    return { success: false, error: `It conflicts with ${instructor.full_name}'s Google Calendar` }
-                }
-                console.log("✅ No Google Calendar conflicts")
-            } catch (e: any) {
-                console.warn("⚠️ Google Calendar check failed, proceeding:", e.message)
-                if (!calendarSyncWarning) {
-                    calendarSyncWarning = `Could not verify calendar availability: ${e.message}`
-                }
-            }
-        }
-
         // 3. Insert Session
-        const { data: session, error } = await supabase
+        const { data: session, error } = await supabaseService
             .from('driving_sessions')
             .insert([{
                 student_id: data.studentId,
@@ -185,7 +167,7 @@ export async function createDrivingSession(data: {
 
         // 5. Send Email Notification to Instructor
         try {
-            const { data: instrProfile } = await supabase
+            const { data: instrProfile } = await supabaseService
                 .from('profiles')
                 .select('email')
                 .eq('id', instructor?.profile_id)
@@ -239,7 +221,7 @@ export async function createDrivingSession(data: {
 }
 
 export async function updateSessionStatus(id: string, status: string) {
-    const { error } = await supabase
+    const { error } = await supabaseService
         .from('driving_sessions')
         .update({ status, updated_at: new Date().toISOString() })
         .eq('id', id)
@@ -250,7 +232,7 @@ export async function updateSessionStatus(id: string, status: string) {
 }
 
 export async function updateSessionNotes(id: string, notes: string) {
-    const { error } = await supabase
+    const { error } = await supabaseService
         .from('driving_sessions')
         .update({ notes, updated_at: new Date().toISOString() })
         .eq('id', id)
@@ -261,7 +243,7 @@ export async function updateSessionNotes(id: string, notes: string) {
 }
 
 export async function deleteDrivingSession(id: string) {
-    const { error } = await supabase
+    const { error } = await supabaseService
         .from('driving_sessions')
         .delete()
         .eq('id', id)
