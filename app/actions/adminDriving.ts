@@ -135,47 +135,39 @@ export async function createDrivingSession(data: {
 
         console.log("✅ Session created in database:", session.id)
 
-        // 4. Sync to Google Calendar
-        if (instructor?.profile_id) {
+        // 4. Sync to Admin's Google Calendar
+        if (user) {
             try {
-                console.log("🚀 Attempting Google Calendar sync...")
-                console.log("   Profile ID:", instructor.profile_id)
+                console.log("🚀 Syncing to ADMIN's Google Calendar...")
+                console.log("   Admin ID:", user.id)
+                console.log("   Instructor:", instructor.full_name)
                 console.log("   Student:", session.profiles?.full_name)
-                console.log("   Time:", startDateTime.toISOString(), "to", endDateTime.toISOString())
 
-                const calendarEvent = await createCalendarEvent(instructor.profile_id, {
+                const calendarEvent = await createCalendarEvent(user.id, {
                     studentName: session.profiles?.full_name || "Student",
                     startTime: startDateTime.toISOString(),
                     endTime: endDateTime.toISOString(),
-                    title: `Driving Session - ${session.profiles?.full_name}`,
-                    description: `Driving Session (Admin Scheduled)\nStudent: ${session.profiles?.full_name}\nDuration: ${data.duration} hour(s)\nNotes: ${data.notes || 'N/A'}`,
+                    title: `${instructor.full_name} - ${session.profiles?.full_name}`,
+                    description: `Driving Session\nInstructor: ${instructor.full_name}\nStudent: ${session.profiles?.full_name}\nDuration: ${data.duration} hour(s)\nNotes: ${data.notes || 'N/A'}`,
                     location: "Driving School"
                 })
 
-                console.log("✅ Google Calendar event created!")
-                console.log("   Event link:", calendarEvent.htmlLink)
+                console.log("✅ Calendar event created on ADMIN calendar!")
+                console.log("   Link:", calendarEvent.htmlLink)
             } catch (calendarError: any) {
-                console.error("❌ Google Calendar sync FAILED")
-                console.error("   Error:", calendarError.message)
-                console.error("   Full error:", calendarError)
-
-                calendarSyncWarning = `Session created but calendar sync failed: ${calendarError.message}. Please check ${instructor.full_name}'s Google Calendar connection.`
+                console.error("❌ Calendar sync failed:", calendarError.message)
+                calendarSyncWarning = `Calendar sync failed: ${calendarError.message}. Check your Google Calendar connection.`
             }
         } else {
-            console.log("⏭️ Skipping Google Calendar sync (no profile_id)")
+            console.log("⏭️ No authenticated admin - skipping calendar sync")
+            calendarSyncWarning = "Calendar sync skipped - admin not authenticated"
         }
 
         // 5. Send Email Notification to Instructor
         try {
-            const { data: instrProfile } = await supabaseService
-                .from('profiles')
-                .select('email')
-                .eq('id', instructor?.profile_id)
-                .single()
-
-            if (instrProfile?.email && instructor) {
+            if (instructor?.email) {
                 await sendTransactionalEmail({
-                    to: [{ email: instrProfile.email, name: instructor.full_name }],
+                    to: [{ email: instructor.email, name: instructor.full_name }],
                     subject: `New Driving Session Assigned: ${session.profiles?.full_name}`,
                     htmlContent: `
                         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px;">
