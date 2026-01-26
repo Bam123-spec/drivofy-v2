@@ -129,6 +129,25 @@ export async function createDrivingSession(data: {
 
         if (error) throw error
 
+        // 4. Sync to Google Calendar
+        if (instructor?.profile_id) {
+            try {
+                console.log("🚀 Syncing session to Google Calendar...")
+                await createCalendarEvent(instructor.profile_id, {
+                    studentName: session.profiles?.full_name || "Student",
+                    startTime: startDateTime.toISOString(),
+                    endTime: endDateTime.toISOString(),
+                    title: `Driving Session - ${session.profiles?.full_name}`,
+                    description: `Driving Session (Admin Scheduled)\nStudent: ${session.profiles?.full_name}\nDuration: ${data.duration} hour(s)\nNotes: ${data.notes || 'N/A'}`,
+                    location: "Driving School"
+                })
+                console.log("✅ Google Calendar sync successful")
+            } catch (calendarError) {
+                console.error("❌ Google Calendar sync failed:", calendarError)
+                // Non-critical: Session is still booked even if calendar sync fails
+            }
+        }
+
         // 5. Send Email Notification to Instructor
         try {
             const { data: instrProfile } = await supabase
