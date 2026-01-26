@@ -48,6 +48,12 @@ export function ScheduleSessionModal({ open, onClose, instructors, students, veh
 
             if (result.success) {
                 toast.success("Session scheduled successfully")
+
+                // Show warning if calendar sync failed
+                if (result.warning) {
+                    toast.warning(result.warning, { duration: 5000 })
+                }
+
                 onSuccess()
                 onClose()
                 // Reset form

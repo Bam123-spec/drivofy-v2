@@ -70,15 +70,31 @@ export async function createDrivingSession(data: {
         const endDateTime = new Date(startDateTime.getTime() + data.duration * 60 * 60 * 1000)
         const durationMinutes = data.duration * 60
 
+        console.log("📋 Creating driving session for instructor:", data.instructorId)
+
         // 0. Resolve Profile ID (Required for Google Sync)
-        const { data: instructor } = await supabase
+        const { data: instructor, error: instructorError } = await supabase
             .from('instructors')
-            .select('profile_id, full_name')
+            .select('profile_id, full_name, email')
             .eq('id', data.instructorId)
             .single()
 
+        if (instructorError) {
+            console.error("❌ Failed to fetch instructor:", instructorError)
+            return { success: false, error: "Failed to fetch instructor details" }
+        }
+
+        console.log("👨‍🏫 Instructor details:", {
+            name: instructor.full_name,
+            profile_id: instructor.profile_id,
+            has_profile_link: !!instructor.profile_id
+        })
+
+        let calendarSyncWarning: string | null = null
+
         if (!instructor?.profile_id) {
-            console.warn(`⚠️ No profile_id found for instructor ${data.instructorId}, skipping GCal sync.`)
+            console.warn(`⚠️ No profile_id found for instructor ${data.instructorId}. Google Calendar sync will be skipped.`)
+            calendarSyncWarning = `${instructor.full_name} doesn't have a linked account. Calendar sync skipped.`
         }
 
         // 1. Conflict Check (Internal) - Allow only 1 booking per time slot
@@ -97,16 +113,22 @@ export async function createDrivingSession(data: {
         // 2. Conflict Check (Google Calendar)
         if (instructor?.profile_id) {
             try {
+                console.log("🔍 Checking Google Calendar conflicts for profile:", instructor.profile_id)
                 const busySlots = await getInstructorBusyTimes(
                     instructor.profile_id,
                     startDateTime.toISOString(),
                     endDateTime.toISOString()
                 )
                 if (busySlots && busySlots.length > 0) {
+                    console.warn("⚠️ Google Calendar conflict detected", busySlots)
                     return { success: false, error: `It conflicts with ${instructor.full_name}'s Google Calendar` }
                 }
-            } catch (e) {
-                console.warn("Google Calendar check failed, proceeding anyway", e)
+                console.log("✅ No Google Calendar conflicts")
+            } catch (e: any) {
+                console.warn("⚠️ Google Calendar check failed, proceeding:", e.message)
+                if (!calendarSyncWarning) {
+                    calendarSyncWarning = `Could not verify calendar availability: ${e.message}`
+                }
             }
         }
 
@@ -129,11 +151,17 @@ export async function createDrivingSession(data: {
 
         if (error) throw error
 
+        console.log("✅ Session created in database:", session.id)
+
         // 4. Sync to Google Calendar
         if (instructor?.profile_id) {
             try {
-                console.log("🚀 Syncing session to Google Calendar...")
-                await createCalendarEvent(instructor.profile_id, {
+                console.log("🚀 Attempting Google Calendar sync...")
+                console.log("   Profile ID:", instructor.profile_id)
+                console.log("   Student:", session.profiles?.full_name)
+                console.log("   Time:", startDateTime.toISOString(), "to", endDateTime.toISOString())
+
+                const calendarEvent = await createCalendarEvent(instructor.profile_id, {
                     studentName: session.profiles?.full_name || "Student",
                     startTime: startDateTime.toISOString(),
                     endTime: endDateTime.toISOString(),
@@ -141,11 +169,18 @@ export async function createDrivingSession(data: {
                     description: `Driving Session (Admin Scheduled)\nStudent: ${session.profiles?.full_name}\nDuration: ${data.duration} hour(s)\nNotes: ${data.notes || 'N/A'}`,
                     location: "Driving School"
                 })
-                console.log("✅ Google Calendar sync successful")
-            } catch (calendarError) {
-                console.error("❌ Google Calendar sync failed:", calendarError)
-                // Non-critical: Session is still booked even if calendar sync fails
+
+                console.log("✅ Google Calendar event created!")
+                console.log("   Event link:", calendarEvent.htmlLink)
+            } catch (calendarError: any) {
+                console.error("❌ Google Calendar sync FAILED")
+                console.error("   Error:", calendarError.message)
+                console.error("   Full error:", calendarError)
+
+                calendarSyncWarning = `Session created but calendar sync failed: ${calendarError.message}. Please check ${instructor.full_name}'s Google Calendar connection.`
             }
+        } else {
+            console.log("⏭️ Skipping Google Calendar sync (no profile_id)")
         }
 
         // 5. Send Email Notification to Instructor
@@ -192,7 +227,11 @@ export async function createDrivingSession(data: {
 
         revalidatePath('/admin/driving')
         revalidatePath('/admin/schedule')
-        return { success: true }
+
+        return {
+            success: true,
+            warning: calendarSyncWarning
+        }
     } catch (error: any) {
         console.error("Create Session Error:", error)
         return { success: false, error: error.message }
