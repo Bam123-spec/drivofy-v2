@@ -58,10 +58,17 @@ export async function getVehicles() {
     return data
 }
 
+export async function getServicePackages() {
+    const { data, error } = await supabaseService.from('service_packages').select('*').order('display_name')
+    if (error) throw new Error(error.message)
+    return data
+}
+
 export async function createDrivingSession(data: {
     studentId: string,
     instructorId: string,
     vehicleId?: string,
+    plan_key?: string,
     date: string,
     time: string,
     duration: number // hours
@@ -126,7 +133,8 @@ export async function createDrivingSession(data: {
                 duration_minutes: durationMinutes,
                 status: 'scheduled',
                 notes: data.notes,
-                source: 'admin'
+                source: 'admin',
+                plan_key: data.plan_key || null
             }])
             .select('*, profiles:student_id(full_name)')
             .single()

@@ -166,92 +166,97 @@ export default function AdminLayout({
                 </div>
 
                 {/* Navigation */}
-                <ScrollArea className="flex-1 py-6 px-3">
-                    <div className="space-y-6">
-                        {menuGroups.map((group, i) => (
-                            <div key={i}>
-                                {!collapsed && (
-                                    <div className="px-3 mb-2 text-[11px] font-bold text-sidebar-foreground/40 uppercase tracking-wider animate-in fade-in duration-300">
-                                        {group.label}
-                                    </div>
-                                )}
-                                <nav className="space-y-0.5">
-                                    {group.items.map((item) => {
-                                        const Icon = item.icon
-                                        const isActive = pathname === item.href
-                                        const targetHref = item.placeholder ? "/admin/coming-soon" : item.href
+                {/* Navigation & Footer */}
+                <ScrollArea className="flex-1">
+                    <div className="flex flex-col min-h-full justify-between">
+                        <div className="py-6 px-3 space-y-6">
+                            {menuGroups.map((group, i) => (
+                                <div key={i}>
+                                    {!collapsed && (
+                                        <div className="px-3 mb-2 text-[11px] font-bold text-sidebar-foreground/40 uppercase tracking-wider animate-in fade-in duration-300">
+                                            {group.label}
+                                        </div>
+                                    )}
+                                    <nav className="space-y-0.5">
+                                        {group.items.map((item) => {
+                                            const Icon = item.icon
+                                            const isActive = pathname === item.href
+                                            const targetHref = item.placeholder ? "/admin/coming-soon" : item.href
 
-                                        return (
-                                            <Link
-                                                key={item.label}
-                                                href={targetHref}
-                                                className={`
-                                                    group flex items-center ${collapsed ? "justify-center px-0" : "justify-between px-3"} py-2 rounded-md text-sm font-medium transition-all duration-200
-                                                    ${isActive
-                                                        ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
-                                                        : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"}
-                                                `}
-                                                onClick={() => setSidebarOpen(false)}
-                                                title={collapsed ? item.label : undefined}
-                                            >
-                                                <div className={`flex items-center ${collapsed ? "gap-0" : "gap-3"}`}>
-                                                    <Icon className={`h-4 w-4 ${isActive ? "text-sidebar-primary-foreground" : "text-sidebar-foreground/50 group-hover:text-sidebar-accent-foreground"}`} />
-                                                    {!collapsed && <span className="animate-in fade-in duration-300">{item.label}</span>}
-                                                </div>
-                                                {!collapsed && isActive && <div className="h-1.5 w-1.5 rounded-full bg-white/20" />}
-                                            </Link>
-                                        )
-                                    })}
-                                </nav>
+                                            return (
+                                                <Link
+                                                    key={item.label}
+                                                    href={targetHref}
+                                                    className={`
+                                                        group flex items-center ${collapsed ? "justify-center px-0" : "justify-between px-3"} py-2 rounded-md text-sm font-medium transition-all duration-200
+                                                        ${isActive
+                                                            ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
+                                                            : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"}
+                                                    `}
+                                                    onClick={() => setSidebarOpen(false)}
+                                                    title={collapsed ? item.label : undefined}
+                                                >
+                                                    <div className={`flex items-center ${collapsed ? "gap-0" : "gap-3"}`}>
+                                                        <Icon className={`h-4 w-4 ${isActive ? "text-sidebar-primary-foreground" : "text-sidebar-foreground/50 group-hover:text-sidebar-accent-foreground"}`} />
+                                                        {!collapsed && <span className="animate-in fade-in duration-300">{item.label}</span>}
+                                                    </div>
+                                                    {!collapsed && isActive && <div className="h-1.5 w-1.5 rounded-full bg-white/20" />}
+                                                </Link>
+                                            )
+                                        })}
+                                    </nav>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="mt-auto">
+                            {/* Collapse Toggle (Desktop Only) */}
+                            <div className="hidden lg:flex items-center justify-center p-2 border-t border-sidebar-border bg-sidebar-accent/5">
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setCollapsed(!collapsed)}
+                                    className="w-full hover:bg-sidebar-accent hover:text-sidebar-accent-foreground text-sidebar-foreground/50"
+                                >
+                                    {collapsed ? <ChevronRight className="h-4 w-4" /> : <div className="flex items-center gap-2"><ChevronRight className="h-4 w-4 rotate-180" /> <span className="text-xs">Collapse Sidebar</span></div>}
+                                </Button>
                             </div>
-                        ))}
+
+                            {/* User Profile Footer */}
+                            <div className={`p-4 border-t border-sidebar-border bg-sidebar-accent/10 ${collapsed ? "flex justify-center" : ""}`}>
+                                <div className={`flex items-center ${collapsed ? "justify-center" : "gap-3"} p-2 rounded-xl hover:bg-sidebar-accent/50 transition-all cursor-pointer group`}>
+                                    <Avatar className="h-9 w-9 border-2 border-sidebar-primary/20 shadow-sm">
+                                        <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${userProfile?.email}`} />
+                                        <AvatarFallback className="bg-sidebar-primary text-sidebar-primary-foreground">AD</AvatarFallback>
+                                    </Avatar>
+                                    {!collapsed && (
+                                        <div className="flex-1 min-w-0 animate-in fade-in duration-300">
+                                            <p className="text-sm font-semibold text-sidebar-foreground truncate">
+                                                {userProfile?.name || "Loading..."}
+                                            </p>
+                                            <p className="text-xs text-sidebar-foreground/50 truncate">
+                                                {userProfile?.email || "admin@drivofy.com"}
+                                            </p>
+                                        </div>
+                                    )}
+                                    {!collapsed && (
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-8 w-8 text-sidebar-foreground/50 hover:text-red-400 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                                            onClick={(e) => {
+                                                e.stopPropagation()
+                                                handleLogout()
+                                            }}
+                                        >
+                                            <LogOut className="h-4 w-4" />
+                                        </Button>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </ScrollArea>
-
-                {/* Collapse Toggle (Desktop Only) */}
-                <div className="hidden lg:flex items-center justify-center p-2 border-t border-sidebar-border bg-sidebar-accent/5 shrink-0">
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setCollapsed(!collapsed)}
-                        className="w-full hover:bg-sidebar-accent hover:text-sidebar-accent-foreground text-sidebar-foreground/50"
-                    >
-                        {collapsed ? <ChevronRight className="h-4 w-4" /> : <div className="flex items-center gap-2"><ChevronRight className="h-4 w-4 rotate-180" /> <span className="text-xs">Collapse Sidebar</span></div>}
-                    </Button>
-                </div>
-
-                {/* User Profile Footer */}
-                <div className={`p-4 border-t border-sidebar-border bg-sidebar-accent/10 shrink-0 ${collapsed ? "flex justify-center" : ""}`}>
-                    <div className={`flex items-center ${collapsed ? "justify-center" : "gap-3"} p-2 rounded-xl hover:bg-sidebar-accent/50 transition-all cursor-pointer group`}>
-                        <Avatar className="h-9 w-9 border-2 border-sidebar-primary/20 shadow-sm">
-                            <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${userProfile?.email}`} />
-                            <AvatarFallback className="bg-sidebar-primary text-sidebar-primary-foreground">AD</AvatarFallback>
-                        </Avatar>
-                        {!collapsed && (
-                            <div className="flex-1 min-w-0 animate-in fade-in duration-300">
-                                <p className="text-sm font-semibold text-sidebar-foreground truncate">
-                                    {userProfile?.name || "Loading..."}
-                                </p>
-                                <p className="text-xs text-sidebar-foreground/50 truncate">
-                                    {userProfile?.email || "admin@drivofy.com"}
-                                </p>
-                            </div>
-                        )}
-                        {!collapsed && (
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-sidebar-foreground/50 hover:text-red-400 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity"
-                                onClick={(e) => {
-                                    e.stopPropagation()
-                                    handleLogout()
-                                }}
-                            >
-                                <LogOut className="h-4 w-4" />
-                            </Button>
-                        )}
-                    </div>
-                </div>
             </aside>
 
             {/* Main Content Area */}

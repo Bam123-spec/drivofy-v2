@@ -22,31 +22,32 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { toast } from "sonner"
+import { InstructorScheduling } from "./InstructorScheduling"
 
 export default function AdminInstructorProfile() {
     const params = useParams()
     const [instructor, setInstructor] = useState<any>(null)
     const [loading, setLoading] = useState(true)
 
-    useEffect(() => {
-        const fetchInstructor = async () => {
-            try {
-                const { data, error } = await supabase
-                    .from('instructors')
-                    .select('*')
-                    .eq('id', params.id)
-                    .single()
+    const fetchInstructor = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('instructors')
+                .select('*')
+                .eq('id', params.id)
+                .single()
 
-                if (error) throw error
-                setInstructor(data)
-            } catch (error) {
-                console.error("Error fetching instructor:", error)
-                toast.error("Failed to load instructor details")
-            } finally {
-                setLoading(false)
-            }
+            if (error) throw error
+            setInstructor(data)
+        } catch (error) {
+            console.error("Error fetching instructor:", error)
+            toast.error("Failed to load instructor details")
+        } finally {
+            setLoading(false)
         }
+    }
 
+    useEffect(() => {
         if (params.id) {
             fetchInstructor()
         }
@@ -93,8 +94,8 @@ export default function AdminInstructorProfile() {
                                 <h1 className="text-3xl font-bold text-gray-900 tracking-tight">{instructor.full_name}</h1>
                                 <div className="flex items-center gap-3">
                                     <Badge variant="secondary" className={`px-3 py-1 text-sm font-medium capitalize shadow-sm ${instructor.type === 'driving' ? 'bg-purple-50 text-purple-700 border-purple-100' :
-                                            instructor.type === 'theory' ? 'bg-indigo-50 text-indigo-700 border-indigo-100' :
-                                                'bg-blue-50 text-blue-700 border-blue-100'
+                                        instructor.type === 'theory' ? 'bg-indigo-50 text-indigo-700 border-indigo-100' :
+                                            'bg-blue-50 text-blue-700 border-blue-100'
                                         }`}>
                                         {instructor.type} Instructor
                                     </Badge>
@@ -234,19 +235,11 @@ export default function AdminInstructorProfile() {
                     </div>
                 </TabsContent>
 
-                <TabsContent value="schedule">
-                    <Card className="border-none shadow-md">
-                        <CardHeader>
-                            <CardTitle>Weekly Schedule</CardTitle>
-                            <CardDescription>Upcoming lessons and availability.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="h-96 flex flex-col items-center justify-center text-gray-400 gap-4">
-                            <div className="h-16 w-16 bg-gray-50 rounded-full flex items-center justify-center">
-                                <Calendar className="h-8 w-8 text-gray-300" />
-                            </div>
-                            <p className="font-medium">Calendar view coming soon...</p>
-                        </CardContent>
-                    </Card>
+                <TabsContent value="schedule" className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+                    <InstructorScheduling
+                        instructor={instructor}
+                        onUpdate={fetchInstructor}
+                    />
                 </TabsContent>
 
                 <TabsContent value="students">

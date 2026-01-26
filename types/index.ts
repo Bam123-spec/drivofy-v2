@@ -20,6 +20,25 @@ export interface Instructor {
     license_number?: string;
     color_code?: string; // For calendar display
     created_at: string;
+    // Scheduling Rules
+    working_days?: number[];
+    start_time?: string;
+    end_time?: string;
+    slot_minutes?: number;
+    break_start?: string;
+    break_end?: string;
+    min_notice_hours?: number;
+    is_active?: boolean;
+}
+
+export interface ServicePackage {
+    id: string;
+    plan_key: string;
+    display_name: string;
+    instructor_id: string | null;
+    duration_minutes: number;
+    credits_granted?: number;
+    created_at: string;
 }
 
 export interface Course {
@@ -61,6 +80,7 @@ export interface BtwSession {
     id: string;
     student_id: string;
     instructor_id?: string;
+    plan_key?: string; // Link to service_packages
     starts_at: string;
     ends_at: string;
     session_type: 'included' | 'extra_paid';

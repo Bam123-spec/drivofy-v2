@@ -7,9 +7,11 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { createDrivingSession } from "@/app/actions/adminDriving"
+import { createDrivingSession, getServicePackages } from "@/app/actions/adminDriving"
 import { toast } from "sonner"
-import { Loader2 } from "lucide-react"
+import { Loader2, Calendar as CalendarIcon, Clock } from "lucide-react"
+import { useEffect } from "react"
+import { format, parseISO } from "date-fns"
 
 interface ScheduleModalProps {
     open: boolean
@@ -22,15 +24,72 @@ interface ScheduleModalProps {
 
 export function ScheduleSessionModal({ open, onClose, instructors, students, vehicles, onSuccess }: ScheduleModalProps) {
     const [loading, setLoading] = useState(false)
+    const [servicePackages, setServicePackages] = useState<any[]>([])
+    const [slots, setSlots] = useState<string[]>([])
+    const [fetchingSlots, setFetchingSlots] = useState(false)
     const [formData, setFormData] = useState({
         studentId: "",
         instructorId: "",
         vehicleId: undefined as string | undefined,
+        plan_key: "",
         date: "",
         time: "",
         duration: "2",
         notes: ""
     })
+
+    useEffect(() => {
+        const fetchPackages = async () => {
+            try {
+                const packages = await getServicePackages()
+                setServicePackages(packages)
+            } catch (error) {
+                console.error("Error fetching packages:", error)
+            }
+        }
+        if (open) fetchPackages()
+    }, [open])
+
+    useEffect(() => {
+        const fetchSlots = async () => {
+            if (!formData.plan_key || !formData.date) {
+                setSlots([])
+                return
+            }
+
+            setFetchingSlots(true)
+            try {
+                const response = await fetch(`/api/availability?plan_key=${formData.plan_key}&date=${formData.date}`)
+                const data = await response.json()
+                if (data.slots) {
+                    setSlots(data.slots)
+                } else {
+                    setSlots([])
+                }
+            } catch (error) {
+                console.error("Error fetching slots:", error)
+                toast.error("Failed to fetch available slots")
+            } finally {
+                setFetchingSlots(false)
+            }
+        }
+        fetchSlots()
+    }, [formData.plan_key, formData.date])
+
+    const handleSlotSelect = (isoString: string) => {
+        const dateObj = parseISO(isoString)
+        const timeStr = format(dateObj, "HH:mm")
+
+        // Find the service package to get instructor and duration
+        const pkg = servicePackages.find(p => p.plan_key === formData.plan_key)
+
+        setFormData(prev => ({
+            ...prev,
+            time: timeStr,
+            instructorId: pkg?.instructor_id || prev.instructorId,
+            duration: (pkg?.duration_minutes / 60).toString() || prev.duration
+        }))
+    }
 
     const handleSubmit = async () => {
         if (!formData.studentId || !formData.instructorId || !formData.date || !formData.time) {
@@ -61,6 +120,7 @@ export function ScheduleSessionModal({ open, onClose, instructors, students, veh
                     studentId: "",
                     instructorId: "",
                     vehicleId: undefined,
+                    plan_key: "",
                     date: "",
                     time: "",
                     duration: "2",
@@ -90,11 +150,11 @@ export function ScheduleSessionModal({ open, onClose, instructors, students, veh
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label>Student *</Label>
-                            <Select onValueChange={(val) => setFormData({ ...formData, studentId: val })}>
-                                <SelectTrigger>
+                            <Select value={formData.studentId} onValueChange={(val) => setFormData({ ...formData, studentId: val })}>
+                                <SelectTrigger className="h-11 rounded-xl">
                                     <SelectValue placeholder="Select student" />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="rounded-xl">
                                     {students.map(s => (
                                         <SelectItem key={s.id} value={s.id}>{s.full_name}</SelectItem>
                                     ))}
@@ -102,65 +162,95 @@ export function ScheduleSessionModal({ open, onClose, instructors, students, veh
                             </Select>
                         </div>
                         <div className="space-y-2">
-                            <Label>Instructor *</Label>
-                            <Select onValueChange={(val) => setFormData({ ...formData, instructorId: val })}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select instructor" />
+                            <Label>Service Plan *</Label>
+                            <Select value={formData.plan_key} onValueChange={(val) => setFormData({ ...formData, plan_key: val, time: "" })}>
+                                <SelectTrigger className="h-11 rounded-xl">
+                                    <SelectValue placeholder="Select plan" />
                                 </SelectTrigger>
-                                <SelectContent>
-                                    {instructors.map(i => (
-                                        <SelectItem key={i.id} value={i.id}>{i.full_name}</SelectItem>
+                                <SelectContent className="rounded-xl">
+                                    {servicePackages.map(p => (
+                                        <SelectItem key={p.id} value={p.plan_key}>{p.display_name}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-4">
-                        <div className="space-y-2">
-                            <Label>Date *</Label>
+                    <div className="space-y-2">
+                        <Label>Date *</Label>
+                        <div className="relative">
+                            <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                             <Input
                                 type="date"
+                                className="h-11 pl-10 rounded-xl"
                                 value={formData.date}
-                                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                                onChange={(e) => setFormData({ ...formData, date: e.target.value, time: "" })}
                             />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Time *</Label>
-                            <Input
-                                type="time"
-                                value={formData.time}
-                                onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Duration (hrs)</Label>
-                            <Select value={formData.duration} onValueChange={(val) => setFormData({ ...formData, duration: val })}>
-                                <SelectTrigger>
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="1">1 hour</SelectItem>
-                                    <SelectItem value="1.5">1.5 hours</SelectItem>
-                                    <SelectItem value="2">2 hours</SelectItem>
-                                    <SelectItem value="3">3 hours</SelectItem>
-                                </SelectContent>
-                            </Select>
                         </div>
                     </div>
 
-                    <div className="space-y-2">
-                        <Label>Vehicle (Optional)</Label>
-                        <Select onValueChange={(val) => setFormData({ ...formData, vehicleId: val })}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select vehicle" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {vehicles.map(v => (
-                                    <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                    {formData.plan_key && formData.date && (
+                        <div className="space-y-3">
+                            <Label className="text-sm font-bold text-slate-900 group flex items-center gap-2">
+                                <Clock className="h-4 w-4 text-blue-600" />
+                                Available Slots
+                            </Label>
+                            {fetchingSlots ? (
+                                <div className="flex items-center justify-center py-8">
+                                    <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+                                </div>
+                            ) : slots.length > 0 ? (
+                                <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto p-1">
+                                    {slots.map((slot) => {
+                                        const dateObj = parseISO(slot)
+                                        const displayTime = format(dateObj, "h:mm a")
+                                        const valueTime = format(dateObj, "HH:mm")
+                                        const isSelected = formData.time === valueTime
+
+                                        return (
+                                            <Button
+                                                key={slot}
+                                                type="button"
+                                                variant={isSelected ? "default" : "outline"}
+                                                className={`h-10 text-xs font-bold rounded-lg transition-all ${isSelected ? "bg-blue-600 shadow-md shadow-blue-600/20" : "hover:border-blue-200 hover:bg-blue-50"
+                                                    }`}
+                                                onClick={() => handleSlotSelect(slot)}
+                                            >
+                                                {displayTime}
+                                            </Button>
+                                        )
+                                    })}
+                                </div>
+                            ) : (
+                                <div className="text-center py-6 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                                    <p className="text-sm text-slate-500 font-medium">No slots available for this date.</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label>Vehicle (Optional)</Label>
+                            <Select value={formData.vehicleId} onValueChange={(val) => setFormData({ ...formData, vehicleId: val })}>
+                                <SelectTrigger className="h-11 rounded-xl">
+                                    <SelectValue placeholder="Select vehicle" />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-xl">
+                                    {vehicles.map(v => (
+                                        <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Duration (hrs)</Label>
+                            <Input
+                                disabled
+                                value={`${formData.duration} hours`}
+                                className="h-11 rounded-xl bg-slate-50 font-medium"
+                            />
+                        </div>
                     </div>
 
                     <div className="space-y-2">

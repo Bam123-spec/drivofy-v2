@@ -100,13 +100,14 @@ export function DrivingSessionTable({ sessions, onSelectSession }: DrivingSessio
                                     <Badge variant={
                                         session.status === 'scheduled' ? 'secondary' :
                                             session.status === 'completed' ? 'outline' :
-                                                session.status === 'cancelled' ? 'destructive' : 'outline'
+                                                session.status === 'cancelled' || session.status === 'no_show' ? 'destructive' : 'outline'
                                     } className={
                                         session.status === 'scheduled' ? 'bg-blue-100 text-blue-800 hover:bg-blue-100' :
                                             session.status === 'completed' ? 'bg-green-100 text-green-800 border-green-200 hover:bg-green-100' :
-                                                session.status === 'cancelled' ? 'bg-red-100 text-red-800 hover:bg-red-100' : ''
+                                                session.status === 'cancelled' ? 'bg-red-100 text-red-800 hover:bg-red-100' :
+                                                    session.status === 'no_show' ? 'bg-orange-100 text-orange-800 hover:bg-orange-100' : ''
                                     }>
-                                        {session.status}
+                                        {session.status.replace('_', ' ')}
                                     </Badge>
                                 </TableCell>
                                 <TableCell className="text-right">
@@ -123,27 +124,52 @@ export function DrivingSessionTable({ sessions, onSelectSession }: DrivingSessio
                                                 View Details
                                             </DropdownMenuItem>
                                             {session.status === 'scheduled' && (
-                                                <DropdownMenuItem
-                                                    className="text-orange-600 focus:text-orange-700 focus:bg-orange-50"
-                                                    onClick={async (e) => {
-                                                        e.stopPropagation();
-                                                        if (confirm('Cancel this session?')) {
+                                                <>
+                                                    <DropdownMenuItem
+                                                        className="text-green-600 focus:text-green-700 focus:bg-green-50"
+                                                        onClick={async (e) => {
+                                                            e.stopPropagation();
                                                             try {
-                                                                const res = await updateSessionStatus(session.id, 'cancelled');
-                                                                if (res.success) {
-                                                                    toast.success("Session cancelled");
-                                                                } else {
-                                                                    toast.error("Failed to cancel session");
-                                                                }
+                                                                const res = await updateSessionStatus(session.id, 'completed');
+                                                                if (res.success) toast.success("Session marked as completed");
                                                             } catch (err) {
                                                                 toast.error("An error occurred");
-                                                                console.error(err);
                                                             }
-                                                        }
-                                                    }}
-                                                >
-                                                    Cancel Session
-                                                </DropdownMenuItem>
+                                                        }}
+                                                    >
+                                                        Mark Completed
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem
+                                                        className="text-orange-600 focus:text-orange-700 focus:bg-orange-50"
+                                                        onClick={async (e) => {
+                                                            e.stopPropagation();
+                                                            try {
+                                                                const res = await updateSessionStatus(session.id, 'no_show');
+                                                                if (res.success) toast.success("Marked as No-Show");
+                                                            } catch (err) {
+                                                                toast.error("An error occurred");
+                                                            }
+                                                        }}
+                                                    >
+                                                        Mark No-Show
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem
+                                                        className="text-slate-600 focus:text-slate-700 focus:bg-slate-50"
+                                                        onClick={async (e) => {
+                                                            e.stopPropagation();
+                                                            if (confirm('Cancel this session?')) {
+                                                                try {
+                                                                    const res = await updateSessionStatus(session.id, 'cancelled');
+                                                                    if (res.success) toast.success("Session cancelled");
+                                                                } catch (err) {
+                                                                    toast.error("An error occurred");
+                                                                }
+                                                            }
+                                                        }}
+                                                    >
+                                                        Cancel Session
+                                                    </DropdownMenuItem>
+                                                </>
                                             )}
                                             <DropdownMenuItem
                                                 className="text-red-600 focus:text-red-700 focus:bg-red-50"
