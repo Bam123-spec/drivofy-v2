@@ -29,6 +29,7 @@ export function AddStudentForm({ classId }: AddStudentFormProps) {
 
     // Local state for grading inputs: { [enrollmentId]: "85" }
     const [gradeInputs, setGradeInputs] = useState<Record<string, string>>({})
+    const [initialGrades, setInitialGrades] = useState<Record<string, string>>({})
     const [savingGrades, setSavingGrades] = useState<Record<string, boolean>>({})
 
     useEffect(() => {
@@ -46,6 +47,7 @@ export function AddStudentForm({ classId }: AddStudentFormProps) {
                 if (s.grade) initialInputs[s.enrollmentId] = s.grade
             })
             setGradeInputs(initialInputs)
+            setInitialGrades(initialInputs)
         } catch (error) {
             console.error(error)
             toast.error("Failed to load enrolled students")
@@ -70,6 +72,8 @@ export function AddStudentForm({ classId }: AddStudentFormProps) {
             const result = await adminUpdateStudentGrade(enrollmentId, grade)
             if (result.success) {
                 toast.success(`Grade updated to ${grade}`)
+                // Update initial grade to new value so button disables again
+                setInitialGrades(prev => ({ ...prev, [enrollmentId]: grade }))
                 // Optionally reload to see status/credits updates
                 loadEnrolledStudents()
             }
@@ -254,9 +258,9 @@ export function AddStudentForm({ classId }: AddStudentFormProps) {
                                             <Button
                                                 size="sm"
                                                 variant="ghost"
-                                                disabled={savingGrades[student.enrollmentId]}
+                                                disabled={savingGrades[student.enrollmentId] || (gradeInputs[student.enrollmentId] || "") === (initialGrades[student.enrollmentId] || "")}
                                                 onClick={() => handleSaveGrade(student.enrollmentId)}
-                                                className="h-8 px-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                                className="h-8 px-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
                                                 {savingGrades[student.enrollmentId] ? <Loader2 className="h-3 w-3 animate-spin" /> : "Save"}
                                             </Button>
