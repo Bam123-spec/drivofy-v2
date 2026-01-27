@@ -42,6 +42,8 @@ interface ClassesTableProps {
     onAddStudent: (cls: Class) => void
 }
 
+import { useRouter } from "next/navigation"
+
 export function ClassesTable({
     classes,
     onEdit,
@@ -51,6 +53,8 @@ export function ClassesTable({
     onTakeAttendance,
     onAddStudent
 }: ClassesTableProps) {
+    const router = useRouter()
+
     const getStatusColor = (status: string) => {
         switch (status) {
             case 'active': return 'bg-purple-100 text-purple-800 border-purple-200'
@@ -79,7 +83,7 @@ export function ClassesTable({
                             <TableRow
                                 key={cls.id}
                                 className="group hover:bg-gray-50/50 transition-colors cursor-pointer"
-                                onClick={() => onEdit(cls)}
+                                onClick={() => router.push(`/admin/classes/${cls.id}`)}
                             >
                                 <TableCell>
                                     <div className="font-medium text-gray-900">{cls.name}</div>
