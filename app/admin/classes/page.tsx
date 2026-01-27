@@ -311,12 +311,16 @@ export default function AdminClassesPage() {
                                     <TableRow
                                         key={cls.id}
                                         className={`group transition-colors cursor-pointer border-b border-gray-50 hover:bg-gray-50/50 ${selectedIds.includes(cls.id) ? 'bg-primary/5 hover:bg-primary/10' : ''}`}
+                                        onClick={() => {
+                                            setSelectedClass(cls)
+                                            setActiveTab("details")
+                                            setIsDetailOpen(true)
+                                        }}
                                     >
-                                        <TableCell className="pl-0">
+                                        <TableCell className="pl-0" onClick={(e) => e.stopPropagation()}>
                                             <Checkbox
                                                 checked={selectedIds.includes(cls.id)}
                                                 onCheckedChange={(checked) => handleSelectRow(cls.id, checked as boolean)}
-                                                onClick={(e) => e.stopPropagation()}
                                             />
                                         </TableCell>
                                         <TableCell>
@@ -369,8 +373,8 @@ export default function AdminClassesPage() {
                                                 {cls.status}
                                             </Badge>
                                         </TableCell>
-                                        <TableCell className="text-right">
-                                            <div onClick={(e) => e.stopPropagation()}>
+                                        <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                                            <div>
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
                                                         <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-gray-400 hover:text-gray-600">
