@@ -3,6 +3,9 @@
 import { createClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
 import { logAuditAction } from "@/app/actions/audit"
+import { sendTransactionalEmail, generateGradePassingEmail, generateGradeFailingEmail } from "@/lib/brevo"
+import { cookies } from 'next/headers'
+import { createServerClient } from '@supabase/ssr'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -156,6 +159,149 @@ export async function removeStudentFromClass(enrollmentId: string) {
     await logAuditAction('delete_student', {
         enrollmentId: enrollmentId
     }, `Student Removed from Class (Enrollment ID: ${enrollmentId})`)
+
+    revalidatePath('/admin/classes')
+    return { success: true }
+}
+
+export async function adminUpdateStudentGrade(enrollmentId: string, grade: string) {
+    const cookieStore = await cookies()
+
+    const supabaseAuth = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+            cookies: {
+                getAll() { return cookieStore.getAll() },
+                setAll(cookiesToSet) { try { cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options)) } catch { } },
+            },
+        }
+    )
+
+    // 1. Verify Admin
+    const { data: { user } } = await supabaseAuth.auth.getUser()
+    if (!user) throw new Error("Unauthorized")
+
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+
+    if (profile?.role !== 'admin') throw new Error("Unauthorized: Admin only")
+
+    // 2. Fetch enrollment logic
+    const { data: enrollment, error: fetchError } = await supabase
+        .from('enrollments')
+        .select(`
+            id,
+            class_id,
+            student_id,
+            btw_credits_granted,
+            course:classes(name),
+            student:profiles(email, full_name)
+        `)
+        .eq('id', enrollmentId)
+        .single()
+
+    if (fetchError || !enrollment) throw new Error("Enrollment not found")
+
+    // 3. Update Grade
+    const { error: updateError } = await supabase
+        .from('enrollments')
+        .update({
+            grade,
+            updated_at: new Date().toISOString()
+            // NOTE: We do NOT auto-change status here unless explicit rule. 
+            // Rule says: "Mark enrollment as passed/completed (use existing status conventions)"
+            // If passed, we can mark completed?
+            // "If grade >= 80: Mark enrollment as passed/completed"
+        })
+        .eq('id', enrollmentId)
+
+    if (updateError) throw updateError
+
+    const numericGrade = parseFloat(grade)
+    const isPassing = !isNaN(numericGrade) && numericGrade >= 80
+
+    // 4. Status Update (Explicit rule)
+    // If passing, mark 'completed'. If failing, users usually stay 'active' until retake, or maybe 'failed'?
+    // "If grade < 80: Mark enrollment failed (or keep enrolled but store grade; follow existing conventions)"
+    // Let's stick to 'completed' for passing.
+    if (isPassing) {
+        await supabase
+            .from('enrollments')
+            .update({ status: 'completed' })
+            .eq('id', enrollmentId)
+    }
+
+    // 5. Credits & Emails
+    const student = Array.isArray(enrollment.student) ? enrollment.student[0] : enrollment.student
+    // Fix: Safe navigation for course name, handle array or object
+    const courseObj = Array.isArray(enrollment.course) ? enrollment.course[0] : enrollment.course
+    const courseName = courseObj?.name
+
+    if (isPassing) {
+        // Grant credits IDEMPOTENTLY
+        if (!enrollment.btw_credits_granted) {
+            const { data: studentProfile } = await supabase
+                .from('profiles')
+                .select('driving_balance_hours, driving_balance_sessions')
+                .eq('id', enrollment.student_id)
+                .single()
+
+            if (studentProfile) {
+                const newHours = (studentProfile.driving_balance_hours || 0) + 6
+                const newSessions = (studentProfile.driving_balance_sessions || 0) + 3
+
+                const { error: profileError } = await supabase
+                    .from('profiles')
+                    .update({
+                        driving_balance_hours: newHours,
+                        driving_balance_sessions: newSessions,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', enrollment.student_id)
+
+                if (!profileError) {
+                    await supabase
+                        .from('enrollments')
+                        .update({ btw_credits_granted: true })
+                        .eq('id', enrollmentId)
+
+                    console.log(`✅ Granted 6h/3s BTW credits to student ${enrollment.student_id} (Admin)`)
+                }
+            }
+        }
+
+        // Email: Passed
+        if (student?.email) {
+            const emailData = generateGradePassingEmail(student.full_name, courseName || 'Driver\'s Ed', grade)
+            await sendTransactionalEmail({
+                to: [{ email: student.email, name: student.full_name }],
+                subject: emailData.subject,
+                htmlContent: emailData.htmlContent
+            })
+        }
+    } else {
+        // Email: Retake
+        if (student?.email) {
+            const emailData = generateGradeFailingEmail(student.full_name, courseName || 'Driver\'s Ed', grade)
+            await sendTransactionalEmail({
+                to: [{ email: student.email, name: student.full_name }],
+                subject: emailData.subject,
+                htmlContent: emailData.htmlContent
+            })
+        }
+    }
+
+    // Fix: Use generic 'update_student' action if specific one doesn't exist
+    await logAuditAction('update_student', {
+        enrollmentId,
+        grade,
+        passed: isPassing,
+        adminId: user.id
+    }, `Admin Updated Grade: ${grade}`)
 
     revalidatePath('/admin/classes')
     return { success: true }
