@@ -76,6 +76,8 @@ export function AddStudentForm({ classId }: AddStudentFormProps) {
                 setInitialGrades(prev => ({ ...prev, [enrollmentId]: grade }))
                 // Optionally reload to see status/credits updates
                 loadEnrolledStudents()
+            } else if (result.error) {
+                toast.error(result.error)
             }
         } catch (error: any) {
             console.error(error)
