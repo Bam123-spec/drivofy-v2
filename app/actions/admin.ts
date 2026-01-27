@@ -118,6 +118,7 @@ export async function getEnrolledStudents(classId: string) {
         .from('enrollments')
         .select(`
             id,
+            grade,
             status,
             enrolled_at,
             student:profiles!student_id (
@@ -138,6 +139,7 @@ export async function getEnrolledStudents(classId: string) {
 
     return data.map((e: any) => ({
         enrollmentId: e.id,
+        grade: e.grade,
         ...e.student,
         status: e.status,
         enrolledAt: e.enrolled_at
@@ -229,7 +231,7 @@ export async function adminUpdateStudentGrade(enrollmentId: string, grade: strin
 
         if (updateError) {
             console.error("adminUpdateStudentGrade: Update failed", updateError)
-            return { success: false, error: "Failed to update grade" }
+            return { success: false, error: `Failed to update grade: ${updateError.message}` }
         }
 
         const numericGrade = parseFloat(grade)
