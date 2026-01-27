@@ -114,16 +114,7 @@ export default function AdminDashboard() {
             </div>
 
             {/* KPI Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-                <KpiCard
-                    title="Total Revenue"
-                    value={`$${stats.revenue.value.toLocaleString()}`}
-                    icon={DollarSign}
-                    trend={`${stats.revenue.trend > 0 ? '+' : ''}${stats.revenue.trend}%`}
-                    trendUp={stats.revenue.trend >= 0}
-                    color="green"
-                    description="Total earnings"
-                />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <KpiCard
                     title="Total Students"
                     value={stats.totalStudents.value}
