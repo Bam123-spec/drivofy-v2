@@ -12,13 +12,14 @@ import { Separator } from "@/components/ui/separator"
 
 interface AddStudentFormProps {
     classId: string
+    isEditMode?: boolean
 }
 
 import { adminUpdateStudentGrade } from "@/app/actions/admin"
 
 // ... imports remain the same
 
-export function AddStudentForm({ classId }: AddStudentFormProps) {
+export function AddStudentForm({ classId, isEditMode = false }: AddStudentFormProps) {
     const [query, setQuery] = useState("")
     const [searchResults, setSearchResults] = useState<any[]>([])
     const [isSearching, setIsSearching] = useState(false)
@@ -161,48 +162,53 @@ export function AddStudentForm({ classId }: AddStudentFormProps) {
                     </button>
                 </div>
             )}
-            <div className="space-y-4">
-                <h3 className="text-sm font-medium text-gray-900">Add Students</h3>
-                <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <Input
-                        placeholder="Search by name or email..."
-                        value={query}
-                        onChange={(e) => handleSearch(e.target.value)}
-                        className="pl-9"
-                    />
-                    {isSearching && (
-                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                            <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
-                        </div>
-                    )}
-                </div>
 
-                {/* Search Results */}
-                {searchResults.length > 0 && (
-                    <div className="border rounded-md divide-y bg-white shadow-sm max-h-[200px] overflow-y-auto">
-                        {searchResults.map((student) => (
-                            <div key={student.id} className="flex items-center justify-between p-3 hover:bg-gray-50">
-                                <div className="flex items-center gap-3">
-                                    <Avatar className="h-8 w-8">
-                                        <AvatarImage src={student.avatar_url} />
-                                        <AvatarFallback><User className="h-4 w-4" /></AvatarFallback>
-                                    </Avatar>
-                                    <div className="text-sm">
-                                        <div className="font-medium text-gray-900">{student.full_name}</div>
-                                        <div className="text-gray-500 text-xs">{student.email}</div>
-                                    </div>
+            {/* Search UI only visible in edit mode */}
+            {
+                isEditMode && (
+                    <div className="space-y-4">
+                        <h3 className="text-sm font-medium text-gray-900">Add Students</h3>
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                            <Input
+                                placeholder="Search by name or email..."
+                                value={query}
+                                onChange={(e) => handleSearch(e.target.value)}
+                                className="pl-9"
+                            />
+                            {isSearching && (
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                    <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
                                 </div>
-                                <Button size="sm" variant="ghost" onClick={() => handleEnroll(student)} className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
-                                    <Plus className="h-4 w-4 mr-1" /> Add
-                                </Button>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
+                            )}
+                        </div>
 
-            <Separator />
+                        {/* Search Results */}
+                        {searchResults.length > 0 && (
+                            <div className="border rounded-md divide-y bg-white shadow-sm max-h-[200px] overflow-y-auto">
+                                {searchResults.map((student) => (
+                                    <div key={student.id} className="flex items-center justify-between p-3 hover:bg-gray-50">
+                                        <div className="flex items-center gap-3">
+                                            <Avatar className="h-8 w-8">
+                                                <AvatarImage src={student.avatar_url} />
+                                                <AvatarFallback><User className="h-4 w-4" /></AvatarFallback>
+                                            </Avatar>
+                                            <div className="text-sm">
+                                                <div className="font-medium text-gray-900">{student.full_name}</div>
+                                                <div className="text-gray-500 text-xs">{student.email}</div>
+                                            </div>
+                                        </div>
+                                        <Button size="sm" variant="ghost" onClick={() => handleEnroll(student)} className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+                                            <Plus className="h-4 w-4 mr-1" /> Add
+                                        </Button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        <Separator />
+                    </div>
+                )
+            }
 
             <div className="space-y-4">
                 <div className="flex items-center justify-between">
@@ -237,10 +243,16 @@ export function AddStudentForm({ classId }: AddStudentFormProps) {
                                             <div className="text-sm truncate">
                                                 <div className="font-medium text-gray-900 truncate">{student.full_name}</div>
                                                 <div className="text-gray-500 text-xs truncate">{student.email}</div>
-                                                {(student.btw_credits_granted || student.status === 'completed') && (
+                                                {student.btw_credits_granted && (
                                                     <div className="text-[10px] text-green-600 font-medium flex items-center gap-1 mt-0.5">
                                                         <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-500"></span>
-                                                        Credits Granted
+                                                        Graduated
+                                                    </div>
+                                                )}
+                                                {!student.btw_credits_granted && isPassed && (
+                                                    <div className="text-[10px] text-amber-600 font-medium flex items-center gap-1 mt-0.5">
+                                                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                                                        Passing (pending)
                                                     </div>
                                                 )}
                                             </div>
@@ -271,8 +283,9 @@ export function AddStudentForm({ classId }: AddStudentFormProps) {
                                         <Button
                                             size="icon"
                                             variant="ghost"
-                                            className="text-gray-400 hover:text-red-600 hover:bg-red-50 h-8 w-8 ml-2"
+                                            className={`text-gray-400 hover:text-red-600 hover:bg-red-50 h-8 w-8 ml-2 ${!isEditMode && 'invisible'}`}
                                             onClick={() => handleRemove(student.enrollmentId)}
+                                            disabled={!isEditMode}
                                         >
                                             <Trash2 className="h-4 w-4" />
                                         </Button>
@@ -288,6 +301,6 @@ export function AddStudentForm({ classId }: AddStudentFormProps) {
                     </ScrollArea>
                 )}
             </div>
-        </div>
+        </div >
     )
 }

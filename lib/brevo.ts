@@ -57,7 +57,7 @@ export async function sendTransactionalEmail({ to, subject, htmlContent, sender 
 }
 
 export function generateBtwCooldownReadyEmail(userName: string) {
-    const dashboardLink = `${process.env.NEXT_PUBLIC_APP_URL || 'https://drivofy.com'}/dashboard/book-driving?plan_key=btw`;
+    const dashboardLink = 'https://portifol.com/student/behind-the-wheel';
 
     return {
         subject: "You can book your next Behind-the-Wheel session",
@@ -86,7 +86,7 @@ export function generateBtwCooldownReadyEmail(userName: string) {
 }
 
 export function generateGradePassingEmail(userName: string, courseName: string, grade: string) {
-    const dashboardLink = `${process.env.NEXT_PUBLIC_APP_URL || 'https://drivofy.com'}/dashboard/book-driving?plan_key=btw`;
+    const dashboardLink = 'https://portifol.com/student/behind-the-wheel';
 
     return {
         subject: `Congratulations! You've passed ${courseName}`,
