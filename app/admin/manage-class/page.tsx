@@ -19,7 +19,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
 import { format } from "date-fns"
-import { ManageClassSheet } from "./components/ManageClassSheet"
+import { ManageClassSheet } from "@/app/admin/manage-class/components/ManageClassSheet"
 
 export default function ManageClassPage() {
     const [classes, setClasses] = useState<any[]>([])
