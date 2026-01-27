@@ -90,8 +90,8 @@ export default function AdminInstructorProfile() {
                                     } shadow-sm`} />
                             </div>
 
-                            <div className="mb-2 space-y-1">
-                                <h1 className="text-3xl font-bold text-gray-900 tracking-tight">{instructor.full_name}</h1>
+                            <div className="mb-2 space-y-2">
+                                <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">{instructor.full_name}</h1>
                                 <div className="flex items-center gap-3">
                                     <Badge variant="secondary" className={`px-3 py-1 text-sm font-medium capitalize shadow-sm ${instructor.type === 'driving' ? 'bg-purple-50 text-purple-700 border-purple-100' :
                                         instructor.type === 'theory' ? 'bg-indigo-50 text-indigo-700 border-indigo-100' :
@@ -107,7 +107,7 @@ export default function AdminInstructorProfile() {
                             </div>
                         </div>
 
-                        <div className="flex gap-3 w-full md:w-auto">
+                        <div className="flex gap-3 w-full md:w-auto pb-2">
                             <Button variant="outline" className="flex-1 md:flex-none border-gray-200 hover:bg-gray-50 hover:text-gray-900 transition-colors">
                                 Edit Profile
                             </Button>
@@ -147,63 +147,13 @@ export default function AdminInstructorProfile() {
             </div>
 
             {/* Main Content Tabs */}
-            <Tabs defaultValue="overview" className="space-y-8">
+            <Tabs defaultValue="schedule" className="space-y-8">
                 <TabsList className="bg-white border border-gray-200 p-1.5 h-14 w-full justify-start rounded-2xl shadow-sm">
-                    <TabsTrigger value="overview" className="data-[state=active]:bg-gray-100 data-[state=active]:text-gray-900 data-[state=active]:shadow-none h-11 px-6 rounded-xl font-medium transition-all">Overview</TabsTrigger>
                     <TabsTrigger value="schedule" className="data-[state=active]:bg-gray-100 data-[state=active]:text-gray-900 data-[state=active]:shadow-none h-11 px-6 rounded-xl font-medium transition-all">Schedule</TabsTrigger>
-                    <TabsTrigger value="students" className="data-[state=active]:bg-gray-100 data-[state=active]:text-gray-900 data-[state=active]:shadow-none h-11 px-6 rounded-xl font-medium transition-all">Students</TabsTrigger>
-                    <TabsTrigger value="performance" className="data-[state=active]:bg-gray-100 data-[state=active]:text-gray-900 data-[state=active]:shadow-none h-11 px-6 rounded-xl font-medium transition-all">Performance</TabsTrigger>
+                    <TabsTrigger value="overview" className="data-[state=active]:bg-gray-100 data-[state=active]:text-gray-900 data-[state=active]:shadow-none h-11 px-6 rounded-xl font-medium transition-all">Overview</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="overview" className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                    {/* Quick Stats */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                        <Card className="border-none shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 bg-white/80 backdrop-blur-sm group">
-                            <CardContent className="p-6 flex items-center gap-4">
-                                <div className="p-4 bg-amber-50 text-amber-600 rounded-2xl group-hover:bg-amber-100 transition-colors">
-                                    <Star className="h-6 w-6 fill-current" />
-                                </div>
-                                <div>
-                                    <p className="text-sm font-medium text-gray-500">Rating</p>
-                                    <h3 className="text-2xl font-bold text-gray-900 tracking-tight">4.9</h3>
-                                </div>
-                            </CardContent>
-                        </Card>
-                        <Card className="border-none shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 bg-white/80 backdrop-blur-sm group">
-                            <CardContent className="p-6 flex items-center gap-4">
-                                <div className="p-4 bg-blue-50 text-blue-600 rounded-2xl group-hover:bg-blue-100 transition-colors">
-                                    <Users className="h-6 w-6" />
-                                </div>
-                                <div>
-                                    <p className="text-sm font-medium text-gray-500">Active Students</p>
-                                    <h3 className="text-2xl font-bold text-gray-900 tracking-tight">12</h3>
-                                </div>
-                            </CardContent>
-                        </Card>
-                        <Card className="border-none shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 bg-white/80 backdrop-blur-sm group">
-                            <CardContent className="p-6 flex items-center gap-4">
-                                <div className="p-4 bg-emerald-50 text-emerald-600 rounded-2xl group-hover:bg-emerald-100 transition-colors">
-                                    <Clock className="h-6 w-6" />
-                                </div>
-                                <div>
-                                    <p className="text-sm font-medium text-gray-500">Hours Taught</p>
-                                    <h3 className="text-2xl font-bold text-gray-900 tracking-tight">145</h3>
-                                </div>
-                            </CardContent>
-                        </Card>
-                        <Card className="border-none shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 bg-white/80 backdrop-blur-sm group">
-                            <CardContent className="p-6 flex items-center gap-4">
-                                <div className="p-4 bg-purple-50 text-purple-600 rounded-2xl group-hover:bg-purple-100 transition-colors">
-                                    <Award className="h-6 w-6" />
-                                </div>
-                                <div>
-                                    <p className="text-sm font-medium text-gray-500">Pass Rate</p>
-                                    <h3 className="text-2xl font-bold text-gray-900 tracking-tight">92%</h3>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </div>
-
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                         <Card className="md:col-span-2 border-none shadow-md bg-white">
                             <CardHeader>
@@ -240,36 +190,6 @@ export default function AdminInstructorProfile() {
                         instructor={instructor}
                         onUpdate={fetchInstructor}
                     />
-                </TabsContent>
-
-                <TabsContent value="students">
-                    <Card className="border-none shadow-md">
-                        <CardHeader>
-                            <CardTitle>Assigned Students</CardTitle>
-                            <CardDescription>Students currently learning with this instructor.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="h-96 flex flex-col items-center justify-center text-gray-400 gap-4">
-                            <div className="h-16 w-16 bg-gray-50 rounded-full flex items-center justify-center">
-                                <Users className="h-8 w-8 text-gray-300" />
-                            </div>
-                            <p className="font-medium">Student list coming soon...</p>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-
-                <TabsContent value="performance">
-                    <Card className="border-none shadow-md">
-                        <CardHeader>
-                            <CardTitle>Performance Metrics</CardTitle>
-                            <CardDescription>Detailed analytics and feedback.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="h-96 flex flex-col items-center justify-center text-gray-400 gap-4">
-                            <div className="h-16 w-16 bg-gray-50 rounded-full flex items-center justify-center">
-                                <Award className="h-8 w-8 text-gray-300" />
-                            </div>
-                            <p className="font-medium">Charts coming soon...</p>
-                        </CardContent>
-                    </Card>
                 </TabsContent>
             </Tabs>
         </div>

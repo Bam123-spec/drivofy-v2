@@ -147,3 +147,40 @@ export function generateGradeFailingEmail(userName: string, courseName: string, 
         `
     };
 }
+
+export function generateBtwFinalEmail(userName: string) {
+    const extraPracticeLink = 'https://drivofy.com/extra-driving-practice';
+    const roadTestLink = 'https://drivofy.com/road-test-service';
+
+    return {
+        subject: "Congratulations on completing your Behind-the-Wheel training!",
+        htmlContent: `
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+                <h2 style="color: #166534;">Congratulations ${userName}! 🎉</h2>
+                <p style="font-size: 16px; color: #555; line-height: 1.5;">
+                    You have successfully completed all required Behind-the-Wheel driving hours. Great job!
+                </p>
+                <div style="background-color: #f0fdf4; padding: 16px; border-radius: 8px; margin: 24px 0; border: 1px solid #bbf7d0;">
+                    <p style="margin: 0; color: #166534; font-weight: bold; text-align: center;">
+                        To book Roadtest, Please contact us at (202) 630 1930
+                    </p>
+                </div>
+                <h3 style="color: #333; margin-top: 30px;">Next Steps:</h3>
+                <ul style="color: #555; line-height: 1.6;">
+                    <li>
+                        <strong>Need more practice?</strong><br>
+                        <a href="${extraPracticeLink}" style="color: #0070f3; text-decoration: none;">Book Extra Driving Practice</a>
+                    </li>
+                    <li style="margin-top: 10px;">
+                        <strong>Ready for your license?</strong><br>
+                        <a href="${roadTestLink}" style="color: #0070f3; text-decoration: none;">Book Your Road Test Service</a>
+                    </li>
+                </ul>
+                <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+                <p style="font-size: 12px; color: #aaa;">
+                    This is an automated notification from Drivofy.
+                </p>
+            </div>
+        `
+    };
+}

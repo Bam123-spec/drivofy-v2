@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { sendTransactionalEmail, generateBtwCooldownReadyEmail } from '@/lib/brevo';
+import { sendTransactionalEmail, generateBtwCooldownReadyEmail, generateBtwFinalEmail } from '@/lib/brevo';
 import { withCors, handleOptions } from '@/lib/cors';
 
 export async function OPTIONS() {
@@ -64,6 +64,8 @@ export async function GET(request: Request) {
             let emailData;
             if (item.email_type === 'btw_cooldown_ready') {
                 emailData = generateBtwCooldownReadyEmail(profile.full_name || 'Student');
+            } else if (item.email_type === 'btw_completion_final') {
+                emailData = generateBtwFinalEmail(profile.full_name || 'Student');
             } else {
                 console.warn(`⚠️ Unknown email type: ${item.email_type}`);
                 results.failed++;

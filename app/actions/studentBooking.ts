@@ -46,6 +46,11 @@ export async function bookStudentLesson(data: {
             }
         }
 
+        // 1c. Enforce BTW Duration (2 hours)
+        if (isBTW && data.duration !== 2) {
+            return { success: false, error: "Behind-the-Wheel sessions must be exactly 2 hours." }
+        }
+
         if ((profile.driving_balance_sessions || 0) <= 0) {
             return { success: false, error: "Insufficient session credits. Please contact admin to purchase more." }
         }
@@ -134,24 +139,35 @@ export async function bookStudentLesson(data: {
             // Critical error: Session created but credits not deducted.
             // In a real app, we'd want to rollback or alert admin.
         } else if (isBTW) {
-            // 5b. Queue Cooldown End Email
-            const cooldownUntil = new Date(endDateTime.getTime() + 24 * 60 * 60 * 1000).toISOString();
+            // 5b. Queue Email (Cooldown or Final Completion)
+            const remainingSessions = newSessions
+            let emailType = 'btw_cooldown_ready'
+            let sendAt = new Date(endDateTime.getTime() + 24 * 60 * 60 * 1000).toISOString() // 24h later
+
+            // Final Session Check
+            if (remainingSessions <= 0) {
+                console.log("🎓 Final BTW session completed! Queuing completion email.")
+                emailType = 'btw_completion_final'
+                // Optional: Send final email 24h later too? Or immediately?
+                // Keeping 24h later consistency or maybe 1 hour later? 
+                // Let's stick to 24h after last lesson for "completion" feel.
+            }
 
             const { error: queueError } = await supabase
                 .from('email_queue')
                 .upsert({
                     student_id: user.id,
-                    email_type: 'btw_cooldown_ready',
-                    send_at: cooldownUntil,
+                    email_type: emailType,
+                    send_at: sendAt,
                     status: 'pending'
                 }, {
                     onConflict: 'student_id, email_type, send_at'
                 });
 
             if (queueError) {
-                console.error("❌ Failed to queue cooldown email:", queueError);
+                console.error(`❌ Failed to queue ${emailType} email:`, queueError);
             } else {
-                console.log("✅ Cooldown email queued for:", cooldownUntil);
+                console.log(`✅ ${emailType} email queued for:`, sendAt);
             }
         }
 
