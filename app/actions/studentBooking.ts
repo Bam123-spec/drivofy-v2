@@ -11,7 +11,8 @@ export async function bookStudentLesson(data: {
     instructorId: string,
     date: string,
     time: string,
-    duration: number // hours
+    duration: number, // hours
+    plan_key?: string
 }) {
     const cookieStore = await cookies()
     const supabase = createClient(cookieStore)
@@ -25,12 +26,24 @@ export async function bookStudentLesson(data: {
         // 1. Check Student Credits
         const { data: profile } = await supabase
             .from('profiles')
-            .select('driving_balance_sessions, driving_balance_hours, full_name, email, phone')
+            .select('driving_balance_sessions, driving_balance_hours, full_name, email, phone, btw_cooldown_until')
             .eq('id', user.id)
             .single()
 
         if (!profile) {
             return { success: false, error: "Profile not found" }
+        }
+
+        // 1b. Check BTW Cooldown
+        const isBTW = data.plan_key === 'btw';
+        if (isBTW && profile.btw_cooldown_until) {
+            const cooldownUntil = new Date(profile.btw_cooldown_until);
+            if (cooldownUntil > new Date()) {
+                return {
+                    success: false,
+                    error: `BTW Cooldown active. You can book another BTW session after ${cooldownUntil.toLocaleString('en-US', { timeZone: 'America/New_York' })}`
+                }
+            }
         }
 
         if ((profile.driving_balance_sessions || 0) <= 0) {
@@ -94,7 +107,8 @@ export async function bookStudentLesson(data: {
                 end_time: endDateTime.toISOString(),
                 status: 'scheduled',
                 source: 'student_portal',
-                duration_minutes: data.duration * 60
+                duration_minutes: data.duration * 60,
+                plan_key: data.plan_key || null
             }])
             .select()
             .single()
@@ -110,6 +124,7 @@ export async function bookStudentLesson(data: {
             .update({
                 driving_balance_sessions: newSessions,
                 driving_balance_hours: newHours,
+                btw_cooldown_until: isBTW ? new Date(endDateTime.getTime() + 24 * 60 * 60 * 1000).toISOString() : profile.btw_cooldown_until,
                 updated_at: new Date().toISOString()
             })
             .eq('id', user.id)
@@ -118,6 +133,26 @@ export async function bookStudentLesson(data: {
             console.error("Failed to deduct credits!", updateError)
             // Critical error: Session created but credits not deducted.
             // In a real app, we'd want to rollback or alert admin.
+        } else if (isBTW) {
+            // 5b. Queue Cooldown End Email
+            const cooldownUntil = new Date(endDateTime.getTime() + 24 * 60 * 60 * 1000).toISOString();
+
+            const { error: queueError } = await supabase
+                .from('email_queue')
+                .upsert({
+                    student_id: user.id,
+                    email_type: 'btw_cooldown_ready',
+                    send_at: cooldownUntil,
+                    status: 'pending'
+                }, {
+                    onConflict: 'student_id, email_type, send_at'
+                });
+
+            if (queueError) {
+                console.error("❌ Failed to queue cooldown email:", queueError);
+            } else {
+                console.log("✅ Cooldown email queued for:", cooldownUntil);
+            }
         }
 
         // 6. Sync to Google Calendar

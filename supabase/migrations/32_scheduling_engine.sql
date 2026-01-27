@@ -6,7 +6,7 @@ ALTER TABLE instructors
 ADD COLUMN IF NOT EXISTS working_days smallint[] DEFAULT '{1,2,3,4,5}', -- 1=Monday to 5=Friday default
 ADD COLUMN IF NOT EXISTS start_time text DEFAULT '7:00 AM',
 ADD COLUMN IF NOT EXISTS end_time text DEFAULT '7:00 PM',
-ADD COLUMN IF NOT EXISTS slot_minutes integer DEFAULT 60Check (slot_minutes IN (60, 120)),
+ADD COLUMN IF NOT EXISTS slot_minutes integer DEFAULT 60 CHECK (slot_minutes IN (60, 120)),
 ADD COLUMN IF NOT EXISTS break_start text,
 ADD COLUMN IF NOT EXISTS break_end text,
 ADD COLUMN IF NOT EXISTS min_notice_hours integer DEFAULT 12,

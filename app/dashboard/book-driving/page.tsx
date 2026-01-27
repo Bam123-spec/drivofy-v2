@@ -85,7 +85,8 @@ export default function BookDrivingPage() {
                 instructorId: selectedInstructorId,
                 date: formattedDate,
                 time,
-                duration
+                duration,
+                plan_key: 'btw'
             })
 
             if (result.success) {

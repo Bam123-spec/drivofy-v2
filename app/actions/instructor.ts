@@ -6,7 +6,7 @@ import { revalidatePath } from 'next/cache'
 import { cookies } from 'next/headers'
 import { logAuditAction } from "@/app/actions/audit"
 import { getGoogleAccessToken } from '@/lib/googleCalendar'
-import { sendTransactionalEmail } from "@/lib/brevo"
+import { sendTransactionalEmail, generateGradePassingEmail, generateGradeFailingEmail } from "@/lib/brevo"
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -692,40 +692,103 @@ export async function updateStudentGrade(enrollmentId: string, grade: string) {
     const instructor = await getCurrentInstructor()
     if (!instructor) throw new Error("Unauthorized")
 
-    // Verify ownership via enrollment -> class -> instructor
-    // For simplicity/speed, we'll trust the RLS policies we set up, 
-    // but explicit check is safer.
-
-    // Use Service Role for updating grade
     const supabaseAdmin = getServiceSupabase()
 
-    // Verify ownership
-    // Get class from enrollment
-    const { data: enrollment } = await supabaseAdmin
+    // 1. Fetch enrollment, student, and class details
+    const { data: enrollment, error: fetchError } = await supabaseAdmin
         .from('enrollments')
-        .select('class_id, course:classes(instructor_id)')
+        .select(`
+            id,
+            class_id,
+            student_id,
+            btw_credits_granted,
+            course:classes(name, instructor_id),
+            student:profiles(email, full_name)
+        `)
         .eq('id', enrollmentId)
         .single()
 
-    if (!enrollment) throw new Error("Enrollment not found")
+    if (fetchError || !enrollment) throw new Error("Enrollment not found")
 
-    // Check instructor
+    // Verify instructor ownership
     const course = Array.isArray(enrollment.course) ? enrollment.course[0] : enrollment.course
     if (course?.instructor_id !== instructor.id) {
         throw new Error("Unauthorized")
     }
 
-    const { error } = await supabaseAdmin
+    // 2. Update the grade in the database
+    const { error: updateError } = await supabaseAdmin
         .from('enrollments')
         .update({ grade, updated_at: new Date().toISOString() })
         .eq('id', enrollmentId)
 
-    if (error) throw error
+    if (updateError) throw updateError
+
+    // 3. Logic for Credits and Emails
+    const numericGrade = parseFloat(grade)
+    const isPassing = !isNaN(numericGrade) && numericGrade >= 80
+    const student = Array.isArray(enrollment.student) ? enrollment.student[0] : enrollment.student
+
+    if (isPassing) {
+        // Grant credits if not already granted
+        if (!enrollment.btw_credits_granted) {
+            const { data: profile } = await supabaseAdmin
+                .from('profiles')
+                .select('driving_balance_hours, driving_balance_sessions')
+                .eq('id', enrollment.student_id)
+                .single()
+
+            if (profile) {
+                const newHours = (profile.driving_balance_hours || 0) + 6
+                const newSessions = (profile.driving_balance_sessions || 0) + 3
+
+                const { error: profileError } = await supabaseAdmin
+                    .from('profiles')
+                    .update({
+                        driving_balance_hours: newHours,
+                        driving_balance_sessions: newSessions,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', enrollment.student_id)
+
+                if (!profileError) {
+                    await supabaseAdmin
+                        .from('enrollments')
+                        .update({ btw_credits_granted: true })
+                        .eq('id', enrollmentId)
+
+                    console.log(`✅ Granted 6h/3s BTW credits to student ${enrollment.student_id}`)
+                }
+            }
+        }
+
+        // Send Passing Email
+        if (student?.email) {
+            const emailData = generateGradePassingEmail(student.full_name, course?.name || 'Driver\'s Ed Theory', grade)
+            await sendTransactionalEmail({
+                to: [{ email: student.email, name: student.full_name }],
+                subject: emailData.subject,
+                htmlContent: emailData.htmlContent
+            })
+        }
+    } else {
+        // Send Failing Email
+        if (student?.email) {
+            const emailData = generateGradeFailingEmail(student.full_name, course?.name || 'Driver\'s Ed Theory', grade)
+            await sendTransactionalEmail({
+                to: [{ email: student.email, name: student.full_name }],
+                subject: emailData.subject,
+                htmlContent: emailData.htmlContent
+            })
+        }
+    }
 
     await logAuditAction('update_student', {
         enrollmentId,
-        grade
-    }, `Student Grade Updated: ${grade}`)
+        grade,
+        passed: isPassing,
+        creditsGranted: isPassing && !enrollment.btw_credits_granted
+    }, `Student Grade Updated: ${grade} (${isPassing ? 'PASSED' : 'FAILED'})`)
 
     revalidatePath('/instructor/lessons/[classId]')
     return { success: true }

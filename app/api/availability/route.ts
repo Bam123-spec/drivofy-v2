@@ -1,24 +1,72 @@
 import { createAdminClient } from '@/lib/supabase/admin';
+import { createClient } from '@/lib/supabase/server';
+import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { generateAvailableSlots } from '@/lib/scheduling/availability';
 import { parseISO, format, startOfDay, endOfDay } from 'date-fns';
+import { withCors, handleOptions } from '@/lib/cors';
+
+export async function OPTIONS() {
+    return handleOptions();
+}
 
 export async function GET(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
         const planKey = searchParams.get('plan_key');
         const date = searchParams.get('date'); // YYYY-MM-DD
+        const studentIdParam = searchParams.get('student_id');
 
         if (!planKey || !date) {
-            return NextResponse.json(
+            return withCors(NextResponse.json(
                 { error: 'Missing required parameters: plan_key and date' },
                 { status: 400 }
-            );
+            ));
         }
 
         const supabase = createAdminClient();
 
-        // 1. Look up the service_package row by plan_key
+        // 1. Check for BTW Cooldown if applicable
+        if (planKey === 'btw') {
+            let studentId = studentIdParam;
+
+            // If no student_id param, try to get from session
+            if (!studentId) {
+                const cookieStore = await cookies();
+                const supabaseClient = createClient(cookieStore);
+                const { data: { user } } = await supabaseClient.auth.getUser();
+                if (user) studentId = user.id;
+            }
+
+            if (studentId) {
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('btw_cooldown_until, driving_balance_sessions')
+                    .eq('id', studentId)
+                    .single();
+
+                // Check for sessions balance
+                if (profile && (profile.driving_balance_sessions || 0) <= 0) {
+                    return withCors(NextResponse.json({
+                        slots: [],
+                        reason: "no_credits"
+                    }));
+                }
+
+                if (profile?.btw_cooldown_until) {
+                    const cooldownUntil = new Date(profile.btw_cooldown_until);
+                    if (cooldownUntil > new Date()) {
+                        return withCors(NextResponse.json({
+                            slots: [],
+                            reason: "cooldown",
+                            next_available_at: profile.btw_cooldown_until
+                        }));
+                    }
+                }
+            }
+        }
+
+        // 2. Look up the service_package row by plan_key
         const { data: servicePackage, error: spError } = await supabase
             .from('service_packages')
             .select('instructor_id, duration_minutes, display_name')
@@ -27,10 +75,10 @@ export async function GET(request: Request) {
 
         if (spError || !servicePackage) {
             console.error('[API] Service Package Error:', spError);
-            return NextResponse.json(
+            return withCors(NextResponse.json(
                 { error: 'Service package not found' },
                 { status: 404 }
-            );
+            ));
         }
 
         const { instructor_id, duration_minutes } = servicePackage;
@@ -44,10 +92,10 @@ export async function GET(request: Request) {
 
         if (instError || !instructor) {
             console.error('[API] Instructor Error:', instError);
-            return NextResponse.json(
+            return withCors(NextResponse.json(
                 { error: 'Instructor not found' },
                 { status: 404 }
-            );
+            ));
         }
 
         // 3. Query driving_sessions for that instructor_id on that date
@@ -69,10 +117,10 @@ export async function GET(request: Request) {
 
         if (sessionError) {
             console.error('[API] Sessions Error:', sessionError);
-            return NextResponse.json(
+            return withCors(NextResponse.json(
                 { error: 'Failed to fetch sessions' },
                 { status: 500 }
-            );
+            ));
         }
 
         // 4. Map sessions to the format expected by the utility
@@ -117,13 +165,13 @@ export async function GET(request: Request) {
             return `${date}T${pad(hours)}:${pad(minutes)}:00-05:00`;
         });
 
-        return NextResponse.json({ slots: isoSlots });
+        return withCors(NextResponse.json({ slots: isoSlots }));
 
     } catch (error: any) {
         console.error('[API] Availability Error:', error);
-        return NextResponse.json(
+        return withCors(NextResponse.json(
             { error: 'Internal Server Error' },
             { status: 500 }
-        );
+        ));
     }
 }
