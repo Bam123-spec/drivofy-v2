@@ -255,7 +255,7 @@ export default function ClassesPageClient({ initialClasses, instructors }: Class
                 onDuplicate={handleDuplicate}
                 onDelete={setClassToDelete}
                 onViewEnrollments={(cls) => router.push(`/admin/enrollments?class=${cls.id}`)}
-                onTakeAttendance={(cls) => router.push(`/admin/attendance?class=${cls.id}`)}
+                onTakeAttendance={(cls) => router.push(`/admin/manage-class`)}
             />
 
             <ClassDetailSheet

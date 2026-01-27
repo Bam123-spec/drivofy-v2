@@ -102,7 +102,7 @@ export default function AdminLayout({
                 { href: "/admin/classes", label: "Classes", icon: BookOpen, placeholder: false },
                 { href: "/admin/driving", label: "Driving Sessions", icon: Car, placeholder: false },
                 { href: "/admin/instructors", label: "Instructors", icon: Users, placeholder: false },
-                { href: "/admin/attendance", label: "Attendance", icon: CalendarDays, placeholder: false },
+                { href: "/admin/manage-class", label: "Manage Class", icon: CalendarDays, placeholder: false },
             ]
         },
         {
