@@ -19,13 +19,12 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
 import { format } from "date-fns"
-import { ManageClassSheet } from "@/app/admin/manage-class/components/ManageClassSheet"
+import { useRouter } from "next/navigation"
 
 export default function ManageClassPage() {
+    const router = useRouter()
     const [classes, setClasses] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
-    const [selectedClass, setSelectedClass] = useState<any>(null)
-    const [isSheetOpen, setIsSheetOpen] = useState(false)
 
     useEffect(() => {
         fetchUpcomingClasses()
@@ -60,8 +59,7 @@ export default function ManageClassPage() {
     }
 
     const handleManageClass = (cls: any) => {
-        setSelectedClass(cls)
-        setIsSheetOpen(true)
+        router.push(`/admin/manage-class/${cls.id}`)
     }
 
     return (
@@ -168,13 +166,6 @@ export default function ManageClassPage() {
                     </div>
                 </div>
             )}
-
-            <ManageClassSheet
-                isOpen={isSheetOpen}
-                onClose={() => setIsSheetOpen(false)}
-                classData={selectedClass}
-                onUpdate={fetchUpcomingClasses}
-            />
         </div>
     )
 }
