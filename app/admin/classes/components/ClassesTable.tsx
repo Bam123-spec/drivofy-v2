@@ -117,8 +117,8 @@ export function ClassesTable({
                                         {cls.status}
                                     </Badge>
                                 </TableCell>
-                                <TableCell className="text-right">
-                                    <div onClick={(e) => e.stopPropagation()}>
+                                <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                                    <div>
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
                                                 <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-gray-400 hover:text-gray-600">
