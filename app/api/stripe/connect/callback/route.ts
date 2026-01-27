@@ -76,7 +76,8 @@ export async function GET(request: Request) {
             .update({
                 stripe_account_id: stripeAccountId,
                 stripe_status: 'connected',
-                stripe_connected_at: new Date().toISOString()
+                stripe_connected_at: new Date().toISOString(),
+                current_period_end: '2026-02-27T00:00:00Z' // Manually set for next billing
             })
             .eq('id', organizationId)
 
