@@ -272,9 +272,9 @@ export function ManageClassClient({ classData: initialClassData, instructors }: 
                                                         <Badge className="bg-emerald-50 text-emerald-600 border-none rounded-lg text-[9px] font-black tracking-widest uppercase">
                                                             Certified
                                                         </Badge>
-                                                    ) : isPassing ? (
-                                                        <Badge className="bg-blue-50 text-blue-600 border-none rounded-lg text-[9px] font-black tracking-widest uppercase">
-                                                            Pending
+                                                    ) : isPassing || s.status === 'completed' ? (
+                                                        <Badge className="bg-indigo-50 text-indigo-600 border-none rounded-lg text-[9px] font-black tracking-widest uppercase">
+                                                            Graduate
                                                         </Badge>
                                                     ) : (
                                                         <Badge className="bg-slate-50 text-slate-300 border-none rounded-lg text-[9px] font-black tracking-widest uppercase">

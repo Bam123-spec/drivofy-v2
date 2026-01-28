@@ -121,6 +121,7 @@ export async function getEnrolledStudents(classId: string) {
             grade,
             status,
             enrolled_at,
+            btw_credits_granted,
             student:profiles!student_id (
                 id,
                 full_name,
@@ -142,7 +143,8 @@ export async function getEnrolledStudents(classId: string) {
         grade: e.grade,
         ...e.student,
         status: e.status,
-        enrolledAt: e.enrolled_at
+        enrolledAt: e.enrolled_at,
+        btw_credits_granted: e.btw_credits_granted
     }))
 }
 
@@ -239,10 +241,17 @@ export async function adminUpdateStudentGrade(enrollmentId: string, grade: strin
 
         // 4. Status Update (Explicit rule)
         if (isPassing) {
-            await supabase
+            const { error: statusError } = await supabase
                 .from('enrollments')
-                .update({ status: 'completed' })
+                .update({
+                    status: 'completed',
+                    updated_at: new Date().toISOString()
+                })
                 .eq('id', enrollmentId)
+
+            if (statusError) {
+                console.error("adminUpdateStudentGrade: Status update failed", statusError)
+            }
         }
 
         // 5. Credits & Emails
@@ -320,6 +329,7 @@ export async function adminUpdateStudentGrade(enrollmentId: string, grade: strin
         }, `Admin Updated Grade: ${grade}`)
 
         revalidatePath('/admin/classes')
+        revalidatePath('/admin/manage-class')
         return { success: true }
     } catch (error: any) {
         console.error("adminUpdateStudentGrade CRITICAL ERROR:", error)
