@@ -83,9 +83,10 @@ export function ClassForm({ initialData, instructors, onSubmit, isSubmitting = f
         }
     }, [initialData, form])
 
-    // Watch start_date and class_type to auto-calculate end_date
+    // Watch start_date, class_type, and classification to auto-calculate end_date
     const startDate = form.watch("start_date")
     const classType = form.watch("class_type")
+    const classification = form.watch("classification")
 
     useEffect(() => {
         if (startDate) {
@@ -93,8 +94,15 @@ export function ClassForm({ initialData, instructors, onSubmit, isSubmitting = f
             if (!isNaN(start.getTime())) {
                 let end = start
                 if (classType === 'DE') {
-                    // DE: 2 weeks (11 days from Monday to next Friday)
-                    end = addDays(start, 11)
+                    if (classification === 'Weekend') {
+                        // Weekend: 5 weeks (Sat/Sun x 5 = 10 sessions). 
+                        // Span is roughly 29 days (e.g. Sat 1st to Sun 30th).
+                        end = addDays(start, 29)
+                    } else {
+                        // Standard DE (Morning/Evening): 2 weeks (Mon-Fri x 2 = 10 sessions)
+                        // Span is 11 days (e.g. Mon 1st to Fri 12th)
+                        end = addDays(start, 11)
+                    }
                 } else {
                     // RSEP/DIP: Single day (0 days diff)
                     end = start
@@ -102,7 +110,7 @@ export function ClassForm({ initialData, instructors, onSubmit, isSubmitting = f
                 form.setValue("end_date", format(end, "yyyy-MM-dd"))
             }
         }
-    }, [startDate, classType, form])
+    }, [startDate, classType, classification, form])
 
     return (
         <Form {...form}>
@@ -199,7 +207,7 @@ export function ClassForm({ initialData, instructors, onSubmit, isSubmitting = f
                                     <Input type="date" {...field} disabled className="bg-gray-50" />
                                 </FormControl>
                                 <FormDescription className="text-xs">
-                                    Auto-calculated (2 weeks).
+                                    {classification === 'Weekend' ? 'Auto-calculated (5 weeks)' : 'Auto-calculated (2 weeks)'}
                                 </FormDescription>
                                 <FormMessage />
                             </FormItem>
