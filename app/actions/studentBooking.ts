@@ -179,7 +179,7 @@ export async function bookStudentLesson(data: {
                 startTime: startDateTime.toISOString(),
                 endTime: endDateTime.toISOString(),
                 description: `Driving Lesson (Student Booked)\nStudent: ${profile.full_name}\nPhone: ${profile.phone || 'N/A'}\nEmail: ${profile.email}`,
-                location: "Drivofy HQ"
+                location: "Selam Driving School"
             })
             console.log("✅ Google Calendar Sync Successful")
         } catch (calendarError) {

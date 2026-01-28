@@ -12,7 +12,7 @@ export async function POST(request: Request) {
 
         const result = await sendTransactionalEmail({
             to: [{ email, name: name || 'Test User' }],
-            subject: 'Drivofy - Brevo Integration Test',
+            subject: 'Selam Driving School - Brevo Integration Test',
             htmlContent: `
                 <div style="font-family: sans-serif; padding: 20px;">
                     <h2>Brevo Integration Test Successful!</h2>

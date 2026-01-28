@@ -121,7 +121,7 @@ export async function createCalendarEvent(profileId: string, eventData: {
     const event = {
         summary: eventData.title || `Unassigned - ${eventData.studentName}`,
         location: eventData.location || "Driving School",
-        description: eventData.description || "Driving lesson booked via Drivofy.",
+        description: eventData.description || "Driving lesson booked via Selam Driving School.",
         colorId: '8', // Graphite (Best for 'Black' requirement)
         start: {
             dateTime: eventData.startTime,

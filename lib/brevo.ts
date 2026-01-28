@@ -23,7 +23,7 @@ export async function sendTransactionalEmail({ to, subject, htmlContent, sender 
     const payload = {
         sender: sender || {
             email: process.env.BREVO_SENDER_EMAIL || 'noreply@drivofy.com',
-            name: process.env.BREVO_SENDER_NAME || 'Drivofy',
+            name: process.env.BREVO_SENDER_NAME || 'Selam Driving School',
         },
         to,
         subject,
@@ -78,7 +78,7 @@ export function generateBtwCooldownReadyEmail(userName: string) {
                 </p>
                 <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
                 <p style="font-size: 12px; color: #aaa;">
-                    This is an automated notification from Drivofy.
+                    This is an automated notification from Selam Driving School.
                 </p>
             </div>
         `
@@ -178,7 +178,7 @@ export function generateBtwFinalEmail(userName: string) {
                 </ul>
                 <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
                 <p style="font-size: 12px; color: #aaa;">
-                    This is an automated notification from Drivofy.
+                    This is an automated notification from Selam Driving School.
                 </p>
             </div>
         `
