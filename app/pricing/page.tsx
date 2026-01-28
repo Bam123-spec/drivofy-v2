@@ -32,6 +32,7 @@ const PLANS = [
         description: "Essential tools for independent instructors and small schools.",
         price_numeric: 34,
         price_display: "$34",
+        unit: "/mo",
         popular: false,
         features: [
             { text: "Up to 50 Students", icon: "Users", color: "text-blue-400" },
@@ -48,6 +49,7 @@ const PLANS = [
         description: "Perfect for growing schools needing advanced automation.",
         price_numeric: 59,
         price_display: "$59",
+        unit: "/mo",
         popular: true,
         features: [
             { text: "Unlimited Students", icon: "Users", color: "text-blue-400" },
