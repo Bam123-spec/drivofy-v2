@@ -80,16 +80,18 @@ export function CreateClassDialog({ open, onOpenChange, onSuccess }: CreateClass
     // Auto-calculate End Date for DE
     useEffect(() => {
         if (isDE && formData.start_date) {
-            // DE is 2 weeks (14 days? Or 10 class days?). 
-            // Previous logic was +11 days (Mon -> Fri next week). 
-            // Prompt says: "End Date becomes auto-calculated: start_date + 13 days"
-            const start = new Date(formData.start_date + "T00:00:00") // Local time fix
+            // DE is 2 weeks (Weekdays) or 5 weeks (Weekends).
+            const start = new Date(formData.start_date + "T00:00:00")
             if (!isNaN(start.getTime())) {
-                const end = addDays(start, 13)
+                const isWeekendSeries = formData.series_key === "de_weekend_5wk"
+                // Weekday: 13 days from start (2 weeks)
+                // Weekend: 29 days from start being Sat (Sat->Sun 5 weeks later is ~29-30 days. 4 weeks + 1 day? 5 weekends = 29 days inclusive)
+                const daysToAdd = isWeekendSeries ? 29 : 13
+                const end = addDays(start, daysToAdd)
                 setFormData(prev => ({ ...prev, end_date: format(end, 'yyyy-MM-dd') }))
             }
         }
-    }, [isDE, formData.start_date])
+    }, [isDE, formData.start_date, formData.series_key])
 
     const fetchData = async () => {
         const [instRes, catRes] = await Promise.all([
@@ -176,9 +178,15 @@ export function CreateClassDialog({ open, onOpenChange, onSuccess }: CreateClass
                 const startDate = parseLocalDate(formData.start_date)
                 const count = Math.max(1, formData.seed_count)
 
+                const isWeekendSeries = formData.series_key === "de_weekend_5wk"
+                // Weekday: Interval 14 days, Duration 13 days
+                // Weekend: Interval 35 days (5 weeks), Duration 29 days
+                const interval = isWeekendSeries ? 35 : 14
+                const duration = isWeekendSeries ? 29 : 13
+
                 for (let i = 0; i < count; i++) {
-                    const currentStart = addDays(startDate, i * 14) // 2 weeks * i
-                    const currentEnd = addDays(currentStart, 13)    // 2 weeks length
+                    const currentStart = addDays(startDate, i * interval)
+                    const currentEnd = addDays(currentStart, duration)
 
                     // For seeded names, maybe append date or keep same? 
                     // Usually "Driver's Ed (Morning)" is the series. 
@@ -398,7 +406,7 @@ export function CreateClassDialog({ open, onOpenChange, onSuccess }: CreateClass
                                     <SelectContent>
                                         <SelectItem value="de_morning_2wk">Driver's Ed (Morning) – 2 week</SelectItem>
                                         <SelectItem value="de_evening_2wk">Driver's Ed (Evening) – 2 week</SelectItem>
-                                        <SelectItem value="de_weekend_2wk">Driver's Ed (Weekend) – 2 week</SelectItem>
+                                        <SelectItem value="de_weekend_5wk">Driver's Ed (Weekend) – 5 week</SelectItem>
                                     </SelectContent>
                                 </Select>
                                 {createMode === "seed" && (
@@ -516,7 +524,7 @@ export function CreateClassDialog({ open, onOpenChange, onSuccess }: CreateClass
                                 />
                                 {isDE && (
                                     <div className="absolute right-2 top-2 text-xs text-gray-400 pointer-events-none">
-                                        Auto (2 weeks)
+                                        {formData.series_key === 'de_weekend_5wk' ? 'Auto (5 weeks)' : 'Auto (2 weeks)'}
                                     </div>
                                 )}
                             </div>

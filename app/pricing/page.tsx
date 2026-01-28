@@ -17,12 +17,13 @@ import {
     ArrowRight,
     Users,
     Car,
-    BookOpen
+    BookOpen,
+    MapPin
 } from "lucide-react"
 import Link from "next/link"
 
 const IconMap: any = {
-    CheckCircle2, Clock, Zap, Shield, Star, Target, Sparkles
+    CheckCircle2, Clock, Zap, Shield, Star, Target, Sparkles, MapPin
 }
 
 const PLANS = [
@@ -52,6 +53,7 @@ const PLANS = [
         unit: "/mo",
         popular: true,
         features: [
+            { text: "1 Location", icon: "MapPin", color: "text-blue-400" },
             { text: "Unlimited Students", icon: "Users", color: "text-blue-400" },
             { text: "Advanced Scheduling Engine", icon: "Zap", color: "text-blue-400" },
             { text: "Multi-Instructor Support", icon: "Car", color: "text-blue-400" },
@@ -70,6 +72,7 @@ const PLANS = [
         unit: "/mo",
         popular: false,
         features: [
+            { text: "Up to 5 Locations", icon: "MapPin", color: "text-blue-400" },
             { text: "Everything in Standard", icon: "CheckCircle2", color: "text-blue-400" },
             { text: "Advanced Analytics", icon: "Target", color: "text-blue-400" },
             { text: "White-label Portal", icon: "Sparkles", color: "text-blue-400" },
