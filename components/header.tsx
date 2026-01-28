@@ -50,9 +50,9 @@ export function Header() {
             <Image
               src="/drivofy-logo.png"
               alt="Selam Driving School"
-              width={140}
-              height={40}
-              className="h-12 w-auto"
+              width={180}
+              height={50}
+              className="h-16 w-auto"
               priority
             />
           </Link>
