@@ -69,14 +69,14 @@ export function DrivingSessionTable({ sessions, onSelectSession }: DrivingSessio
                             >
                                 <TableCell className="py-4">
                                     <div className="flex items-center gap-3">
-                                        <Avatar className="h-9 w-9 border border-slate-200 dark:border-slate-800 shadow-sm">
-                                            <AvatarFallback className="bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 text-xs font-bold">
+                                        <Avatar className="h-9 w-9 border border-slate-200 dark:border-white/10 shadow-sm">
+                                            <AvatarFallback className="bg-slate-950 text-white dark:bg-slate-900 text-xs font-bold">
                                                 {session.profiles?.full_name?.split(' ').map((n: string) => n[0]).join('').toUpperCase() || 'S'}
                                             </AvatarFallback>
                                         </Avatar>
                                         <div className="flex flex-col">
                                             <span className="font-semibold text-slate-900 dark:text-slate-100 text-sm">{session.profiles?.full_name}</span>
-                                            <span className="text-xs text-slate-500 font-medium">ID: {session.student_id?.slice(0, 8)}</span>
+                                            <span className="text-[10px] text-slate-400 font-medium">ID: {session.student_id?.slice(0, 8)}</span>
                                         </div>
                                     </div>
                                 </TableCell>
