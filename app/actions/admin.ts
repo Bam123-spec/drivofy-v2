@@ -252,6 +252,19 @@ export async function adminUpdateStudentGrade(enrollmentId: string, grade: strin
             if (statusError) {
                 console.error("adminUpdateStudentGrade: Status update failed", statusError)
             }
+        } else {
+            // Revert status to active if grade is now failing
+            const { error: revertError } = await supabase
+                .from('enrollments')
+                .update({
+                    status: 'active',
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', enrollmentId)
+
+            if (revertError) {
+                console.error("adminUpdateStudentGrade: Status revert failed", revertError)
+            }
         }
 
         // 5. Credits & Emails
