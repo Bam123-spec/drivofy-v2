@@ -23,7 +23,7 @@ export async function sendTransactionalEmail({ to, subject, htmlContent, sender 
     const payload = {
         sender: sender || {
             email: process.env.BREVO_SENDER_EMAIL || 'noreply@drivofy.com',
-            name: process.env.BREVO_SENDER_NAME || 'Selam Driving School',
+            name: 'Selam Driving School',
         },
         to,
         subject,

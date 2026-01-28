@@ -8,9 +8,9 @@ const _geist = Geist({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Drivofy - All-in-One Driving School Management Platform",
+  title: "Selam Driving School - Maryland MVA Certified Driver's Education",
   description:
-    "Streamline your driving school with automated scheduling, student portals, instructor management, and Google Calendar sync. Start your 30-day free trial today.",
+    "Maryland MVA certified driving school in Silver Spring and Laurel. We offer driver education, behind-the-wheel training, and road test services.",
   generator: "v0.app",
   icons: {
     icon: "/favicon.png",

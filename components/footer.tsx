@@ -12,15 +12,15 @@ export function Footer() {
             <Link href="/" className="flex items-center mb-4">
               <Image
                 src="/drivofy-logo.png"
-                alt="Drivofy"
+                alt="Selam Driving School"
                 width={140}
                 height={40}
                 className="h-12 w-auto"
               />
             </Link>
             <p className="text-sm text-muted-foreground max-w-md leading-relaxed">
-              The all-in-one driving school management platform. Schedule lessons, track progress, automate
-              communications, and grow your business—all from one dashboard.
+              Maryland's premier MVA certified driving school. We provide comprehensive driver education,
+              professional behind-the-wheel training, and streamlined road test services.
             </p>
           </div>
 
@@ -72,7 +72,7 @@ export function Footer() {
         </div>
 
         <div className="mt-12 pt-8 border-t border-border">
-          <p className="text-sm text-muted-foreground text-center">© {currentYear} Drivofy. All rights reserved.</p>
+          <p className="text-sm text-muted-foreground text-center">© {currentYear} Selam Driving School. All rights reserved.</p>
         </div>
       </div>
     </footer>

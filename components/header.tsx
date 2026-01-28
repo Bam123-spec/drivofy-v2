@@ -49,7 +49,7 @@ export function Header() {
           <Link href="/" className="flex items-center gap-2 transition-opacity hover:opacity-80">
             <Image
               src="/drivofy-logo.png"
-              alt="Drivofy"
+              alt="Selam Driving School"
               width={140}
               height={40}
               className="h-12 w-auto"
