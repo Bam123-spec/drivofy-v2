@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { cookies } from 'next/headers'
 import { revalidatePath } from 'next/cache'
 import { format } from 'date-fns'
-import { getInstructorBusyTimes, createCalendarEvent } from '@/lib/googleCalendar'
+import { getInstructorBusyTimes, createCalendarEvent, updateCalendarEvent, deleteCalendarEvent } from '@/lib/googleCalendar'
 import { sendTransactionalEmail } from '@/lib/brevo'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -180,7 +180,7 @@ export async function createDrivingSession(data: {
         // 5. Sync to Admin's Google Calendar
         if (user) {
             try {
-                await createCalendarEvent(user.id, {
+                const googleEvent = await createCalendarEvent(user.id, {
                     studentName: student.full_name || "Student",
                     startTime: startDateTime.toISOString(),
                     endTime: endDateTime.toISOString(),
@@ -188,10 +188,17 @@ export async function createDrivingSession(data: {
                     description: `Driving Session\nInstructor: ${instructor.full_name}\nStudent: ${student.full_name}\nDuration: ${data.duration} hour(s)\nNotes: ${data.notes || 'N/A'}`,
                     location: "Driving School"
                 })
-                console.log("📅 Calendar sync successful")
+                console.log("📅 Calendar sync successful", googleEvent.id)
+
+                // Save Google Event ID
+                await supabaseService
+                    .from('driving_sessions')
+                    .update({ google_event_id: googleEvent.id })
+                    .eq('id', session.id)
+
             } catch (calendarError: any) {
                 console.error("❌ Calendar sync failed:", calendarError.message)
-                calendarSyncWarning = `Calendar sync failed. Check your Google Calendar connection.`
+                calendarSyncWarning = `Calendar sync failed. Check your Google Calendar connection. ${calendarError.message}`
             }
         }
 
@@ -313,6 +320,7 @@ export async function updateSessionStatus(id: string, status: string) {
 
         // 4. Send Student Status Update Email
         if (session.profiles?.email) {
+            // ... Email logic remains same ...
             const statusConfig: any = {
                 completed: { title: "Session Completed ✅", message: "Your driving session has been marked as completed. We hope it was a great learning experience!" },
                 cancelled: { title: "Session Cancelled ❌", message: "Your driving session has been cancelled. If this was a mistake, please reach out or book a new slot." },
@@ -346,6 +354,27 @@ export async function updateSessionStatus(id: string, status: string) {
                 })
             }
         }
+
+        // 5. Sync Cancellation to Google Calendar
+        if (status === 'cancelled' && session.google_event_id) {
+            const cookieStore = await cookies()
+            const supabase = createClient(cookieStore)
+            const { data: { user } } = await supabase.auth.getUser()
+
+            if (user) {
+                try {
+                    await deleteCalendarEvent(user.id, session.google_event_id)
+                    // Optional: Clear the ID from DB? Or keep it for log?
+                    // Let's clear it to avoid double deletion errors
+                    await supabaseService
+                        .from('driving_sessions')
+                        .update({ google_event_id: null })
+                        .eq('id', id)
+                } catch (err) {
+                    console.error("Failed to delete calendar event on cancellation:", err)
+                }
+            }
+        }
     } catch (e) {
         console.error("Failed to process session automation:", e)
     }
@@ -356,17 +385,70 @@ export async function updateSessionStatus(id: string, status: string) {
 }
 
 export async function updateSessionNotes(id: string, notes: string) {
-    const { error } = await supabaseService
+    // 1. Update DB
+    const { data: session, error } = await supabaseService
         .from('driving_sessions')
         .update({ notes, updated_at: new Date().toISOString() })
         .eq('id', id)
+        .select(`
+            *,
+            profiles:student_id(full_name),
+            instructors(full_name)
+        `)
+        .single()
 
     if (error) throw new Error(error.message)
+
+    // 2. Sync to Google Calendar
+    if (session?.google_event_id) {
+        const cookieStore = await cookies()
+        const supabase = createClient(cookieStore)
+        const { data: { user } } = await supabase.auth.getUser()
+
+        if (user) {
+            try {
+                await updateCalendarEvent(user.id, session.google_event_id, {
+                    studentName: session.profiles?.full_name || "Student",
+                    startTime: session.start_time,
+                    endTime: session.end_time,
+                    title: `Session: ${session.instructors?.full_name || 'Instructor'} / ${session.profiles?.full_name || 'Student'}`,
+                    description: `Driving Session\nInstructor: ${session.instructors?.full_name}\nStudent: ${session.profiles?.full_name}\nDuration: ${session.duration_minutes / 60} hour(s)\nNotes: ${notes}`,
+                    location: "Driving School"
+                })
+            } catch (err) {
+                console.error("Failed to update Google Calendar event notes:", err)
+            }
+        }
+    }
+
     revalidatePath('/admin/driving')
     return { success: true }
 }
 
 export async function deleteDrivingSession(id: string) {
+    // 1. Get Session for Google Event ID
+    const { data: session } = await supabaseService
+        .from('driving_sessions')
+        .select('google_event_id')
+        .eq('id', id)
+        .single()
+
+    // 2. Delete from Google Calendar
+    if (session?.google_event_id) {
+        const cookieStore = await cookies()
+        const supabase = createClient(cookieStore)
+        const { data: { user } } = await supabase.auth.getUser()
+
+        if (user) {
+            try {
+                await deleteCalendarEvent(user.id, session.google_event_id)
+            } catch (err) {
+                console.error("Failed to delete Google Calendar event:", err)
+            }
+        }
+    }
+
+    // 3. Delete from DB
     const { error } = await supabaseService
         .from('driving_sessions')
         .delete()

@@ -190,3 +190,87 @@ export async function getInstructorBusyTimes(profileId: string, timeMin: string,
     const data = await response.json()
     return data.calendars.primary.busy || []
 }
+
+/**
+ * Updates an existing calendar event.
+ */
+export async function updateCalendarEvent(profileId: string, eventId: string, eventData: {
+    studentName: string
+    startTime: string
+    endTime: string
+    title?: string
+    description?: string
+    location?: string
+}) {
+    console.log("📅 Updating Calendar Event:", eventId)
+    const accessToken = await getGoogleAccessToken(profileId)
+    if (!accessToken) throw new Error("Could not get access token")
+
+    const event = {
+        summary: eventData.title || `Unassigned - ${eventData.studentName}`,
+        location: eventData.location || "Driving School",
+        description: eventData.description || "Driving lesson booked via Selam Driving School.",
+        start: {
+            dateTime: eventData.startTime,
+            timeZone: 'UTC',
+        },
+        end: {
+            dateTime: eventData.endTime,
+            timeZone: 'UTC',
+        },
+    }
+
+    const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`, {
+        method: 'PATCH',
+        headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(event),
+    })
+
+    if (!response.ok) {
+        const error = await response.json()
+        console.error("❌ Google Calendar Update Error:", error)
+        // If 404 or 410, it's already gone. Maybe ignore?
+        if (response.status === 404 || response.status === 410) {
+            console.warn("⚠️ Event not found or deleted, skipping update.")
+            return null
+        }
+        throw new Error(`Google Calendar API Error: ${JSON.stringify(error)}`)
+    }
+
+    const result = await response.json()
+    console.log("✅ Event updated successfully")
+    return result
+}
+
+/**
+ * Deletes a calendar event.
+ */
+export async function deleteCalendarEvent(profileId: string, eventId: string) {
+    console.log("🗑️ Deleting Calendar Event:", eventId)
+    const accessToken = await getGoogleAccessToken(profileId)
+    if (!accessToken) throw new Error("Could not get access token")
+
+    const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`, {
+        method: 'DELETE',
+        headers: {
+            'Authorization': `Bearer ${accessToken}`,
+        },
+    })
+
+    if (!response.ok) {
+        // 404/410 means already deleted, which is fine.
+        if (response.status === 404 || response.status === 410) {
+            console.log("ℹ️ Event already deleted from calendar")
+            return true
+        }
+        const error = await response.json()
+        console.error("❌ Google Calendar Delete Error:", error)
+        throw new Error(`Google Calendar API Error: ${JSON.stringify(error)}`)
+    }
+
+    console.log("✅ Event deleted successfully")
+    return true
+}
