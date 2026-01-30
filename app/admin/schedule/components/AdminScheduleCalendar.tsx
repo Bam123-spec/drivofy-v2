@@ -185,12 +185,12 @@ export function AdminScheduleCalendar() {
                                 {/* Day Header */}
                                 <div className={`h-24 border-b border-gray-100 flex flex-col items-center justify-center sticky top-0 z-20 bg-white/95 backdrop-blur-xl group/header transition-colors ${isToday ? 'bg-blue-50/30' : 'hover:bg-gray-50'}`}>
                                     <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 font-mono">{format(day, "EEE")}</span>
-                                    <div className="relative inline-flex items-center justify-center p-2">
+                                    <div className="flex flex-col items-center gap-1">
                                         <span className={`text-3xl font-black tracking-tighter transition-all ${isToday ? 'text-blue-600' : 'text-gray-900 group-hover/header:text-blue-600'}`}>
                                             {format(day, "d")}
                                         </span>
                                         {isToday && (
-                                            <div className="absolute top-0 right-0 w-2.5 h-2.5 rounded-full bg-blue-600 shadow-[0_0_12px_rgba(37,99,235,0.8)] animate-pulse ring-4 ring-blue-600/10"></div>
+                                            <div className="w-1.5 h-1.5 rounded-full bg-blue-600 shadow-[0_0_12px_rgba(37,99,235,0.8)] animate-pulse ring-4 ring-blue-600/10 mb-1"></div>
                                         )}
                                     </div>
                                     {isToday && <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-600 shadow-[0_-2px_8px_rgba(37,99,235,0.3)]"></div>}
