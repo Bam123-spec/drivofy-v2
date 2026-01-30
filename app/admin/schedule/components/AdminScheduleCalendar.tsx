@@ -165,7 +165,7 @@ export function AdminScheduleCalendar() {
                 <div className="grid grid-cols-8 min-w-[1200px] h-full">
                     {/* Time Scale */}
                     <div className="border-r border-gray-100 bg-white/50 sticky left-0 z-30 backdrop-blur-md">
-                        <div className="h-16 border-b border-gray-100 flex items-center justify-center text-[9px] font-black text-gray-400 font-mono uppercase tracking-[0.2em]">
+                        <div className="h-20 border-b border-gray-100 flex items-center justify-center text-[9px] font-black text-gray-400 font-mono uppercase tracking-[0.2em]">
                             Time
                         </div>
                         {hours.map(hour => (
@@ -176,120 +176,114 @@ export function AdminScheduleCalendar() {
                     </div>
 
                     {/* Day Columns */}
-                    {weekDays.map((day, dayIndex) => {
-                        const dayEvents = getEventsForDay(day)
-                        const isToday = isSameDay(day, new Date())
+                    {/* Day Header */}
+                    <div className={`h-20 border-b border-gray-100 flex flex-col items-center justify-center sticky top-0 z-20 bg-white/95 backdrop-blur-xl group/header transition-colors ${isToday ? 'bg-blue-50/30' : 'hover:bg-gray-50'}`}>
+                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">{format(day, "EEE")}</span>
+                        <div className="relative inline-flex items-center justify-center">
+                            <span className={`text-2xl font-black tracking-tighter transition-all ${isToday ? 'text-blue-600 scale-110' : 'text-gray-900 group-hover/header:text-blue-600'}`}>{format(day, "d")}</span>
+                            {isToday && (
+                                <div className="absolute -top-1 -right-2 w-2 h-2 rounded-full bg-blue-600 shadow-[0_0_12px_rgba(37,99,235,0.8)] animate-pulse ring-4 ring-blue-600/10"></div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Slot BG */}
+                    {hours.map(hour => (
+                        <div key={hour} className="h-14 border-b border-gray-50/40 transition-colors hover:bg-white/50"></div>
+                    ))}
+
+                    {/* Interactive Events Overlay */}
+                    {dayEvents.map((event) => {
+                        const start = event.start
+                        const end = event.end
+                        const startHr = start.getHours() + start.getMinutes() / 60
+                        const endHr = end.getHours() + end.getMinutes() / 60
+                        const duration = endHr - startHr
+
+                        const top = (startHr - 5) * 56 // 56px per hour (h-14)
+                        const height = duration * 56
+
+                        if (startHr < 5 || startHr >= 24) return null
+
+                        let bgClass = "bg-blue-600 shadow-blue-200"
+                        let borderClass = "border-blue-700"
+                        let textClass = "text-white"
+
+                        if (event.type === 'class') {
+                            bgClass = "bg-purple-600 shadow-purple-200"
+                            borderClass = "border-purple-700"
+                        } else if (event.type === 'google') {
+                            bgClass = "bg-slate-900 shadow-slate-200"
+                            borderClass = "border-black"
+                        }
+
+                        // Conflict Detection Logic
+                        const hasConflict = event.type !== 'google' && dayEvents.some(other =>
+                            other.type === 'google' &&
+                            ((start >= other.start && start < other.end) || (end > other.start && end <= other.end) || (start <= other.start && end >= other.end))
+                        )
 
                         return (
-                            <div key={dayIndex} className={`border-r border-gray-100 relative ${isToday ? 'bg-blue-50/5' : ''}`}>
-                                {/* Day Header */}
-                                <div className={`h-16 border-b border-gray-100 flex flex-col items-center justify-center sticky top-0 z-20 bg-white/90 backdrop-blur-xl group/header ${isToday ? 'bg-blue-50/20' : ''}`}>
-                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-0.5">{format(day, "EEE")}</span>
-                                    <div className="relative">
-                                        <span className={`text-xl font-black tracking-tighter transition-colors ${isToday ? 'text-blue-600' : 'text-gray-900 group-hover/header:text-blue-500'}`}>{format(day, "d")}</span>
-                                        {isToday && (
-                                            <div className="absolute -top-1 -right-2 w-2 h-2 rounded-full bg-blue-600 shadow-[0_0_12px_rgba(37,99,235,0.6)] animate-pulse"></div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Slot BG */}
-                                {hours.map(hour => (
-                                    <div key={hour} className="h-14 border-b border-gray-50/40 transition-colors hover:bg-white/50"></div>
-                                ))}
-
-                                {/* Interactive Events Overlay */}
-                                {dayEvents.map((event) => {
-                                    const start = event.start
-                                    const end = event.end
-                                    const startHr = start.getHours() + start.getMinutes() / 60
-                                    const endHr = end.getHours() + end.getMinutes() / 60
-                                    const duration = endHr - startHr
-
-                                    const top = (startHr - 5) * 56 // 56px per hour (h-14)
-                                    const height = duration * 56
-
-                                    if (startHr < 5 || startHr >= 24) return null
-
-                                    let bgClass = "bg-blue-600 shadow-blue-200"
-                                    let borderClass = "border-blue-700"
-                                    let textClass = "text-white"
-
-                                    if (event.type === 'class') {
-                                        bgClass = "bg-purple-600 shadow-purple-200"
-                                        borderClass = "border-purple-700"
-                                    } else if (event.type === 'google') {
-                                        bgClass = "bg-slate-900 shadow-slate-200"
-                                        borderClass = "border-black"
-                                    }
-
-                                    // Conflict Detection Logic
-                                    const hasConflict = event.type !== 'google' && dayEvents.some(other =>
-                                        other.type === 'google' &&
-                                        ((start >= other.start && start < other.end) || (end > other.start && end <= other.end) || (start <= other.start && end >= other.end))
-                                    )
-
-                                    return (
-                                        <div
-                                            key={event.id}
-                                            className={`absolute left-1 right-1 rounded-2xl px-4 py-3 text-[11px] font-bold border-2 shadow-xl overflow-hidden transition-all hover:z-50 hover:scale-[1.02] hover:shadow-2xl flex flex-col justify-between group cursor-default
+                            <div
+                                key={event.id}
+                                className={`absolute left-1 right-1 rounded-2xl px-4 py-3 text-[11px] font-bold border-2 shadow-xl overflow-hidden transition-all hover:z-50 hover:scale-[1.02] hover:shadow-2xl flex flex-col justify-between group cursor-default
                                                 ${bgClass} ${borderClass} ${textClass}
                                                 ${event.type === 'google' ? 'opacity-90 grayscale-[0.2] hover:grayscale-0' : ''}
                                             `}
-                                            style={{ top: `${top + 64 + 2}px`, height: `${height - 2}px` }}
-                                        >
-                                            <div className="space-y-1">
-                                                <div className="flex items-start justify-between gap-2">
-                                                    <span className="leading-tight line-clamp-2">{event.title}</span>
-                                                    {hasConflict && (
-                                                        <TooltipProvider>
-                                                            <Tooltip>
-                                                                <TooltipTrigger>
-                                                                    <div className="bg-red-500 p-1.5 rounded-lg animate-pulse ring-4 ring-red-500/20">
-                                                                        <AlertTriangle className="h-3 w-3 text-white" />
-                                                                    </div>
-                                                                </TooltipTrigger>
-                                                                <TooltipContent className="bg-slate-900 text-white border-0 rounded-xl p-3 shadow-2xl">
-                                                                    <p className="font-bold flex items-center gap-2">
-                                                                        <ShieldAlert className="h-4 w-4 text-red-400" />
-                                                                        Schedule Conflict Detected
-                                                                    </p>
-                                                                    <p className="text-[10px] text-gray-400 mt-1">This slot overlaps with an external Google Calendar event.</p>
-                                                                </TooltipContent>
-                                                            </Tooltip>
-                                                        </TooltipProvider>
-                                                    )}
-                                                    {event.type === 'google' && (
-                                                        <div className="bg-white/10 p-1 rounded-md opacity-50 group-hover:opacity-100 transition-opacity">
-                                                            <ExternalLink className="h-3 w-3" />
+                                style={{ top: `${top + 80 + 2}px`, height: `${height - 2}px` }}
+                            >
+                                <div className="space-y-1">
+                                    <div className="flex items-start justify-between gap-2">
+                                        <span className="leading-tight line-clamp-2">{event.title}</span>
+                                        {hasConflict && (
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger>
+                                                        <div className="bg-red-500 p-1.5 rounded-lg animate-pulse ring-4 ring-red-500/20">
+                                                            <AlertTriangle className="h-3 w-3 text-white" />
                                                         </div>
-                                                    )}
-                                                </div>
-                                                {event.subtitle && <div className="text-[9px] font-medium text-white/70 tracking-wide uppercase">{event.subtitle}</div>}
+                                                    </TooltipTrigger>
+                                                    <TooltipContent className="bg-slate-900 text-white border-0 rounded-xl p-3 shadow-2xl">
+                                                        <p className="font-bold flex items-center gap-2">
+                                                            <ShieldAlert className="h-4 w-4 text-red-400" />
+                                                            Schedule Conflict Detected
+                                                        </p>
+                                                        <p className="text-[10px] text-gray-400 mt-1">This slot overlaps with an external Google Calendar event.</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                        )}
+                                        {event.type === 'google' && (
+                                            <div className="bg-white/10 p-1 rounded-md opacity-50 group-hover:opacity-100 transition-opacity">
+                                                <ExternalLink className="h-3 w-3" />
                                             </div>
+                                        )}
+                                    </div>
+                                    {event.subtitle && <div className="text-[9px] font-medium text-white/70 tracking-wide uppercase">{event.subtitle}</div>}
+                                </div>
 
-                                            <div className="flex items-center justify-between mt-2">
-                                                <div className="px-2 py-1 rounded-lg bg-black/20 backdrop-blur-md text-[9px] font-black tracking-widest uppercase">
-                                                    {format(start, "h:mm")} - {format(end, "h:mm a")}
-                                                </div>
-                                                {event.status && (
-                                                    <div className="text-[8px] font-black uppercase tracking-widest opacity-60">
-                                                        {event.status}
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            {/* Design Accent */}
-                                            <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 group-hover:bg-white/10 transition-colors"></div>
+                                <div className="flex items-center justify-between mt-2">
+                                    <div className="px-2 py-1 rounded-lg bg-black/20 backdrop-blur-md text-[9px] font-black tracking-widest uppercase">
+                                        {format(start, "h:mm")} - {format(end, "h:mm a")}
+                                    </div>
+                                    {event.status && (
+                                        <div className="text-[8px] font-black uppercase tracking-widest opacity-60">
+                                            {event.status}
                                         </div>
-                                    )
-                                })}
+                                    )}
+                                </div>
+
+                                {/* Design Accent */}
+                                <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 group-hover:bg-white/10 transition-colors"></div>
                             </div>
                         )
                     })}
                 </div>
+                )
+                    })}
             </div>
         </div>
+        </div >
     )
 }
 
