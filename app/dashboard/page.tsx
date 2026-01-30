@@ -39,7 +39,7 @@ export default async function DashboardPage() {
     <>
       <Header />
       <main className="min-h-screen bg-gray-50">
-        <div className="container mx-auto px-4 py-12">
+        <div className="container mx-auto px-4 pt-32 pb-12">
           <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <h1 className="text-4xl font-bold mb-2">Welcome back, {userName}!</h1>

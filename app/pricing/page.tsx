@@ -30,55 +30,50 @@ const PLANS = [
     {
         id: "core",
         title: "Core Plan",
-        description: "Essential tools for independent instructors and small schools.",
+        description: "Professional tools to get your school started.",
         price_numeric: 34,
         price_display: "$34",
         unit: "/mo",
         popular: false,
         features: [
-            { text: "Up to 50 Students", icon: "Users", color: "text-blue-400" },
-            { text: "Basic Scheduling", icon: "Calendar", color: "text-blue-400" },
-            { text: "Student Progress Tracking", icon: "Target", color: "text-blue-400" },
-            { text: "Email Notifications", icon: "Zap", color: "text-blue-400" },
-            { text: "Mobile Dashboard", icon: "Sparkles", color: "text-blue-400" }
+            { text: "Online Self-Service Booking", icon: "Calendar", color: "text-blue-400" },
+            { text: "Automatic Reminders Save Time", icon: "Clock", color: "text-blue-400" },
+            { text: "Manage Everything from Your Phone", icon: "Sparkles", color: "text-blue-400" },
+            { text: "The Essentials for Small Schools", icon: "Target", color: "text-blue-400" }
         ],
         enroll_link: "/signup?plan=core"
     },
     {
         id: "standard",
         title: "Standard Plan",
-        description: "Perfect for growing schools needing advanced automation.",
+        description: "The 'Daily Operations' plan for growing schools.",
         price_numeric: 59,
         price_display: "$59",
         unit: "/mo",
         popular: true,
         features: [
-            { text: "1 Location", icon: "MapPin", color: "text-blue-400" },
-            { text: "Unlimited Students", icon: "Users", color: "text-blue-400" },
-            { text: "Advanced Scheduling Engine", icon: "Zap", color: "text-blue-400" },
-            { text: "Multi-Instructor Support", icon: "Car", color: "text-blue-400" },
-            { text: "Auto-Billing & Payments", icon: "Shield", color: "text-blue-400" },
-            { text: "Theory Class Management", icon: "BookOpen", color: "text-blue-400" },
-            { text: "Automated Reminders", icon: "Clock", color: "text-blue-400" }
+            { text: "Unlimited Student Bookings", icon: "Users", color: "text-blue-400" },
+            { text: "Multi-Instructor Scheduling", icon: "Car", color: "text-blue-400" },
+            { text: "Students Book & Pay Online Instantly", icon: "Shield", color: "text-blue-400" },
+            { text: "SMS & Email Reminders to Stop No-Shows", icon: "Clock", color: "text-blue-400" },
+            { text: "Everything Needed to Run Your Business", icon: "CheckCircle2", color: "text-blue-400" }
         ],
         enroll_link: "/signup?plan=standard"
     },
     {
         id: "premium",
         title: "Premium Plan",
-        description: "The complete solution for large-scale operations.",
+        description: "The 'Full Automation' plan to scale your reach.",
         price_numeric: 89,
         price_display: "$89",
         unit: "/mo",
         popular: false,
         features: [
-            { text: "Up to 5 Locations", icon: "MapPin", color: "text-blue-400" },
-            { text: "Everything in Standard", icon: "CheckCircle2", color: "text-blue-400" },
-            { text: "Advanced Analytics", icon: "Target", color: "text-blue-400" },
-            { text: "White-label Portal", icon: "Sparkles", color: "text-blue-400" },
-            { text: "Priority 24/7 Support", icon: "Shield", color: "text-blue-400" },
-            { text: "Custom API Access", icon: " Zap", color: "text-blue-400" },
-            { text: "Dedicated Success Manager", icon: "Star", color: "text-blue-400" }
+            { text: "Manage Up to 5 Locations in One Place", icon: "MapPin", color: "text-blue-400" },
+            { text: "Advanced Revenue & Performance Reports", icon: "Target", color: "text-blue-400" },
+            { text: "AI Sales Assistant to Capture More Leads", icon: "Sparkles", color: "text-blue-400" },
+            { text: "Priority Help Whenever You Need It", icon: "Shield", color: "text-blue-400" },
+            { text: "Growth Plan: Put Your School on Cruise Control", icon: "Zap", color: "text-blue-400" }
         ],
         enroll_link: "/signup?plan=premium"
     }
@@ -89,10 +84,10 @@ export default function PricingPage() {
         <div className="min-h-screen flex flex-col bg-[#0A0A0B] text-white selection:bg-primary/30">
             <Header />
 
-            <main className="flex-1 pt-32 pb-20">
+            <main className="flex-1 pt-40 pb-20">
                 <div className="container mx-auto px-4">
                     {/* Header Section */}
-                    <div className="max-w-3xl mx-auto text-center mb-20 animate-in fade-in slide-in-from-bottom-6 duration-700">
+                    <div className="max-w-3xl mx-auto text-center mb-20 animate-in fade-in slide-in-from-bottom-6 duration-700 pt-64 md:pt-80">
                         <Badge variant="outline" className="mb-4 bg-white/5 border-white/10 text-white/60 uppercase tracking-widest text-[10px] font-black px-3 py-1">
                             Pricing Plans
                         </Badge>

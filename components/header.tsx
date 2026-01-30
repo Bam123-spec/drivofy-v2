@@ -45,16 +45,18 @@ export function Header() {
   return (
     <header className="fixed top-0 z-50 w-full border-b border-white/5 bg-black/50 backdrop-blur-xl supports-[backdrop-filter]:bg-black/20">
       <div className="container mx-auto px-4">
-        <div className="flex h-16 items-center justify-between">
+        <div className="flex h-20 items-center justify-between">
           <Link href="/" className="flex items-center gap-2 transition-opacity hover:opacity-80">
-            <Image
-              src="/drivofy-logo.png"
-              alt="Selam Driving School"
-              width={180}
-              height={50}
-              className="h-16 w-auto"
-              priority
-            />
+            <div className="relative h-32 w-auto flex items-center">
+              <Image
+                src="/drivofy-logo.png"
+                alt="Selam Driving School"
+                width={320}
+                height={120}
+                className="h-32 w-auto -my-6"
+                priority
+              />
+            </div>
           </Link>
 
           {/* Desktop Navigation */}

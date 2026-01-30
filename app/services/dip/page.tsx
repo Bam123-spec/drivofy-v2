@@ -21,7 +21,7 @@ export default async function DIPPage() {
         <div className="min-h-screen flex flex-col bg-background">
             <Header />
 
-            <main className="flex-1 container mx-auto px-4 py-12">
+            <main className="flex-1 container mx-auto px-4 pt-32 pb-12">
                 <div className="max-w-3xl mx-auto text-center mb-12">
                     <h1 className="text-4xl font-bold mb-4">Driver Improvement Program (DIP)</h1>
                     <p className="text-xl text-muted-foreground">

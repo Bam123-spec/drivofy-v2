@@ -12,7 +12,7 @@ export default function HowItWorks() {
 
       <main className="flex-1">
         {/* Hero Section */}
-        <section className="py-20 md:py-28 bg-gradient-to-b from-background to-muted/20">
+        <section className="pt-32 pb-20 md:pt-40 md:pb-28 bg-gradient-to-b from-background to-muted/20">
           <div className="container mx-auto px-4">
             <div className="max-w-3xl mx-auto text-center">
               <h1 className="text-4xl md:text-6xl font-bold mb-6 text-balance">

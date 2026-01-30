@@ -173,7 +173,7 @@ export default function UpdatePasswordPage() {
         return (
             <>
                 <Header />
-                <main className="min-h-screen flex items-center justify-center px-4 py-12 bg-gradient-to-b from-background to-muted/20">
+                <main className="min-h-screen flex items-center justify-center px-4 pt-32 pb-20 bg-gradient-to-b from-background to-muted/20">
                     <Card className="w-full max-w-md">
                         <CardContent className="pt-12 pb-12 flex flex-col items-center gap-4">
                             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -189,7 +189,7 @@ export default function UpdatePasswordPage() {
     return (
         <>
             <Header />
-            <main className="min-h-screen flex items-center justify-center px-4 py-12 bg-gradient-to-b from-background to-muted/20">
+            <main className="min-h-screen flex items-center justify-center px-4 pt-80 pb-20 bg-gradient-to-b from-background to-muted/20">
                 <Card className="w-full max-w-md">
                     <CardHeader className="space-y-1">
                         <CardTitle className="text-2xl font-bold text-center">Set New Password</CardTitle>

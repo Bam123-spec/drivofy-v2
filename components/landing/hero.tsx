@@ -8,7 +8,7 @@ import { GlassCard } from "@/components/ui/glass-card"
 
 export function Hero() {
     return (
-        <section className="relative min-h-[110vh] w-full overflow-hidden bg-[#0A0A0B] pt-32 pb-20 md:pt-48">
+        <section className="relative min-h-[110vh] w-full overflow-hidden bg-[#0A0A0B] pt-32 pb-20 md:pt-40">
             {/* Background Gradients */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-primary/20 rounded-full blur-[120px] opacity-50 pointer-events-none" />
             <div className="absolute bottom-0 right-0 w-[800px] h-[600px] bg-blue-600/10 rounded-full blur-[120px] opacity-30 pointer-events-none" />
