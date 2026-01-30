@@ -116,46 +116,38 @@ export function AdminScheduleCalendar() {
     }
 
     return (
-        <div className="flex flex-col min-h-[1000px] bg-white rounded-3xl border border-gray-100 shadow-2xl shadow-gray-200/50 overflow-visible animate-in fade-in duration-700 mb-10">
+        <div className="flex flex-col min-h-[1000px] bg-white rounded-[2.5rem] border border-gray-100 shadow-2xl shadow-gray-200/40 overflow-visible animate-in fade-in duration-700 mb-10">
             {/* Calendar Controls */}
-            <div className="flex flex-col md:flex-row items-center justify-between p-3 border-b border-gray-50 bg-white/80 backdrop-blur-xl sticky top-0 z-40 gap-4">
-                <div className="flex items-center gap-6">
-                    <div className="flex items-center gap-2 bg-gray-50 p-1.5 rounded-2xl border border-gray-100">
-                        <Button variant="ghost" size="icon" className="h-10 w-10 hover:bg-white hover:shadow-md rounded-xl transition-all" onClick={() => setCurrentDate(subWeeks(currentDate, 1))}>
-                            <ChevronLeft className="h-5 w-5 text-gray-600" />
-                        </Button>
-                        <Button variant="ghost" size="sm" className="h-10 px-6 text-sm font-bold hover:bg-white hover:shadow-md rounded-xl transition-all text-gray-900" onClick={() => setCurrentDate(new Date())}>
-                            Today
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-10 w-10 hover:bg-white hover:shadow-md rounded-xl transition-all" onClick={() => setCurrentDate(addWeeks(currentDate, 1))}>
-                            <ChevronRight className="h-5 w-5 text-gray-600" />
-                        </Button>
-                    </div>
-                    <div className="h-10 w-[1px] bg-gray-100 hidden md:block" />
-                    <h2 className="text-xl font-black text-gray-900 tracking-tight">
+            <div className="flex flex-col md:flex-row items-center justify-between p-6 border-b border-gray-50 bg-white/80 backdrop-blur-xl sticky top-16 z-40 gap-6">
+                <div className="flex items-center gap-8">
+                    <h2 className="text-2xl font-black text-gray-900 tracking-tight min-w-[200px]">
                         {format(startDate, "MMMM yyyy")}
                     </h2>
-                </div>
 
-                <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-4 bg-gray-50/50 p-2 rounded-2xl border border-gray-100/50">
+                    <div className="hidden md:flex items-center gap-4 bg-gray-50/50 p-1.5 rounded-2xl border border-gray-100/50">
                         {[
                             { label: 'Driving', color: 'bg-blue-500 shadow-blue-200' },
                             { label: 'Theory', color: 'bg-purple-500 shadow-purple-200' },
                             { label: 'Google', color: 'bg-slate-900 shadow-gray-200' }
                         ].map((item) => (
-                            <div key={item.label} className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white shadow-sm border border-gray-100">
+                            <div key={item.label} className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
                                 <div className={`w-2.5 h-2.5 rounded-full ${item.color} shadow-lg`}></div>
                                 <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">{item.label}</span>
                             </div>
                         ))}
                     </div>
+                </div>
 
-                    <div className="h-10 w-[1px] bg-gray-100 hidden md:block" />
-
-                    <Suspense fallback={<div className="h-10 w-32 animate-pulse bg-gray-50 rounded-2xl" />}>
-                        <GoogleCalendarConnect variant="compact" />
-                    </Suspense>
+                <div className="flex items-center gap-3 bg-gray-50 p-1.5 rounded-2xl border border-gray-100">
+                    <Button variant="ghost" size="icon" className="h-10 w-10 hover:bg-white hover:text-blue-600 hover:shadow-md rounded-xl transition-all" onClick={() => setCurrentDate(subWeeks(currentDate, 1))}>
+                        <ChevronLeft className="h-5 w-5" />
+                    </Button>
+                    <Button variant="ghost" size="sm" className="h-10 px-8 text-sm font-black uppercase tracking-widest hover:bg-white hover:text-blue-600 hover:shadow-md rounded-xl transition-all text-gray-900" onClick={() => setCurrentDate(new Date())}>
+                        Today
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-10 w-10 hover:bg-white hover:text-blue-600 hover:shadow-md rounded-xl transition-all" onClick={() => setCurrentDate(addWeeks(currentDate, 1))}>
+                        <ChevronRight className="h-5 w-5" />
+                    </Button>
                 </div>
             </div>
 
@@ -173,11 +165,11 @@ export function AdminScheduleCalendar() {
                 <div className="grid grid-cols-8 min-w-[1200px] h-full">
                     {/* Time Scale */}
                     <div className="border-r border-gray-100 bg-white/50 sticky left-0 z-30 backdrop-blur-md">
-                        <div className="h-12 border-b border-gray-100 flex items-center justify-center text-[9px] font-black text-gray-400 uppercase tracking-[0.2em]">
+                        <div className="h-16 border-b border-gray-100 flex items-center justify-center text-[9px] font-black text-gray-400 font-mono uppercase tracking-[0.2em]">
                             Time
                         </div>
                         {hours.map(hour => (
-                            <div key={hour} className="h-14 border-b border-gray-50/50 text-[9px] font-bold text-gray-400 text-right pr-4 pt-1.5 italic">
+                            <div key={hour} className="h-14 border-b border-gray-50/50 text-[10px] font-bold text-gray-400 text-right pr-4 pt-4">
                                 {hour > 12 ? `${hour - 12} PM` : hour === 12 ? '12 PM' : `${hour} AM`}
                             </div>
                         ))}
@@ -191,10 +183,14 @@ export function AdminScheduleCalendar() {
                         return (
                             <div key={dayIndex} className={`border-r border-gray-100 relative ${isToday ? 'bg-blue-50/5' : ''}`}>
                                 {/* Day Header */}
-                                <div className={`h-12 border-b border-gray-100 flex flex-col items-center justify-center sticky top-0 z-20 bg-white/90 backdrop-blur-xl ${isToday ? 'bg-blue-50/30' : ''}`}>
-                                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.1em]">{format(day, "EEE")}</span>
-                                    <span className={`text-lg font-black ${isToday ? 'text-blue-600' : 'text-gray-900'}`}>{format(day, "d")}</span>
-                                    {isToday && <div className="absolute bottom-2 w-1.5 h-1.5 rounded-full bg-blue-600 shadow-[0_0_10px_rgba(37,99,235,0.5)]"></div>}
+                                <div className={`h-16 border-b border-gray-100 flex flex-col items-center justify-center sticky top-0 z-20 bg-white/90 backdrop-blur-xl group/header ${isToday ? 'bg-blue-50/20' : ''}`}>
+                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-0.5">{format(day, "EEE")}</span>
+                                    <div className="relative">
+                                        <span className={`text-xl font-black tracking-tighter transition-colors ${isToday ? 'text-blue-600' : 'text-gray-900 group-hover/header:text-blue-500'}`}>{format(day, "d")}</span>
+                                        {isToday && (
+                                            <div className="absolute -top-1 -right-2 w-2 h-2 rounded-full bg-blue-600 shadow-[0_0_12px_rgba(37,99,235,0.6)] animate-pulse"></div>
+                                        )}
+                                    </div>
                                 </div>
 
                                 {/* Slot BG */}
@@ -240,7 +236,7 @@ export function AdminScheduleCalendar() {
                                                 ${bgClass} ${borderClass} ${textClass}
                                                 ${event.type === 'google' ? 'opacity-90 grayscale-[0.2] hover:grayscale-0' : ''}
                                             `}
-                                            style={{ top: `${top + 48 + 2}px`, height: `${height - 2}px` }}
+                                            style={{ top: `${top + 64 + 2}px`, height: `${height - 2}px` }}
                                         >
                                             <div className="space-y-1">
                                                 <div className="flex items-start justify-between gap-2">
