@@ -22,6 +22,7 @@ export default function UpdatePasswordPage() {
     useEffect(() => {
         let mounted = true
         let authSubscription: { unsubscribe: () => void } | null = null
+        let timeoutId: NodeJS.Timeout | null = null
 
         const initSession = async () => {
             try {
@@ -79,7 +80,7 @@ export default function UpdatePasswordPage() {
                     return
                 }
 
-                console.log('[UPDATE_PASSWORD] No session found')
+                console.log('[UPDATE_PASSWORD] No session found yet, waiting for auth state change...')
 
                 // Set up listener for auth state changes
                 const { data } = supabase.auth.onAuthStateChange((event, session) => {
@@ -94,13 +95,15 @@ export default function UpdatePasswordPage() {
                 })
                 authSubscription = data.subscription
 
-                // Safety timeout
-                setTimeout(() => {
+                // Extended timeout to allow session to be established from cookie redirect
+                // If after 10 seconds there's still no session, allow the form to show
+                // The user can still try to submit, and we'll handle the error gracefully
+                timeoutId = setTimeout(() => {
                     if (mounted) {
-                        console.log('[UPDATE_PASSWORD] Timeout - stopping check')
+                        console.log('[UPDATE_PASSWORD] Timeout - proceeding without confirmed session')
                         setIsCheckingSession(false)
                     }
-                }, 3000)
+                }, 10000)
 
             } catch (error) {
                 console.error('[UPDATE_PASSWORD] Init error:', error)
@@ -115,6 +118,7 @@ export default function UpdatePasswordPage() {
         return () => {
             mounted = false
             if (authSubscription) authSubscription.unsubscribe()
+            if (timeoutId) clearTimeout(timeoutId)
         }
     }, [router])
 

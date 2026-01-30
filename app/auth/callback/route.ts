@@ -31,10 +31,26 @@ export async function GET(request: Request) {
         )
         const { error } = await supabase.auth.exchangeCodeForSession(code)
         if (!error) {
-            return NextResponse.redirect(`${origin}${next}`)
+            // Create redirect response
+            const redirectResponse = NextResponse.redirect(`${origin}${next}`)
+
+            // Ensure all auth cookies are set on the response
+            // The cookieStore.set() calls above set cookies on the request,
+            // but we also need them on the response for the redirect to work
+            const allCookies = cookieStore.getAll()
+            allCookies.forEach(cookie => {
+                redirectResponse.cookies.set(cookie.name, cookie.value, {
+                    path: '/',
+                    sameSite: 'lax',
+                    secure: process.env.NODE_ENV === 'production',
+                })
+            })
+
+            return redirectResponse
         }
     }
 
     // return the user to an error page with instructions
     return NextResponse.redirect(`${origin}/auth/auth-code-error`)
 }
+
