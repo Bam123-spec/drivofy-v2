@@ -139,7 +139,7 @@ export default function InstructorLayout({
                         </div>
                         {!collapsed && (
                             <span className="text-lg font-bold tracking-tight text-gray-900 animate-in fade-in duration-300">
-                                Drivofy<span className="text-blue-600">.</span>
+                                Selam<span className="text-blue-600">.</span>
                             </span>
                         )}
                     </div>
@@ -224,7 +224,7 @@ export default function InstructorLayout({
                                         {userProfile?.name || "Loading..."}
                                     </p>
                                     <p className="text-xs text-gray-500 truncate">
-                                        {userProfile?.email || "instructor@drivofy.com"}
+                                        {userProfile?.email || "instructor@selamdriving.com"}
                                     </p>
                                 </div>
                                 <Button

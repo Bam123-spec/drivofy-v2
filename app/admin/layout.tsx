@@ -119,7 +119,7 @@ export default function AdminLayout({
                 { href: "/admin/settings/payments", label: "Payments Settings", icon: CreditCard, placeholder: false },
                 { href: "/admin/users", label: "Admin Users", icon: UserCog, placeholder: false },
                 { href: "/admin/audit", label: "Audit Logs", icon: History, placeholder: false },
-                { href: "/admin/payments", label: "Drivofy Billing", icon: CreditCard, placeholder: false },
+                { href: "/admin/payments", label: "School Subscription", icon: CreditCard, placeholder: false },
             ]
         }
     ]
@@ -151,9 +151,9 @@ export default function AdminLayout({
                         {/* Logo Image */}
                         <div className="relative h-8 w-auto flex items-center justify-center">
                             {collapsed ? (
-                                <img src="/sidebar-logo-dark.png" alt="Drivofy" className="h-8 w-8 object-contain rounded-md" />
+                                <img src="/sidebar-logo-dark.png" alt="Selam" className="h-8 w-8 object-contain rounded-md" />
                             ) : (
-                                <img src="/logo.jpg" alt="Drivofy" className="h-8 w-auto object-contain" />
+                                <img src="/logo.jpg" alt="Selam Driving School" className="h-8 w-auto object-contain" />
                             )}
                         </div>
                     </div>
@@ -235,7 +235,7 @@ export default function AdminLayout({
                                         {userProfile?.name || "Loading..."}
                                     </p>
                                     <p className="text-xs text-sidebar-foreground/50 truncate">
-                                        {userProfile?.email || "admin@drivofy.com"}
+                                        {userProfile?.email || "admin@selamdriving.com"}
                                     </p>
                                 </div>
                             )}

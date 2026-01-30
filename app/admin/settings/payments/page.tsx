@@ -108,7 +108,7 @@ export default async function PaymentsSettingsPage({
                                         Secure Payments
                                     </h4>
                                     <p className="text-slate-500 text-sm leading-relaxed">
-                                        Your payments are processed securely through Stripe. Drivofy facilitates the connection but never stores your sensitive payment data.
+                                        The platform facilitates the connection but never stores your sensitive payment data.
                                     </p>
                                 </div>
                                 <div className="space-y-4">

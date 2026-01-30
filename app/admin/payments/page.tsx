@@ -105,7 +105,7 @@ export default async function BillingPage() {
                                         <div className="p-2 rounded-xl bg-blue-50 text-blue-600">
                                             <Zap className="h-6 w-6 fill-current" />
                                         </div>
-                                        <h2 className="text-2xl font-black text-slate-900 tracking-tight">Drivofy Standard</h2>
+                                        <h2 className="text-2xl font-black text-slate-900 tracking-tight">Selam Pro</h2>
                                     </div>
                                     <p className="text-slate-500 font-medium leading-relaxed max-w-md">
                                         Full access to the admin dashboard, instructor portals, and student management tools.
@@ -247,7 +247,7 @@ export default async function BillingPage() {
                             </div>
                             <h3 className="text-xl font-black text-slate-900 tracking-tight mb-3">No Active Plan</h3>
                             <p className="text-slate-500 text-sm font-medium leading-relaxed mb-8">
-                                Subscribe to unlock full access to the Drivofy platform and start managing your school.
+                                Subscribe to unlock full access to the Selam platform and start managing your school.
                             </p>
                             <ManageBillingButton mode="checkout" />
                         </div>

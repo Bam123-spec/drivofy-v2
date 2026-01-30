@@ -73,7 +73,7 @@ export default function SitePage({ params }: { params: { domain: string } }) {
                 <CardHeader className="space-y-1">
                     <div className="flex justify-center mb-4">
                         {/* Use the logo directly or a placeholder if not available */}
-                        <img src="/logo.jpg" alt="Drivofy Logo" className="h-10 w-auto" />
+                        <img src="/logo.jpg" alt="Selam Driving School" className="h-10 w-auto" />
                     </div>
                     <CardTitle className="text-2xl font-bold text-center">Welcome back</CardTitle>
                     <CardDescription className="text-center">
