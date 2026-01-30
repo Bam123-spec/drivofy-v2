@@ -8,7 +8,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 export default function AdminSchedulePage() {
     return (
-        <div className="space-y-6 pb-6">
+        <div className="space-y-6 pb-6 overflow-x-hidden">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 px-2 mb-4">
                 <div>
                     <h1 className="text-4xl font-black text-gray-900 tracking-tight mb-2">Schedule</h1>

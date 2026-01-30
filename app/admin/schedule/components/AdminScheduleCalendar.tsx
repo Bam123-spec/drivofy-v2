@@ -116,9 +116,9 @@ export function AdminScheduleCalendar() {
     }
 
     return (
-        <div className="flex flex-col min-h-[1000px] bg-white rounded-[2.5rem] border border-gray-100 shadow-2xl shadow-gray-200/40 overflow-visible animate-in fade-in duration-700 mb-10">
+        <div className="flex flex-col min-h-[1000px] bg-white rounded-[2.5rem] border border-gray-100 shadow-2xl shadow-gray-200/40 overflow-hidden animate-in fade-in duration-700 mb-10">
             {/* Calendar Controls */}
-            <div className="flex flex-col md:flex-row items-center justify-between p-6 border-b border-gray-50 bg-white/80 backdrop-blur-xl sticky top-16 z-40 gap-6">
+            <div className="flex flex-col md:flex-row items-center justify-between p-6 border-b border-gray-50 bg-white/80 backdrop-blur-xl gap-6">
                 <div className="flex items-center gap-8">
                     <h2 className="text-2xl font-black text-gray-900 tracking-tight min-w-[200px]">
                         {format(startDate, "MMMM yyyy")}
@@ -151,8 +151,8 @@ export function AdminScheduleCalendar() {
                 </div>
             </div>
 
-            {/* Grid Container */}
-            <div className="flex-1 relative bg-gray-50/30">
+            {/* Scrollable Container */}
+            <div className="flex-1 relative bg-gray-50/30 overflow-x-auto overflow-y-hidden custom-scrollbar">
                 {loading && (
                     <div className="absolute inset-0 bg-white/40 backdrop-blur-sm z-50 flex items-center justify-center">
                         <div className="bg-white p-6 rounded-3xl shadow-2xl border border-gray-100 flex items-center gap-4 animate-in zoom-in-95 duration-300">
@@ -162,10 +162,10 @@ export function AdminScheduleCalendar() {
                     </div>
                 )}
 
-                <div className="grid grid-cols-8 min-w-[1200px] h-full">
-                    {/* Time Scale */}
-                    <div className="border-r border-gray-100 bg-white/50 sticky left-0 z-30 backdrop-blur-md">
-                        <div className="h-20 border-b border-gray-100 flex items-center justify-center text-[9px] font-black text-gray-400 font-mono uppercase tracking-[0.2em]">
+                <div className="grid grid-cols-8 min-w-[1240px] h-full">
+                    {/* Time Scale Column */}
+                    <div className="border-r border-gray-100 bg-white/50 sticky left-0 z-30 backdrop-blur-md shrink-0">
+                        <div className="h-24 border-b border-gray-100 flex items-center justify-center text-[9px] font-black text-gray-400 font-mono uppercase tracking-[0.2em] sticky top-0 bg-white/90 backdrop-blur-xl z-20">
                             Time
                         </div>
                         {hours.map(hour => (
@@ -176,16 +176,15 @@ export function AdminScheduleCalendar() {
                     </div>
 
                     {/* Day Columns */}
-                    {/* Day Columns */}
                     {weekDays.map((day, dayIndex) => {
                         const dayEvents = getEventsForDay(day)
                         const isToday = isSameDay(day, new Date())
 
                         return (
-                            <div key={dayIndex} className={`border-r border-gray-100 relative ${isToday ? 'bg-blue-50/5' : ''}`}>
+                            <div key={dayIndex} className={`border-r border-gray-100 relative shrink-0 min-w-[150px] ${isToday ? 'bg-blue-50/5' : ''}`}>
                                 {/* Day Header */}
                                 <div className={`h-24 border-b border-gray-100 flex flex-col items-center justify-center sticky top-0 z-20 bg-white/95 backdrop-blur-xl group/header transition-colors ${isToday ? 'bg-blue-50/30' : 'hover:bg-gray-50'}`}>
-                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">{format(day, "EEE")}</span>
+                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 font-mono">{format(day, "EEE")}</span>
                                     <div className="relative inline-flex items-center justify-center p-2">
                                         <span className={`text-3xl font-black tracking-tighter transition-all ${isToday ? 'text-blue-600' : 'text-gray-900 group-hover/header:text-blue-600'}`}>
                                             {format(day, "d")}
@@ -248,7 +247,7 @@ export function AdminScheduleCalendar() {
                                                     {hasConflict && (
                                                         <TooltipProvider>
                                                             <Tooltip>
-                                                                <TooltipTrigger>
+                                                                <TooltipTrigger asChild>
                                                                     <div className="bg-red-500 p-1.5 rounded-lg animate-pulse ring-4 ring-red-500/20">
                                                                         <AlertTriangle className="h-3 w-3 text-white" />
                                                                     </div>
