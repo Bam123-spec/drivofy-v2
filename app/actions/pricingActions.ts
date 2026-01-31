@@ -104,6 +104,7 @@ export async function updateClassTypePricing(
     }
 
     revalidatePath('/admin/pricing')
+    revalidatePath('/admin/editor')
     revalidatePath('/admin/classes')
 
     return {
@@ -119,22 +120,21 @@ export async function getServicePricingSummary(): Promise<ServicePricingSummary[
     const supabase = createClient(await cookies())
 
     const { data, error } = await supabase
-        .from('courses')
-        .select('id, slug, title, price, type')
-        .eq('is_published', true)
+        .from('services')
+        .select('id, slug, name, price, is_active')
         .order('slug')
 
     if (error) {
         console.error('[PRICING] Error fetching service pricing:', error)
-        throw new Error('Failed to fetch service pricing')
+        return []
     }
 
     return (data || []).map(item => ({
         id: item.id,
         slug: item.slug,
-        title: item.title,
+        title: item.name, // Map 'name' from services table to 'title'
         price: Number(item.price) || 0,
-        type: item.type
+        type: 'service' // Default type since services table doesn't have it
     }))
 }
 
@@ -160,7 +160,7 @@ export async function updateServicePricing(
     const formattedPrice = Math.round(newPrice * 100) / 100
 
     const { error } = await supabase
-        .from('courses')
+        .from('services')
         .update({ price: formattedPrice })
         .eq('id', serviceId)
 
@@ -170,6 +170,7 @@ export async function updateServicePricing(
     }
 
     revalidatePath('/admin/pricing')
+    revalidatePath('/admin/editor')
     revalidatePath('/services')
 
     return { success: true }
