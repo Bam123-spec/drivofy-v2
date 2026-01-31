@@ -54,15 +54,8 @@ export async function POST(req: Request) {
 
         console.log('Sync: Selected sub:', sub.id, 'Status:', sub.status);
 
-        // Determine plan from items
-        let plan = 'core';
-        const item = sub.items?.data?.[0];
-        if (item?.plan?.amount) {
-            const amount = item.plan.amount;
-            if (amount === 8900) plan = 'premium';
-            else if (amount === 5900) plan = 'standard';
-            else if (amount === 3400) plan = 'core';
-        }
+        // GLOBAL PREMIUM: If they have any active/trialing sub, they get Premium
+        const plan = 'premium';
 
         let periodEnd: Date | null = null;
         try {
