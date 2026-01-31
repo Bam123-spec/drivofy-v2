@@ -181,9 +181,6 @@ export default async function BillingPage() {
 
                 {/* Premium Plan */}
                 <Card className={`relative group overflow-hidden border-2 transition-all ${org?.current_plan === 'premium' ? 'border-blue-600 shadow-xl' : 'border-indigo-600/20 shadow-lg shadow-indigo-500/5'}`}>
-                    <div className="absolute top-0 right-0 p-3">
-                        <Badge className="bg-indigo-600 text-white border-0">Popular</Badge>
-                    </div>
                     <CardHeader>
                         <div className="flex justify-between items-start mb-4">
                             <div className="p-2 rounded-xl bg-indigo-50 text-indigo-600">
