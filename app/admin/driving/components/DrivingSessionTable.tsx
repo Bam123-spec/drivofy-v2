@@ -31,6 +31,18 @@ interface DrivingSessionTableProps {
 }
 
 export function DrivingSessionTable({ sessions, onSelectSession }: DrivingSessionTableProps) {
+    const getServiceName = (slug: string | null) => {
+        if (!slug) return 'N/A'
+        const serviceMap: Record<string, string> = {
+            'driving-practice-1hr': 'Driving Practice (1hr)',
+            'driving-practice-2hr': 'Driving Practice (2hr)',
+            'road-test-1hr': 'Road Test',
+            'btw': 'BTW Session',
+            'driving-practice-5hr': '5 Hour Class'
+        }
+        return serviceMap[slug] || slug
+    }
+
     const getStatusStyle = (status: string) => {
         switch (status) {
             case 'scheduled':
@@ -54,6 +66,7 @@ export function DrivingSessionTable({ sessions, onSelectSession }: DrivingSessio
                         <TableHead className="py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Student</TableHead>
                         <TableHead className="py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Instructor</TableHead>
                         <TableHead className="py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Date & Time</TableHead>
+                        <TableHead className="py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Service</TableHead>
                         <TableHead className="py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Vehicle</TableHead>
                         <TableHead className="py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Status</TableHead>
                         <TableHead className="py-4 text-right text-xs font-bold uppercase tracking-wider text-slate-500">Actions</TableHead>
@@ -103,6 +116,11 @@ export function DrivingSessionTable({ sessions, onSelectSession }: DrivingSessio
                                             </span>
                                         </div>
                                     </div>
+                                </TableCell>
+                                <TableCell className="py-4">
+                                    <Badge variant="outline" className="text-xs font-medium">
+                                        {getServiceName(session.plan_key || session.service_slug)}
+                                    </Badge>
                                 </TableCell>
                                 <TableCell className="py-4">
                                     {session.vehicles ? (
