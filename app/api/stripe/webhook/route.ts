@@ -40,33 +40,54 @@ export async function POST(req: Request) {
     try {
         if (event.type === 'checkout.session.completed') {
             console.log('Checkout session completed. Metadata:', session.metadata);
-            if (!session?.metadata?.orgId) {
-                console.error('Org ID is missing from metadata');
+
+            // Get orgId from metadata OR client_reference_id (passed in Payment Link URL)
+            const orgId = session.metadata?.orgId || session.client_reference_id;
+
+            if (!orgId) {
+                console.error('Org ID is missing from session');
                 return new NextResponse('Org ID missing', { status: 400 });
             }
 
-            const subscriptionId = session.subscription as string;
-            console.log('Retrieving subscription:', subscriptionId);
+            // Determine plan based on amount or metadata
+            // Premium = $8900 (89.00), Standard = $5900 (59.00), Core = $3400 (34.00)
+            let plan = session.metadata?.plan || 'core';
+            if (!session.metadata?.plan) {
+                if (session.amount_total === 8900) plan = 'premium';
+                else if (session.amount_total === 5900) plan = 'standard';
+                else if (session.amount_total === 3400) plan = 'core';
+            }
 
-            // Fetch subscription details to get status and period end
-            const sub = await stripe.subscriptions.retrieve(subscriptionId);
-            console.log('Subscription status:', sub.status);
+            console.log(`Updating org ${orgId} to plan ${plan}`);
+
+            const updateData: any = {
+                current_plan: plan,
+                plan_status: 'active',
+                stripe_customer_id: session.customer as string,
+            };
+
+            // If it's a subscription, store the ID and period end
+            if (session.subscription) {
+                const subId = session.subscription as string;
+                const sub = await stripe.subscriptions.retrieve(subId);
+                updateData.stripe_subscription_id = subId;
+                updateData.billing_status = sub.status;
+                updateData.current_period_end = new Date((sub as any).current_period_end * 1000).toISOString();
+            } else {
+                // For one-time payments, just set active status
+                updateData.billing_status = 'active';
+            }
 
             const { error } = await supabaseAdmin
                 .from('organizations')
-                .update({
-                    stripe_subscription_id: subscriptionId,
-                    stripe_customer_id: session.customer as string,
-                    billing_status: sub.status,
-                    current_period_end: new Date((sub as any).current_period_end * 1000).toISOString(),
-                })
-                .eq('id', session.metadata.orgId);
+                .update(updateData)
+                .eq('id', orgId);
 
             if (error) {
                 console.error('Database update error:', error);
                 throw error;
             }
-            console.log('Database updated successfully for org:', session.metadata.orgId);
+            console.log('Database updated successfully for org:', orgId);
         }
 
         if (event.type === 'customer.subscription.updated') {

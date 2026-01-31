@@ -91,66 +91,147 @@ export default async function BillingPage() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
-                {/* Main Content Area */}
-                <div className="lg:col-span-8 space-y-10">
-
-                    {/* The "Out of the Box" Plan Card */}
-                    <div className="relative group">
-                        <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-[2rem] blur opacity-20 group-hover:opacity-40 transition duration-1000 group-hover:duration-200" />
-                        <div className="relative bg-white border border-slate-100 rounded-[2rem] p-8 sm:p-10 shadow-xl shadow-slate-200/50">
-                            <div className="flex flex-col sm:flex-row justify-between items-start gap-6 mb-10">
-                                <div>
-                                    <div className="flex items-center gap-3 mb-2">
-                                        <div className="p-2 rounded-xl bg-blue-50 text-blue-600">
-                                            <Zap className="h-6 w-6 fill-current" />
-                                        </div>
-                                        <h2 className="text-2xl font-black text-slate-900 tracking-tight">Selam Pro</h2>
-                                    </div>
-                                    <p className="text-slate-500 font-medium leading-relaxed max-w-md">
-                                        Full access to the admin dashboard, instructor portals, and student management tools.
-                                    </p>
-                                </div>
-                                <div className="text-left sm:text-right">
-                                    <div className="text-4xl font-black text-slate-900 tracking-tight">$59<span className="text-lg font-bold text-slate-400 ml-1">/mo</span></div>
-                                    <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Billed Monthly</div>
-                                </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+                {/* Core Plan */}
+                <Card className={`relative group overflow-hidden border-2 transition-all ${org?.current_plan === 'core' || !org?.current_plan ? 'border-blue-600 shadow-xl' : 'border-slate-100 hover:border-slate-200'}`}>
+                    <CardHeader>
+                        <div className="flex justify-between items-start mb-4">
+                            <div className="p-2 rounded-xl bg-slate-100 text-slate-600">
+                                <ShieldCheck className="h-6 w-6" />
                             </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
-                                <div className="flex items-center gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-100 group/item hover:bg-white hover:shadow-lg hover:shadow-slate-200/50 transition-all">
-                                    <div className="h-10 w-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 group-hover/item:text-blue-600 transition-colors">
-                                        <Calendar className="h-5 w-5" />
-                                    </div>
-                                    <div>
-                                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Next Billing</div>
-                                        <div className="text-sm font-bold text-slate-900">
-                                            {isActive && org?.current_period_end
-                                                ? new Date(org.current_period_end).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-                                                : 'N/A'}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-100 group/item hover:bg-white hover:shadow-lg hover:shadow-slate-200/50 transition-all">
-                                    <div className="h-10 w-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 group-hover/item:text-green-600 transition-colors">
-                                        <ShieldCheck className="h-5 w-5" />
-                                    </div>
-                                    <div>
-                                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Status</div>
-                                        <div className={`text-sm font-bold ${isActive ? 'text-green-600' : 'text-slate-500'}`}>
-                                            {isActive ? 'Active & Protected' : 'Inactive'}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="flex flex-col sm:flex-row gap-4">
-                                <ManageBillingButton mode={isActive ? 'portal' : 'checkout'} />
-                            </div>
+                            {(org?.current_plan === 'core' || !org?.current_plan) && (
+                                <Badge className="bg-blue-600 text-white border-0">Current Plan</Badge>
+                            )}
                         </div>
-                    </div>
+                        <CardTitle className="text-2xl font-black text-slate-900">Core</CardTitle>
+                        <CardDescription className="text-slate-500 font-medium h-12">Essential features to get your driving school started.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="mb-6">
+                            <span className="text-4xl font-black text-slate-900">$34</span>
+                            <span className="text-slate-400 font-bold ml-1">/mo</span>
+                        </div>
+                        <ul className="space-y-4 text-sm font-medium text-slate-600">
+                            <li className="flex items-center gap-3">
+                                <CheckCircle2 className="h-4 w-4 text-green-500" />
+                                Student Management
+                            </li>
+                            <li className="flex items-center gap-3">
+                                <CheckCircle2 className="h-4 w-4 text-green-500" />
+                                Basic Scheduling
+                            </li>
+                            <li className="flex items-center gap-3 text-slate-300">
+                                <AlertCircle className="h-4 w-4" />
+                                Premium Support
+                            </li>
+                        </ul>
+                    </CardContent>
+                    <CardFooter>
+                        <Button disabled className="w-full bg-slate-100 text-slate-400 cursor-not-allowed">
+                            Default Plan
+                        </Button>
+                    </CardFooter>
+                </Card>
 
-                    {/* Payment Method Section */}
+                {/* Standard Plan */}
+                <Card className={`relative group overflow-hidden border-2 transition-all ${org?.current_plan === 'standard' ? 'border-blue-600 shadow-xl' : 'border-slate-100 hover:border-slate-200'}`}>
+                    <CardHeader>
+                        <div className="flex justify-between items-start mb-4">
+                            <div className="p-2 rounded-xl bg-blue-50 text-blue-600">
+                                <Zap className="h-6 w-6" />
+                            </div>
+                            {org?.current_plan === 'standard' && (
+                                <Badge className="bg-blue-600 text-white border-0">Current Plan</Badge>
+                            )}
+                        </div>
+                        <CardTitle className="text-2xl font-black text-slate-900">Standard</CardTitle>
+                        <CardDescription className="text-slate-500 font-medium h-12">More power for growing schools and teams.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="mb-6">
+                            <span className="text-4xl font-black text-slate-900">$59</span>
+                            <span className="text-slate-400 font-bold ml-1">/mo</span>
+                        </div>
+                        <ul className="space-y-4 text-sm font-medium text-slate-600">
+                            <li className="flex items-center gap-3">
+                                <CheckCircle2 className="h-4 w-4 text-green-500" />
+                                Everything in Core
+                            </li>
+                            <li className="flex items-center gap-3">
+                                <CheckCircle2 className="h-4 w-4 text-green-500" />
+                                Multi-Instructor Portals
+                            </li>
+                            <li className="flex items-center gap-3">
+                                <CheckCircle2 className="h-4 w-4 text-green-500" />
+                                Advanced Automations
+                            </li>
+                        </ul>
+                    </CardContent>
+                    <CardFooter>
+                        <a
+                            href={`https://buy.stripe.com/6oEg196mR395dGMeUX?client_reference_id=${org?.id}`}
+                            className="w-full"
+                        >
+                            <Button className="w-full bg-slate-900 hover:bg-blue-600 text-white font-bold h-12 rounded-xl transition-all">
+                                {org?.current_plan === 'standard' ? 'Active Plan' : 'Buy Now'}
+                            </Button>
+                        </a>
+                    </CardFooter>
+                </Card>
+
+                {/* Premium Plan */}
+                <Card className={`relative group overflow-hidden border-2 transition-all ${org?.current_plan === 'premium' ? 'border-blue-600 shadow-xl' : 'border-indigo-600/20 shadow-lg shadow-indigo-500/5'}`}>
+                    <div className="absolute top-0 right-0 p-3">
+                        <Badge className="bg-indigo-600 text-white border-0">Popular</Badge>
+                    </div>
+                    <CardHeader>
+                        <div className="flex justify-between items-start mb-4">
+                            <div className="p-2 rounded-xl bg-indigo-50 text-indigo-600">
+                                <Zap className="h-6 w-6 fill-current" />
+                            </div>
+                            {org?.current_plan === 'premium' && (
+                                <Badge className="bg-blue-600 text-white border-0">Current Plan</Badge>
+                            )}
+                        </div>
+                        <CardTitle className="text-2xl font-black text-slate-900">Premium</CardTitle>
+                        <CardDescription className="text-slate-500 font-medium h-12">Full white-label experience and priority support.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="mb-6">
+                            <span className="text-4xl font-black text-slate-900">$89</span>
+                            <span className="text-slate-400 font-bold ml-1">/mo</span>
+                        </div>
+                        <ul className="space-y-4 text-sm font-medium text-slate-600">
+                            <li className="flex items-center gap-3">
+                                <CheckCircle2 className="h-4 w-4 text-green-500" />
+                                Everything in Standard
+                            </li>
+                            <li className="flex items-center gap-3">
+                                <CheckCircle2 className="h-4 w-4 text-green-500" />
+                                Built-In Website Editor
+                            </li>
+                            <li className="flex items-center gap-3">
+                                <CheckCircle2 className="h-4 w-4 text-green-500" />
+                                White-Label Domain
+                            </li>
+                        </ul>
+                    </CardContent>
+                    <CardFooter>
+                        <a
+                            href={`https://buy.stripe.com/aFa9AS5iNczF2Tve8d2go02?client_reference_id=${org?.id}`}
+                            className="w-full"
+                        >
+                            <Button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-12 rounded-xl transition-all">
+                                {org?.current_plan === 'premium' ? 'Active Plan' : 'Upgrade to Premium'}
+                            </Button>
+                        </a>
+                    </CardFooter>
+                </Card>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
+                {/* Payment Method Section */}
+                <div className="lg:col-span-8 space-y-10">
                     <PaymentMethodCard />
 
                     {/* Invoice History */}
@@ -203,55 +284,27 @@ export default async function BillingPage() {
 
                 {/* Sidebar / Summary Area */}
                 <div className="lg:col-span-4 space-y-8">
-                    {isActive ? (
-                        <div className="sticky top-8 bg-blue-600 rounded-[2.5rem] p-8 text-white shadow-2xl shadow-blue-600/30 overflow-hidden">
-                            {/* Decorative Elements */}
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-                            <div className="absolute bottom-0 left-0 w-24 h-24 bg-indigo-400/20 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2" />
-
-                            <div className="relative z-10">
-                                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-blue-200 mb-8">Summary</h3>
-
-                                <div className="space-y-6">
-                                    <div className="flex justify-between items-end">
-                                        <div className="text-sm font-bold text-blue-100">Monthly Total</div>
-                                        <div className="text-4xl font-black tracking-tight">$59</div>
+                    <div className="sticky top-8 bg-blue-600 rounded-[2.5rem] p-8 text-white shadow-2xl shadow-blue-600/30 overflow-hidden">
+                        <div className="relative z-10">
+                            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-blue-200 mb-8">Summary</h3>
+                            <div className="space-y-6">
+                                <div className="flex justify-between items-end">
+                                    <div className="text-sm font-bold text-blue-100">Current Plan</div>
+                                    <div className="text-4xl font-black tracking-tight capitalize">{org?.current_plan || 'Core'}</div>
+                                </div>
+                                <div className="pt-6 border-t border-white/10 space-y-4">
+                                    <div className="flex justify-between text-sm font-medium text-blue-100">
+                                        <span>Status</span>
+                                        <Badge className="bg-white/20 text-white border-0 capitalize">{org?.plan_status || 'active'}</Badge>
                                     </div>
-
-                                    <div className="pt-6 border-t border-white/10 space-y-4">
-                                        <div className="flex justify-between text-sm font-medium text-blue-100">
-                                            <span>Current Cycle Ends</span>
-                                            <span className="text-white">
-                                                {org?.current_period_end ? new Date(org.current_period_end).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'N/A'}
-                                            </span>
-                                        </div>
-                                        <div className="flex justify-between text-sm font-medium text-blue-100">
-                                            <span>Payment Method</span>
-                                            <span className="text-white flex items-center gap-2">
-                                                <CardIcon className="h-3.5 w-3.5" />
-                                                Secure
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 text-[10px] font-bold text-blue-100 leading-relaxed text-center uppercase tracking-widest">
-                                        Next charge will be automated
+                                    <div className="flex justify-between text-sm font-medium text-blue-100">
+                                        <span>Billing Cycle</span>
+                                        <span className="text-white">Monthly</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    ) : (
-                        <div className="sticky top-8 bg-slate-50 border border-slate-200 border-dashed rounded-[2.5rem] p-10 text-center">
-                            <div className="h-16 w-16 bg-white rounded-2xl border border-slate-200 flex items-center justify-center mx-auto mb-6 shadow-sm">
-                                <Zap className="h-8 w-8 text-slate-300" />
-                            </div>
-                            <h3 className="text-xl font-black text-slate-900 tracking-tight mb-3">No Active Plan</h3>
-                            <p className="text-slate-500 text-sm font-medium leading-relaxed mb-8">
-                                Subscribe to unlock full access to the Selam platform and start managing your school.
-                            </p>
-                            <ManageBillingButton mode="checkout" />
-                        </div>
-                    )}
+                    </div>
                 </div>
             </div>
         </div>
