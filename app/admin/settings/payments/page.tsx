@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { CheckCircle2, AlertCircle, CreditCard, ExternalLink, ShieldCheck } from "lucide-react"
+import { StripeDisconnectButton } from "./components/StripeDisconnectButton"
 
 export default async function PaymentsSettingsPage({
     searchParams
@@ -27,20 +28,36 @@ export default async function PaymentsSettingsPage({
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) redirect('/login')
 
-    const { data: org } = await supabase
+    let { data: org } = await supabase
         .from('organizations')
         .select('*')
         .eq('owner_user_id', user.id)
         .maybeSingle()
 
+    // Auto-create organization if missing for admin
     if (!org) {
-        return (
-            <div className="p-8 text-center bg-red-50 rounded-2xl border border-red-100">
-                <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-                <h3 className="text-xl font-bold text-red-900">Organization Not Found</h3>
-                <p className="text-red-700 mt-2">Please contact support if this error persists.</p>
-            </div>
-        )
+        const { data: newOrg, error: createError } = await supabase
+            .from('organizations')
+            .insert({
+                owner_user_id: user.id,
+                current_plan: 'core',
+                plan_status: 'active',
+                billing_status: 'inactive'
+            })
+            .select()
+            .single()
+
+        if (createError) {
+            console.error('Error creating organization:', createError)
+            return (
+                <div className="p-8 text-center bg-red-50 rounded-2xl border border-red-100">
+                    <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+                    <h3 className="text-xl font-bold text-red-900">System Error</h3>
+                    <p className="text-red-700 mt-2">Could not initialize your organization. Please contact support.</p>
+                </div>
+            )
+        }
+        org = newOrg
     }
 
     // Determine Stripe status
@@ -160,7 +177,8 @@ export default async function PaymentsSettingsPage({
                                 </div>
                             </div>
 
-                            <div className="pt-6 border-t border-slate-50 flex justify-end">
+                            <div className="pt-6 border-t border-slate-50 flex flex-col sm:flex-row items-center justify-between gap-6">
+                                <StripeDisconnectButton orgId={org.id} />
                                 <Button
                                     variant="outline"
                                     className="h-12 px-6 rounded-xl font-bold border-slate-200 hover:bg-slate-50"
