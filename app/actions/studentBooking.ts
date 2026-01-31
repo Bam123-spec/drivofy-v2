@@ -223,8 +223,13 @@ export async function bookStudentLesson(data: {
 
                 console.log("✅ Google Calendar Sync Successful")
             }
-        } catch (calendarError) {
+        } catch (calendarError: any) {
             console.error("❌ Google Calendar Sync Failed:", calendarError)
+            console.error("❌ Error details:", {
+                message: calendarError?.message,
+                stack: calendarError?.stack,
+                name: calendarError?.name
+            })
             // Non-critical for the booking itself
         }
 
