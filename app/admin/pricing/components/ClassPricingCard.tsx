@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -42,6 +42,12 @@ export function ClassPricingCard({ classData, onUpdate }: ClassPricingCardProps)
     const [newPrice, setNewPrice] = useState(classData.current_price)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [hasChanges, setHasChanges] = useState(false)
+
+    // Sync local state when prop updates (e.g. after successful save and reload)
+    useEffect(() => {
+        setNewPrice(classData.current_price)
+        setHasChanges(false) // Reset changes logic just in case
+    }, [classData.current_price])
 
     const config = CLASS_TYPE_CONFIG[classData.class_type]
 

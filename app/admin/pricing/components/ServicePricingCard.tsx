@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -18,6 +18,12 @@ export function ServicePricingCard({ service, onUpdate }: ServicePricingCardProp
     const [newPrice, setNewPrice] = useState(service.price)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [hasChanges, setHasChanges] = useState(false)
+
+    // Sync local state when prop updates (e.g. after successful save and reload)
+    useEffect(() => {
+        setNewPrice(service.price)
+        setHasChanges(false) // Reset changes logic just in case
+    }, [service.price])
 
     const handlePriceChange = (value: number) => {
         setNewPrice(value)
