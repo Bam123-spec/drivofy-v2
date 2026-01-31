@@ -168,14 +168,20 @@ export default async function BillingPage() {
                         </ul>
                     </CardContent>
                     <CardFooter>
-                        <a
-                            href={`https://buy.stripe.com/6oEg196mR395dGMeUX?client_reference_id=${org?.id}`}
-                            className="w-full"
-                        >
-                            <Button className="w-full bg-slate-900 hover:bg-blue-600 text-white font-bold h-12 rounded-xl transition-all">
-                                {org?.current_plan === 'standard' ? 'Active Plan' : 'Buy Now'}
-                            </Button>
-                        </a>
+                        {org?.current_plan === 'standard' && isActive ? (
+                            <ManageBillingButton
+                                className="w-full bg-slate-900 hover:bg-blue-600 text-white font-bold h-12 rounded-xl transition-all"
+                            />
+                        ) : (
+                            <a
+                                href={`https://buy.stripe.com/6oEg196mR395dGMeUX?client_reference_id=${org?.id}`}
+                                className="w-full"
+                            >
+                                <Button className="w-full bg-slate-900 hover:bg-blue-600 text-white font-bold h-12 rounded-xl transition-all">
+                                    {org?.current_plan === 'standard' ? 'Reactivate Standard' : 'Buy Now'}
+                                </Button>
+                            </a>
+                        )}
                     </CardFooter>
                 </Card>
 
@@ -214,7 +220,7 @@ export default async function BillingPage() {
                         </ul>
                     </CardContent>
                     <CardFooter>
-                        {org?.current_plan === 'premium' ? (
+                        {org?.current_plan === 'premium' && isActive ? (
                             <ManageBillingButton
                                 className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-12 rounded-xl transition-all"
                             />
@@ -224,7 +230,7 @@ export default async function BillingPage() {
                                 className="w-full"
                             >
                                 <Button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-12 rounded-xl transition-all">
-                                    Upgrade to Premium
+                                    {org?.current_plan === 'premium' ? 'Reactivate Premium' : 'Upgrade to Premium'}
                                 </Button>
                             </a>
                         )}
