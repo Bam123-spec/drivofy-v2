@@ -73,9 +73,42 @@ export default async function PaymentsSettingsPage({
                 </div>
                 <div>
                     <h1 className="text-3xl font-black text-slate-900 tracking-tight">Payment Settings</h1>
-                    <p className="text-slate-500 font-medium">Connect and manage your school's Stripe account.</p>
+                    <p className="text-slate-500 font-medium">Manage your subscription and school's payout settings.</p>
                 </div>
             </div>
+
+            {/* Subscription & Billing Section */}
+            <Card className="mb-8 border-0 shadow-2xl shadow-slate-200/60 rounded-[2.5rem] overflow-hidden bg-white">
+                <CardHeader className="bg-slate-50/50 p-8 border-b border-slate-100">
+                    <div className="flex justify-between items-center">
+                        <div>
+                            <CardTitle className="text-2xl font-black text-slate-900 tracking-tight mb-2">Subscription & Billing</CardTitle>
+                            <CardDescription className="text-slate-500 font-medium text-base">
+                                Manage your Drivofy subscription and billing history.
+                            </CardDescription>
+                        </div>
+                        <Badge className="bg-indigo-100 text-indigo-700 border-0 px-4 py-1.5 rounded-full font-bold uppercase tracking-wider text-[10px]">
+                            {org.current_plan || 'Core'} Plan
+                        </Badge>
+                    </div>
+                </CardHeader>
+                <CardContent className="p-8">
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+                        <div className="flex items-center gap-4">
+                            <div className="h-12 w-12 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
+                                <ShieldCheck className="h-6 w-6" />
+                            </div>
+                            <div>
+                                <div className="text-sm font-bold text-slate-900">Current Status</div>
+                                <div className="text-sm text-slate-500 capitalize">{org.billing_status || 'inactive'}</div>
+                            </div>
+                        </div>
+                        {org.stripe_customer_id && (
+                            <ManageBillingButton customerId={org.stripe_customer_id} />
+                        )}
+                    </div>
+                </CardContent>
+            </Card>
 
             {resolvedSearchParams.connected && (
                 <div className="mb-8 p-4 bg-green-50 border border-green-100 rounded-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-500">
@@ -142,14 +175,14 @@ export default async function PaymentsSettingsPage({
 
                             <div className="pt-6 border-t border-slate-50 flex flex-col sm:flex-row items-center justify-between gap-6">
                                 <div className="text-sm text-slate-400 font-medium">
-                                    Redirects to Stripe for secure onboarding
+                                    Accept credit cards and digital wallets
                                 </div>
                                 <Button
                                     className="w-full sm:w-auto px-10 h-14 bg-[#635BFF] hover:bg-[#5851E9] text-white rounded-2xl font-black text-lg shadow-xl shadow-indigo-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
                                     asChild
                                 >
                                     <a href={`/api/stripe/connect?organization_id=${org.id}`}>
-                                        Connect Stripe
+                                        Connect Stripe Payouts
                                     </a>
                                 </Button>
                             </div>
@@ -179,12 +212,7 @@ export default async function PaymentsSettingsPage({
                             </div>
 
                             <div className="pt-6 border-t border-slate-50 flex flex-col sm:flex-row items-center justify-between gap-6">
-                                <div className="flex items-center gap-4">
-                                    <StripeDisconnectButton orgId={org.id} />
-                                    {org.stripe_customer_id && (
-                                        <ManageBillingButton customerId={org.stripe_customer_id} />
-                                    )}
-                                </div>
+                                <StripeDisconnectButton orgId={org.id} />
                                 <Button
                                     variant="outline"
                                     className="h-12 px-6 rounded-xl font-bold border-slate-200 hover:bg-slate-50"
