@@ -30,54 +30,63 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'No billing record found' }, { status: 404 });
         }
 
-        // Fetch latest from Stripe
+        // Fetch latest from Stripe including items to determine plan
         const subscriptions = await stripe.subscriptions.list({
             customer: org.stripe_customer_id,
             limit: 1,
-            status: 'active', // Only sync active ones
+            status: 'all', // Check all to get the most relevant one
         });
 
-        console.log('Sync: Found subscriptions:', subscriptions.data.length);
+        // Get the first active or trialing subscription
+        const sub = subscriptions.data.find(s => ['active', 'trialing', 'past_due'].includes(s.status)) as any;
 
-        if (subscriptions.data.length === 0) {
+        if (!sub) {
+            // No active subscription found, reset to core if it was active
+            await supabase
+                .from('organizations')
+                .update({
+                    billing_status: 'inactive',
+                    plan_status: 'inactive'
+                })
+                .eq('id', org.id);
             return NextResponse.json({ status: 'no_subscription' });
         }
 
-        const sub = subscriptions.data[0] as any;
-        console.log('Sync: Selected sub:', sub.id, 'Status:', sub.status, 'Raw Period End:', sub.current_period_end);
+        console.log('Sync: Selected sub:', sub.id, 'Status:', sub.status);
+
+        // Determine plan from items
+        let plan = 'core';
+        const item = sub.items?.data?.[0];
+        if (item?.plan?.amount) {
+            const amount = item.plan.amount;
+            if (amount === 8900) plan = 'premium';
+            else if (amount === 5900) plan = 'standard';
+            else if (amount === 3400) plan = 'core';
+        }
 
         let periodEnd: Date | null = null;
         try {
             if (sub.current_period_end) {
-                // Stripe timestamps are in seconds
-                const timestamp = Number(sub.current_period_end);
-                if (!isNaN(timestamp)) {
-                    periodEnd = new Date(timestamp * 1000);
-                } else {
-                    console.error('Sync: current_period_end is not a number:', sub.current_period_end);
-                }
+                periodEnd = new Date(sub.current_period_end * 1000);
             }
         } catch (e) {
             console.error('Sync: Error parsing date:', e);
         }
 
-        if (periodEnd && isNaN(periodEnd.getTime())) {
-            console.error('Sync: Invalid period end date object created');
-            periodEnd = null;
-        }
-
-        // If it's set to cancel at period end, we treat it as canceled immediately in our DB
+        // If it's set to cancel at period end, we treat it as canceled in terms of status
         const isCanceling = sub.cancel_at_period_end === true || !!sub.cancel_at;
-        const status = isCanceling ? 'canceled' : sub.status;
+        const billingStatus = isCanceling ? 'canceled' : sub.status;
 
-        console.log('Sync: Final status determined:', status, 'isCanceling:', isCanceling);
+        console.log('Sync: Updating org to plan:', plan, 'status:', billingStatus);
 
         // Update DB
         const { error: updateError } = await supabase
             .from('organizations')
             .update({
                 stripe_subscription_id: sub.id,
-                billing_status: status,
+                current_plan: plan,
+                plan_status: (sub.status === 'active' || sub.status === 'trialing') ? 'active' : 'inactive',
+                billing_status: billingStatus,
                 current_period_end: periodEnd ? periodEnd.toISOString() : null,
             })
             .eq('id', org.id);
