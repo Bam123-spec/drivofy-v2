@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { CheckCircle2, AlertCircle, CreditCard, ExternalLink, ShieldCheck } from "lucide-react"
 import { StripeDisconnectButton } from "./components/StripeDisconnectButton"
+import { ManageBillingButton } from "./components/ManageBillingButton"
 
 export default async function PaymentsSettingsPage({
     searchParams
@@ -178,7 +179,12 @@ export default async function PaymentsSettingsPage({
                             </div>
 
                             <div className="pt-6 border-t border-slate-50 flex flex-col sm:flex-row items-center justify-between gap-6">
-                                <StripeDisconnectButton orgId={org.id} />
+                                <div className="flex items-center gap-4">
+                                    <StripeDisconnectButton orgId={org.id} />
+                                    {org.stripe_customer_id && (
+                                        <ManageBillingButton customerId={org.stripe_customer_id} />
+                                    )}
+                                </div>
                                 <Button
                                     variant="outline"
                                     className="h-12 px-6 rounded-xl font-bold border-slate-200 hover:bg-slate-50"
