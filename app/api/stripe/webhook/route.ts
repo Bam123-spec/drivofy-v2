@@ -49,14 +49,16 @@ export async function POST(req: Request) {
                 return new NextResponse('Org ID missing', { status: 400 });
             }
 
-            // Determine plan based on amount or metadata
-            // Premium = $8900 (89.00), Standard = $5900 (59.00), Core = $3400 (34.00)
+            // Determine plan based on metadata OR amount
             let plan = session.metadata?.plan || 'core';
             if (!session.metadata?.plan) {
+                // FALLBACK: Detect by amount if metadata is missing (8900 = Premium, 5900 = Standard, 3400 = Core)
                 if (session.amount_total === 8900) plan = 'premium';
                 else if (session.amount_total === 5900) plan = 'standard';
                 else if (session.amount_total === 3400) plan = 'core';
             }
+
+            console.log(`Webhook: Processing session for org ${orgId}. Detected plan: ${plan}. Amount: ${session.amount_total}`);
 
             console.log(`Updating org ${orgId} to plan ${plan}`);
 
