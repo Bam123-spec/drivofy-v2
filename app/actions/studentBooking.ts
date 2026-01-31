@@ -171,17 +171,53 @@ export async function bookStudentLesson(data: {
             }
         }
 
-        // 6. Sync to Google Calendar
+        // 5b. Lock Time Slot
+        const { error: lockError } = await supabase
+            .from('instructor_availability')
+            .insert({
+                instructor_id: data.instructorId,
+                start_time: startDateTime.toISOString(),
+                end_time: endDateTime.toISOString(),
+                status: 'booked',
+                booking_id: session.id
+            })
+
+        if (lockError) {
+            console.error('❌ Failed to lock slot:', lockError)
+        } else {
+            console.log('🔒 Slot locked')
+        }
+
+        // 6. Sync to Admin's Google Calendar
         try {
             console.log("🚀 Attempting to sync to Google Calendar...")
-            await createCalendarEvent(data.instructorId, {
-                studentName: profile.full_name || "Student",
-                startTime: startDateTime.toISOString(),
-                endTime: endDateTime.toISOString(),
-                description: `Driving Lesson (Student Booked)\nStudent: ${profile.full_name}\nPhone: ${profile.phone || 'N/A'}\nEmail: ${profile.email}`,
-                location: "Selam Driving School"
-            })
-            console.log("✅ Google Calendar Sync Successful")
+
+            // Get the admin's profile ID (first account with Google Calendar connected)
+            const { data: connectedAccount } = await supabase
+                .from('user_google_tokens')
+                .select('profile_id')
+                .limit(1)
+                .single()
+
+            if (!connectedAccount) {
+                console.warn("⚠️ No Google Calendar connected. Skipping sync.")
+            } else {
+                const googleEvent = await createCalendarEvent(connectedAccount.profile_id, {
+                    studentName: profile.full_name || "Student",
+                    startTime: startDateTime.toISOString(),
+                    endTime: endDateTime.toISOString(),
+                    description: `Driving Lesson (Student Booked)\nStudent: ${profile.full_name}\nPhone: ${profile.phone || 'N/A'}\nEmail: ${profile.email}`,
+                    location: "Selam Driving School"
+                })
+
+                // Save Google Event ID
+                await supabase
+                    .from('driving_sessions')
+                    .update({ google_event_id: googleEvent.id })
+                    .eq('id', session.id)
+
+                console.log("✅ Google Calendar Sync Successful")
+            }
         } catch (calendarError) {
             console.error("❌ Google Calendar Sync Failed:", calendarError)
             // Non-critical for the booking itself

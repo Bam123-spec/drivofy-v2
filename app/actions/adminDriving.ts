@@ -375,6 +375,12 @@ export async function updateSessionStatus(id: string, status: string) {
                 }
             }
         }
+
+        // 6. Unlock Slot
+        await supabaseService
+            .from('instructor_availability')
+            .delete()
+            .eq('booking_id', id)
     } catch (e) {
         console.error("Failed to process session automation:", e)
     }
@@ -447,6 +453,12 @@ export async function deleteDrivingSession(id: string) {
             }
         }
     }
+
+    // 3. Unlock Slot
+    await supabaseService
+        .from('instructor_availability')
+        .delete()
+        .eq('booking_id', id)
 
     // 3. Delete from DB
     const { error } = await supabaseService

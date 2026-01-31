@@ -123,11 +123,25 @@ export async function GET(request: Request) {
             ));
         }
 
-        // 4. Map sessions to the format expected by the utility
-        const existingBookings = (sessions || []).map(s => ({
-            start: s.start_time,
-            end: s.end_time
-        }));
+        // 3b. Query instructor_availability for booked/blocked slots
+        const { data: bookedSlots } = await supabase
+            .from('instructor_availability')
+            .select('start_time, end_time')
+            .eq('instructor_id', instructor_id)
+            .eq('status', 'booked')
+            .filter('start_time', 'like', `${date}%`);
+
+        // 4. Merge all blocked times
+        const existingBookings = [
+            ...(sessions || []).map(s => ({
+                start: s.start_time,
+                end: s.end_time
+            })),
+            ...(bookedSlots || []).map(s => ({
+                start: s.start_time,
+                end: s.end_time
+            }))
+        ];
 
         // 5. Call the slot generator
         const slots = generateAvailableSlots({
