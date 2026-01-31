@@ -192,8 +192,13 @@ export async function bookStudentLesson(data: {
         try {
             console.log("🚀 Attempting to sync to Google Calendar...")
 
+
             // Get the admin's profile ID (first account with Google Calendar connected)
-            const { data: connectedAccount } = await supabase
+            // Use service client to access tokens across users
+            const { createAdminClient } = await import('@/lib/supabase/admin')
+            const supabaseAdmin = createAdminClient()
+
+            const { data: connectedAccount } = await supabaseAdmin
                 .from('user_google_tokens')
                 .select('profile_id')
                 .limit(1)
