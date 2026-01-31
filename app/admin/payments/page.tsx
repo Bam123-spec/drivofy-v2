@@ -217,14 +217,20 @@ export default async function BillingPage() {
                         </ul>
                     </CardContent>
                     <CardFooter>
-                        <a
-                            href={`https://buy.stripe.com/aFa9AS5iNczF2Tve8d2go02?client_reference_id=${org?.id}`}
-                            className="w-full"
-                        >
-                            <Button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-12 rounded-xl transition-all">
-                                {org?.current_plan === 'premium' ? 'Active Plan' : 'Upgrade to Premium'}
-                            </Button>
-                        </a>
+                        {org?.current_plan === 'premium' ? (
+                            <ManageBillingButton
+                                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-12 rounded-xl transition-all"
+                            />
+                        ) : (
+                            <a
+                                href={`https://buy.stripe.com/aFa9AS5iNczF2Tve8d2go02?client_reference_id=${org?.id}`}
+                                className="w-full"
+                            >
+                                <Button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-12 rounded-xl transition-all">
+                                    Upgrade to Premium
+                                </Button>
+                            </a>
+                        )}
                     </CardFooter>
                 </Card>
             </div>

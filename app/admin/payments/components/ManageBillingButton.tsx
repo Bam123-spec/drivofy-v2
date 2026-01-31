@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { Loader2, CreditCard } from 'lucide-react'
 
-export default function ManageBillingButton({ mode = 'portal' }: { mode?: 'checkout' | 'portal' }) {
+export default function ManageBillingButton({ mode = 'portal', className }: { mode?: 'checkout' | 'portal', className?: string }) {
     const [loading, setLoading] = useState(false)
 
     const handleAction = async () => {
@@ -45,9 +45,9 @@ export default function ManageBillingButton({ mode = 'portal' }: { mode?: 'check
         <Button
             onClick={handleAction}
             disabled={loading}
-            className={mode === 'checkout'
+            className={className || (mode === 'checkout'
                 ? "bg-slate-900 hover:bg-blue-600 text-white font-bold rounded-2xl h-12 px-8 transition-all shadow-lg shadow-slate-900/10 hover:shadow-blue-600/20 active:scale-95"
-                : "bg-white hover:bg-slate-50 text-slate-900 font-bold border border-slate-200 rounded-2xl h-12 px-8 transition-all shadow-sm active:scale-95"
+                : "bg-white hover:bg-slate-50 text-slate-900 font-bold border border-slate-200 rounded-2xl h-12 px-8 transition-all shadow-sm active:scale-95")
             }
         >
             {loading ? (
