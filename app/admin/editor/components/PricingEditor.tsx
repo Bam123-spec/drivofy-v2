@@ -1,263 +1,177 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { getOfferingsForPage, updateOffering } from "@/app/actions/website"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import {
-    DollarSign,
-    Save,
-    Zap,
-    CheckCircle2,
-    Clock,
-    Target,
-    Sparkles,
-    ArrowUpRight,
-    MousePointer2,
-    Shield,
-    Star
-} from "lucide-react"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { toast } from "sonner"
+import { DollarSign, Target, Sparkles, Calendar, Package, ArrowUpRight } from "lucide-react"
+import {
+    getClassPricingSummary,
+    getServicePricingSummary,
+    type ClassPricingSummary,
+    type ServicePricingSummary
+} from "@/app/actions/pricingActions"
+import { ClassPricingCard } from "@/app/admin/pricing/components/ClassPricingCard"
+import { ServicePricingCard } from "@/app/admin/pricing/components/ServicePricingCard"
 
 export function PricingEditor() {
-    const [offerings, setOfferings] = useState<any[]>([])
+    const [classPricing, setClassPricing] = useState<ClassPricingSummary[]>([])
+    const [servicePricing, setServicePricing] = useState<ServicePricingSummary[]>([])
     const [loading, setLoading] = useState(true)
-    const [isSaving, setIsSaving] = useState(false)
-    const [selectedOffering, setSelectedOffering] = useState<any>(null)
 
     useEffect(() => {
-        loadOfferings()
+        loadPricingData()
     }, [])
 
-    const loadOfferings = async () => {
+    const loadPricingData = async () => {
         try {
-            const data = await getOfferingsForPage('drivers-ed-packages', 'pricing_cards')
-            if (data && data.length > 0) {
-                setOfferings(data)
-                // Default to driver_ed_package for preview if available, else first one
-                const de = data.find((o: any) => o.slug === 'driver_ed_package')
-                setSelectedOffering(de || data[0])
-            }
+            const [classes, services] = await Promise.all([
+                getClassPricingSummary(),
+                getServicePricingSummary()
+            ])
+            setClassPricing(classes)
+            setServicePricing(services)
         } catch (error) {
-            console.error(error)
-            toast.error("Failed to load pricing data")
+            console.error('[PRICING EDITOR] Error loading pricing:', error)
         } finally {
             setLoading(false)
         }
     }
 
-    const handlePriceChange = (slug: string, newPrice: string) => {
-        setOfferings(prev => prev.map(item =>
-            item.slug === slug ? { ...item, price_numeric: Number(newPrice) } : item
-        ))
-    }
-
-    const handleSave = async () => {
-        setIsSaving(true)
-        try {
-            const promises = offerings.map(item => {
-                // Simple logic to preserve "Starting at" prefix if it existed, strictly based on user requirement
-                // If the old display string contained "Starting at", keep it.
-                // Otherwise just use "$<price>"
-                let newDisplay = `$${item.price_numeric}`
-                if (item.price_display && item.price_display.toLowerCase().includes('starting')) {
-                    newDisplay = `Starting at $${item.price_numeric}`
-                }
-
-                return updateOffering(item.id, {
-                    price_numeric: item.price_numeric,
-                    price_display: newDisplay
-                })
-            })
-
-            const results = await Promise.all(promises)
-
-            // Check for errors in results
-            const errors = results.filter(result => result && result.error)
-            if (errors.length > 0) {
-                console.error("Save errors:", errors)
-                throw new Error("Some updates failed")
-            }
-
-            toast.success("Pricing updated across all site pages!")
-
-            // Refresh local state to ensure consistency
-            await loadOfferings()
-        } catch (error) {
-            console.error(error)
-            toast.error("Failed to update pricing. Check console for details.")
-        } finally {
-            setIsSaving(false)
-        }
-    }
-
-
-
-    // Icon mapping
-    const IconMap: any = {
-        CheckCircle2, Clock, Zap, Shield, Star, Target, Sparkles
+    const handleUpdate = () => {
+        // Reload data after any update
+        loadPricingData()
     }
 
     if (loading) {
-        return <div className="p-10 text-center text-slate-500 animate-pulse">Loading pricing data...</div>
+        return (
+            <div className="space-y-6 animate-pulse p-4">
+                <div className="h-48 bg-slate-100 rounded-[2rem] w-full mb-8" />
+                <div className="grid lg:grid-cols-2 gap-8">
+                    <div className="space-y-4">
+                        <div className="h-8 bg-slate-100 rounded w-1/3" />
+                        <div className="h-64 bg-slate-100 rounded-3xl" />
+                        <div className="h-64 bg-slate-100 rounded-3xl" />
+                    </div>
+                    <div className="space-y-4">
+                        <div className="h-8 bg-slate-100 rounded w-1/3" />
+                        {[1, 2, 3, 4].map(i => (
+                            <div key={i} className="h-24 bg-slate-100 rounded-2xl" />
+                        ))}
+                    </div>
+                </div>
+            </div>
+        )
     }
 
     return (
-        <div className="space-y-10 animate-in fade-in slide-in-from-bottom-6 duration-700">
-            {/* Design Banner */}
-            <div className="relative group overflow-hidden rounded-[2rem] bg-gradient-to-br from-indigo-600 via-blue-600 to-violet-600 p-1">
-                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 mix-blend-overlay"></div>
-                <div className="relative bg-white/5 backdrop-blur-xl rounded-[1.9rem] p-8 sm:p-10 flex flex-col md:flex-row items-center justify-between gap-8 border border-white/20">
-                    <div className="space-y-4">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-white text-[10px] font-black uppercase tracking-[0.2em]">
-                            <Sparkles className="h-3 w-3 fill-current" />
-                            Live Customization
+        <div className="space-y-12 animate-in fade-in slide-in-from-bottom-6 duration-700 pb-20">
+            {/* Hero Section */}
+            <div className="relative group overflow-hidden rounded-[2.5rem] bg-slate-900 p-1 shadow-2xl shadow-indigo-900/20">
+                <div className="absolute inset-0 bg-gradient-to-br from-indigo-600 via-blue-700 to-violet-800 opacity-90" />
+
+                {/* Abstract Shapes */}
+                <div className="absolute top-0 right-0 -mt-20 -mr-20 h-96 w-96 rounded-full bg-blue-500/30 blur-3xl mix-blend-overlay animate-pulse" />
+                <div className="absolute bottom-0 left-0 -mb-20 -ml-20 h-96 w-96 rounded-full bg-purple-500/30 blur-3xl mix-blend-overlay animate-pulse duration-1000" />
+
+                <div className="relative bg-white/5 backdrop-blur-2xl rounded-[2.4rem] p-8 sm:p-12 flex flex-col md:flex-row items-center justify-between gap-10 border border-white/10">
+                    <div className="space-y-6 max-w-xl">
+                        <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-100 text-[11px] font-black uppercase tracking-[0.2em] shadow-lg shadow-indigo-900/20 backdrop-blur-md">
+                            <Sparkles className="h-3.5 w-3.5 fill-indigo-200 text-indigo-200" />
+                            Global Configuration
                         </div>
-                        <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight leading-none">
-                            Global Pricing <br /><span className="text-white/60">Control Center</span>
+                        <h2 className="text-4xl sm:text-5xl font-black text-white tracking-tight leading-[0.9]">
+                            Pricing <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-indigo-200">Control Center</span>
                         </h2>
-                        <p className="text-blue-100/80 text-sm font-medium max-w-sm leading-relaxed">
-                            Changes here update your landing page, booking widgets, and student portals in real-time.
+                        <p className="text-blue-100/90 text-lg font-medium leading-relaxed">
+                            Manage your class schedules and service packages from one central hub. Updates sync globally in real-time.
                         </p>
                     </div>
-                    <div className="flex -space-x-4">
-                        <div className="h-16 w-16 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white shadow-2xl">
-                            <DollarSign className="h-8 w-8" />
-                        </div>
-                        <div className="h-16 w-16 rounded-2xl bg-indigo-500 flex items-center justify-center text-white shadow-2xl rotate-12 -translate-y-4">
-                            <Target className="h-8 w-8" />
+
+                    {/* Floating 3D-ish Elements */}
+                    <div className="relative hidden lg:block">
+                        <div className="absolute inset-0 bg-indigo-500 blur-[60px] opacity-40 rounded-full" />
+                        <div className="relative z-10 flex -space-x-6 hover:-space-x-4 transition-all duration-500">
+                            <div className="h-24 w-24 rounded-3xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white shadow-[0_20px_40px_-15px_rgba(0,0,0,0.3)] transform -rotate-6 hover:rotate-0 transition-transform duration-500">
+                                <DollarSign className="h-10 w-10 text-emerald-300" />
+                            </div>
+                            <div className="h-24 w-24 rounded-3xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center text-white shadow-[0_20px_40px_-15px_rgba(0,0,0,0.3)] transform rotate-12 hover:rotate-0 transition-transform duration-500 translate-y-4">
+                                <Target className="h-10 w-10 text-white" />
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Editor & Preview Split */}
-            <div className="flex flex-col xl:flex-row gap-8">
-                {/* Inputs Panel */}
-                <div className="xl:w-1/3 space-y-6">
-                    <Card className="border-0 shadow-2xl shadow-slate-200/50 rounded-[2rem] overflow-hidden sticky top-24">
-                        <CardHeader className="p-8 pb-0">
-                            <CardTitle className="text-xl font-black text-slate-900 flex items-center gap-2 uppercase tracking-tight">
-                                <Zap className="h-5 w-5 text-blue-500 fill-current" />
-                                Pricing Tiers
-                            </CardTitle>
-                            <CardDescription className="text-slate-500 font-medium pt-1">
-                                Set the live prices for your packages.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="p-8 space-y-6">
-                            <div className="grid gap-6">
-                                {offerings.map((offering) => (
-                                    <div key={offering.id} className="space-y-2 group">
-                                        <Label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1 group-focus-within:text-blue-600 transition-colors">
-                                            {offering.title}
-                                        </Label>
-                                        <div className="relative">
-                                            <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                                            <Input
-                                                type="number"
-                                                value={offering.price_numeric}
-                                                onChange={(e) => handlePriceChange(offering.slug, e.target.value)}
-                                                className="pl-12 h-14 bg-slate-50 border-transparent focus:bg-white focus:border-blue-500/20 focus:ring-4 focus:ring-blue-500/5 transition-all rounded-2xl text-lg font-bold text-slate-900"
-                                            />
-                                        </div>
-                                    </div>
-                                ))}
+            {/* Main Content Grid */}
+            <div className="grid xl:grid-cols-12 gap-10">
+                {/* Left Pane: Scheduled Classes (5 columns) */}
+                <div className="xl:col-span-5 space-y-6">
+                    <div className="flex items-end justify-between px-2">
+                        <div className="space-y-1">
+                            <h3 className="text-base font-black uppercase tracking-[0.1em] text-slate-800 flex items-center gap-2">
+                                <Calendar className="h-4 w-4 text-blue-500" />
+                                Scheduled Classes
+                            </h3>
+                            <p className="text-xs text-slate-500 font-bold uppercase tracking-wide">
+                                Batch updates for all sessions
+                            </p>
+                        </div>
+                    </div>
 
-                                {offerings.length === 0 && (
-                                    <div className="text-center py-8 text-slate-400 text-sm">
-                                        No pricing packages found to edit.
-                                    </div>
-                                )}
-                            </div>
+                    <div className="grid gap-6">
+                        {classPricing.map((classData) => (
+                            <ClassPricingCard
+                                key={classData.class_type}
+                                classData={classData}
+                                onUpdate={handleUpdate}
+                            />
+                        ))}
 
-                            <Button
-                                onClick={handleSave}
-                                disabled={isSaving}
-                                className="w-full h-14 bg-slate-900 hover:bg-black text-white rounded-2xl shadow-xl shadow-slate-200 font-bold text-lg group overflow-hidden relative"
-                            >
-                                <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-indigo-600/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                {isSaving ? (
-                                    <>
-                                        <div className="h-5 w-5 border-2 border-white/20 border-t-white rounded-full animate-spin mr-2" />
-                                        Updating...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Save className="mr-2 h-5 w-5" />
-                                        Publish Changes
-                                    </>
-                                )}
-                            </Button>
-                        </CardContent>
-                    </Card>
+                        {classPricing.length === 0 && (
+                            <Card className="border-2 border-dashed border-slate-200 bg-slate-50/50">
+                                <CardContent className="py-16 text-center space-y-3">
+                                    <div className="h-10 w-10 rounded-full bg-slate-200 mx-auto flex items-center justify-center">
+                                        <Calendar className="h-5 w-5 text-slate-400" />
+                                    </div>
+                                    <p className="text-sm font-semibold text-slate-500">No scheduled classes found</p>
+                                </CardContent>
+                            </Card>
+                        )}
+                    </div>
                 </div>
 
-                {/* Live Preview Grid - Full Width */}
-                <div className="xl:w-2/3 space-y-6">
-                    <div className="flex items-center justify-between px-2">
-                        <h3 className="text-sm font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2">
-                            <MousePointer2 className="h-3 w-3" />
-                            Live Website Preview
-                        </h3>
-                        <Badge variant="outline" className="bg-emerald-50 text-emerald-600 border-emerald-100 uppercase tracking-widest text-[10px] font-black px-2">
-                            Visible to Students
+                {/* Right Pane: Service Packages (7 columns) */}
+                <div className="xl:col-span-7 space-y-6">
+                    <div className="flex items-end justify-between px-2">
+                        <div className="space-y-1">
+                            <h3 className="text-base font-black uppercase tracking-[0.1em] text-slate-800 flex items-center gap-2">
+                                <Package className="h-4 w-4 text-indigo-500" />
+                                Service Packages
+                            </h3>
+                            <p className="text-xs text-slate-500 font-bold uppercase tracking-wide">
+                                Individual package configuration
+                            </p>
+                        </div>
+                        <Badge variant="outline" className="bg-emerald-50/50 text-emerald-700 border-emerald-200/60 uppercase tracking-widest text-[10px] font-black px-3 py-1.5 flex items-center gap-2 shadow-sm">
+                            <div className="h-1.5 w-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                            Real-time Sync Active
                         </Badge>
                     </div>
 
-                    {/* Grid matching the public page design */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {offerings.map((offering) => (
-                            <div key={offering.id} className="relative group transition-all duration-500">
-                                {/* Glow Effect */}
-                                <div className={`absolute -inset-1 bg-gradient-to-r ${offering.popular ? 'from-indigo-500 to-purple-500' : 'from-slate-200 to-slate-200'} rounded-[2.5rem] blur-xl opacity-20 group-hover:opacity-40 transition duration-1000`} />
-
-                                <Card className={`relative border-0 shadow-xl shadow-slate-200/40 rounded-[2.5rem] overflow-hidden bg-white h-full flex flex-col ring-1 ${offering.popular ? 'ring-indigo-100' : 'ring-slate-100'}`}>
-                                    <div className="p-6 bg-slate-50/50 border-b border-slate-100">
-                                        <div className="flex justify-between items-start mb-4">
-                                            {offering.popular ? (
-                                                <Badge className="bg-indigo-500 border-0 text-[10px] font-black px-2 py-0.5 uppercase tracking-widest text-white shadow-lg shadow-indigo-500/30">Most Popular</Badge>
-                                            ) : (
-                                                <div className="h-5"></div>
-                                            )}
-                                            {offering.popular && <ArrowUpRight className="h-4 w-4 text-indigo-500" />}
-                                            {!offering.popular && <ArrowUpRight className="h-4 w-4 text-slate-300" />}
-                                        </div>
-                                        <h4 className="text-xl font-black text-slate-900 tracking-tight mb-1">{offering.title}</h4>
-                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wide leading-relaxed">{offering.description}</p>
-                                    </div>
-                                    <CardContent className="p-6 space-y-6 flex-1 flex flex-col">
-                                        <div className="flex items-baseline gap-1">
-                                            <span className={`text-3xl font-black tracking-tight ${offering.popular ? 'text-indigo-600' : 'text-slate-900'}`}>
-                                                ${offering.price_numeric}
-                                            </span>
-                                        </div>
-
-                                        <div className="space-y-3 flex-1">
-                                            {offering.features?.slice(0, 4).map((feature: any, i: number) => {
-                                                const Icon = IconMap[feature.icon || 'CheckCircle2'] || CheckCircle2
-                                                return (
-                                                    <div key={i} className="flex items-start gap-3">
-                                                        <div className={`p-1 mt-0.5 rounded-full bg-slate-50 border border-slate-100 ${feature.color || 'text-slate-600'}`}>
-                                                            <Icon className="h-3 w-3" />
-                                                        </div>
-                                                        <span className="text-xs font-bold text-slate-600 leading-snug">{feature.text}</span>
-                                                    </div>
-                                                )
-                                            })}
-                                            {offering.features?.length > 4 && (
-                                                <div className="text-[10px] font-bold text-slate-400 pl-8">
-                                                    + {offering.features.length - 4} more features
-                                                </div>
-                                            )}
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            </div>
+                    <div className="grid gap-4 bg-slate-50/50 p-6 rounded-[2rem] border border-slate-100 shadow-inner">
+                        {servicePricing.map((service) => (
+                            <ServicePricingCard
+                                key={service.id}
+                                service={service}
+                                onUpdate={handleUpdate}
+                            />
                         ))}
+
+                        {servicePricing.length === 0 && (
+                            <div className="text-center py-16">
+                                <p className="text-sm font-semibold text-slate-400">No service packages available</p>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
