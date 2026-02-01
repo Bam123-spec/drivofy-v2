@@ -13,8 +13,25 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog"
-import { Loader2, Plus, Trash2, Pencil, Save, X } from "lucide-react"
+import { Loader2, Plus, Trash2, Pencil, Save, X, GripVertical } from "lucide-react"
 import { toast } from "sonner"
+import {
+    DndContext,
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+    DragEndEvent
+} from '@dnd-kit/core'
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    verticalListSortingStrategy,
+    useSortable
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 
 interface Category {
     id: string
@@ -44,7 +61,7 @@ export function ManageCategoriesDialog({ open, onOpenChange, onSuccess }: Manage
         const { data, error } = await supabase
             .from('class_categories')
             .select('*')
-            .order('created_at', { ascending: true })
+            .order('sort_order', { ascending: true })
 
         if (data) setCategories(data)
     }
@@ -56,7 +73,10 @@ export function ManageCategoriesDialog({ open, onOpenChange, onSuccess }: Manage
             setLoading(true)
             const { error } = await supabase
                 .from('class_categories')
-                .insert([{ name: newCategoryName.trim() }])
+                .insert([{
+                    name: newCategoryName.trim(),
+                    sort_order: categories.length
+                }])
 
             if (error) throw error
 
@@ -118,6 +138,98 @@ export function ManageCategoriesDialog({ open, onOpenChange, onSuccess }: Manage
         }
     }
 
+    const sensors = useSensors(
+        useSensor(PointerSensor),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
+
+    const handleDragEnd = async (event: DragEndEvent) => {
+        const { active, over } = event;
+        if (over && active.id !== over.id) {
+            const oldIndex = categories.findIndex(c => c.id === active.id);
+            const newIndex = categories.findIndex(c => c.id === over.id);
+
+            const newOrder = arrayMove(categories, oldIndex, newIndex);
+            setCategories(newOrder);
+
+            try {
+                for (let i = 0; i < newOrder.length; i++) {
+                    await supabase
+                        .from('class_categories')
+                        .update({ sort_order: i })
+                        .eq('id', newOrder[i].id);
+                }
+                toast.success("Row order updated");
+                onSuccess();
+            } catch (error) {
+                toast.error("Failed to save order");
+                fetchCategories();
+            }
+        }
+    };
+
+    function SortableCategoryItem({ cat, editingId, editName, setEditName, saveEdit, cancelEdit, startEdit, handleDelete }: any) {
+        const {
+            attributes,
+            listeners,
+            setNodeRef,
+            transform,
+            transition,
+            isDragging
+        } = useSortable({ id: cat.id });
+
+        const style = {
+            transform: CSS.Transform.toString(transform),
+            transition,
+            zIndex: isDragging ? 100 : 0,
+            opacity: isDragging ? 0.5 : 1,
+        };
+
+        return (
+            <div
+                ref={setNodeRef}
+                style={style}
+                className={`flex items-center justify-between p-2 bg-gray-50 rounded-md border border-gray-100 group ${isDragging ? 'shadow-lg border-primary' : ''}`}
+            >
+                {editingId === cat.id ? (
+                    <div className="flex items-center gap-2 flex-1">
+                        <Input
+                            value={editName}
+                            onChange={(e) => setEditName(e.target.value)}
+                            className="h-8"
+                            autoFocus
+                        />
+                        <Button size="icon" variant="ghost" className="h-8 w-8 text-green-600" onClick={() => saveEdit(cat.id)}>
+                            <Save className="h-4 w-4" />
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-8 w-8 text-gray-400" onClick={cancelEdit}>
+                            <X className="h-4 w-4" />
+                        </Button>
+                    </div>
+                ) : (
+                    <>
+                        <div className="flex items-center gap-2">
+                            <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing p-1 text-gray-300 hover:text-gray-600">
+                                <GripVertical className="h-4 w-4" />
+                            </div>
+                            <span className="font-medium text-sm">{cat.name}</span>
+                        </div>
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button size="icon" variant="ghost" className="h-8 w-8 text-blue-600" onClick={() => startEdit(cat)}>
+                                <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button size="icon" variant="ghost" className="h-8 w-8 text-red-600" onClick={() => handleDelete(cat.id)}>
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    </>
+                )}
+            </div>
+        );
+    }
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="admin-light sm:max-w-[500px] bg-white text-gray-900">
@@ -141,39 +253,31 @@ export function ManageCategoriesDialog({ open, onOpenChange, onSuccess }: Manage
                         </Button>
                     </div>
 
-                    <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                        {categories.map((cat) => (
-                            <div key={cat.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-md border border-gray-100 group">
-                                {editingId === cat.id ? (
-                                    <div className="flex items-center gap-2 flex-1">
-                                        <Input
-                                            value={editName}
-                                            onChange={(e) => setEditName(e.target.value)}
-                                            className="h-8"
-                                            autoFocus
-                                        />
-                                        <Button size="icon" variant="ghost" className="h-8 w-8 text-green-600" onClick={() => saveEdit(cat.id)}>
-                                            <Save className="h-4 w-4" />
-                                        </Button>
-                                        <Button size="icon" variant="ghost" className="h-8 w-8 text-gray-400" onClick={cancelEdit}>
-                                            <X className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                ) : (
-                                    <>
-                                        <span className="font-medium text-sm">{cat.name}</span>
-                                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <Button size="icon" variant="ghost" className="h-8 w-8 text-blue-600" onClick={() => startEdit(cat)}>
-                                                <Pencil className="h-4 w-4" />
-                                            </Button>
-                                            <Button size="icon" variant="ghost" className="h-8 w-8 text-red-600" onClick={() => handleDelete(cat.id)}>
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                        </div>
-                                    </>
-                                )}
-                            </div>
-                        ))}
+                    <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+                        <DndContext
+                            sensors={sensors}
+                            collisionDetection={closestCenter}
+                            onDragEnd={handleDragEnd}
+                        >
+                            <SortableContext
+                                items={categories.map(c => c.id)}
+                                strategy={verticalListSortingStrategy}
+                            >
+                                {categories.map((cat) => (
+                                    <SortableCategoryItem
+                                        key={cat.id}
+                                        cat={cat}
+                                        editingId={editingId}
+                                        editName={editName}
+                                        setEditName={setEditName}
+                                        saveEdit={saveEdit}
+                                        cancelEdit={cancelEdit}
+                                        startEdit={startEdit}
+                                        handleDelete={handleDelete}
+                                    />
+                                ))}
+                            </SortableContext>
+                        </DndContext>
                         {categories.length === 0 && (
                             <div className="text-center text-sm text-gray-500 py-4">
                                 No groups created yet.

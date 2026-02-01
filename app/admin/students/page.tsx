@@ -260,10 +260,10 @@ export default function AdminStudentsPage() {
                             Add Student
                         </Button>
                     </DialogTrigger>
-                    <DialogContent className="rounded-2xl border-0 shadow-2xl p-0 overflow-hidden max-w-md">
-                        <div className="bg-blue-600 px-6 py-8 text-white">
-                            <DialogTitle className="text-xl font-bold mb-1">New Student</DialogTitle>
-                            <DialogDescription className="text-blue-100 text-sm">
+                    <DialogContent className="bg-white rounded-2xl border border-slate-200 shadow-2xl p-0 overflow-hidden max-w-md text-slate-900">
+                        <div className="bg-white px-6 py-8 border-b border-slate-100">
+                            <DialogTitle className="text-xl font-bold text-slate-900 mb-1">New Student</DialogTitle>
+                            <DialogDescription className="text-slate-500 text-sm">
                                 Invite a new student to the platform.
                             </DialogDescription>
                         </div>
@@ -273,7 +273,7 @@ export default function AdminStudentsPage() {
                                     <Label className="text-slate-700 font-semibold text-sm">Full Name</Label>
                                     <Input
                                         placeholder="John Doe"
-                                        className="h-10 border-slate-200 bg-white rounded-lg focus:ring-blue-500"
+                                        className="h-10 border-slate-200 bg-white rounded-lg focus:ring-blue-500 text-slate-900 placeholder:text-slate-500 font-medium"
                                         value={newStudent.full_name}
                                         onChange={(e) => setNewStudent({ ...newStudent, full_name: e.target.value })}
                                     />
@@ -282,7 +282,7 @@ export default function AdminStudentsPage() {
                                     <Label className="text-slate-700 font-semibold text-sm">Email Address</Label>
                                     <Input
                                         placeholder="john@example.com"
-                                        className="h-10 border-slate-200 bg-white rounded-lg focus:ring-blue-500"
+                                        className="h-10 border-slate-200 bg-white rounded-lg focus:ring-blue-500 text-slate-900 placeholder:text-slate-500 font-medium"
                                         value={newStudent.email}
                                         onChange={(e) => setNewStudent({ ...newStudent, email: e.target.value })}
                                     />
@@ -291,7 +291,7 @@ export default function AdminStudentsPage() {
                                     <Label className="text-slate-700 font-semibold text-sm">Phone Number</Label>
                                     <Input
                                         placeholder="(555) 000-0000"
-                                        className="h-10 border-slate-200 bg-white rounded-lg focus:ring-blue-500"
+                                        className="h-10 border-slate-200 bg-white rounded-lg focus:ring-blue-500 text-slate-900 placeholder:text-slate-500 font-medium"
                                         value={newStudent.phone}
                                         onChange={(e) => setNewStudent({ ...newStudent, phone: e.target.value })}
                                     />
@@ -555,10 +555,10 @@ export default function AdminStudentsPage() {
 
             {/* Edit Dialog - Reused and restyled */}
             <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-                <DialogContent className="rounded-2xl border-0 shadow-2xl p-0 overflow-hidden max-w-md">
-                    <div className="bg-slate-900 px-6 py-8 text-white">
-                        <DialogTitle className="text-xl font-bold mb-1">Edit Record</DialogTitle>
-                        <DialogDescription className="text-slate-400 text-sm">
+                <DialogContent className="bg-white rounded-2xl border border-slate-200 shadow-2xl p-0 overflow-hidden max-w-md text-slate-900">
+                    <div className="bg-white px-6 py-8 border-b border-slate-100">
+                        <DialogTitle className="text-xl font-bold text-slate-900 mb-1">Edit Record</DialogTitle>
+                        <DialogDescription className="text-slate-500 text-sm">
                             Modify the student information.
                         </DialogDescription>
                     </div>
@@ -567,7 +567,7 @@ export default function AdminStudentsPage() {
                             <div className="space-y-1.5">
                                 <Label className="text-slate-700 font-semibold text-sm">Full Name</Label>
                                 <Input
-                                    className="h-10 border-slate-200 bg-white rounded-lg focus:ring-blue-500"
+                                    className="h-10 border-slate-200 bg-white rounded-lg focus:ring-blue-500 text-slate-900 font-medium"
                                     value={editForm.full_name}
                                     onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })}
                                 />
@@ -575,7 +575,7 @@ export default function AdminStudentsPage() {
                             <div className="space-y-1.5">
                                 <Label className="text-slate-700 font-semibold text-sm">Email</Label>
                                 <Input
-                                    className="h-10 border-slate-200 bg-white rounded-lg focus:ring-blue-500"
+                                    className="h-10 border-slate-200 bg-white rounded-lg focus:ring-blue-500 text-slate-900 font-medium"
                                     value={editForm.email}
                                     onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
                                 />
@@ -583,7 +583,7 @@ export default function AdminStudentsPage() {
                             <div className="space-y-1.5">
                                 <Label className="text-slate-700 font-semibold text-sm">Phone</Label>
                                 <Input
-                                    className="h-10 border-slate-200 bg-white rounded-lg focus:ring-blue-500"
+                                    className="h-10 border-slate-200 bg-white rounded-lg focus:ring-blue-500 text-slate-900 font-medium"
                                     value={editForm.phone}
                                     onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
                                 />

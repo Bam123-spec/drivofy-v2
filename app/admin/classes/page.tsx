@@ -18,8 +18,26 @@ import {
     User,
     Edit,
     CheckCircle2,
-    Copy
+    Copy,
+    GripVertical
 } from "lucide-react"
+import {
+    DndContext,
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+    DragEndEvent
+} from '@dnd-kit/core'
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    verticalListSortingStrategy,
+    useSortable
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -146,16 +164,38 @@ export default function AdminClassesPage() {
                         enrollments (count)
                     `)
                     .eq('is_archived', showArchived)
-                    .order('start_date', { ascending: true }),
+                    .order('sort_order', { ascending: true }),
                 supabase
                     .from('class_categories')
                     .select('*')
-                    .order('created_at', { ascending: true })
+                    .order('sort_order', { ascending: true })
             ])
 
             if (clsRes.error) throw clsRes.error
-            setClasses(clsRes.data || [])
             if (catRes.data) setCategories(catRes.data)
+
+            let finalClasses = clsRes.data || []
+
+            // Auto-archive DIP/RESP past classes
+            if (!showArchived && catRes.data) {
+                const today = new Date().toISOString().split('T')[0]
+                const toArchive = finalClasses.filter(cls =>
+                    cls.end_date < today
+                )
+
+                if (toArchive.length > 0) {
+                    const ids = toArchive.map(c => c.id)
+                    await supabase
+                        .from('classes')
+                        .update({ is_archived: true })
+                        .in('id', ids)
+
+                    finalClasses = finalClasses.filter(c => !ids.includes(c.id))
+                    toast.info(`Auto-archived ${ids.length} past classes (DIP/RESP)`)
+                }
+            }
+
+            setClasses(finalClasses)
             setSelectedIds([]) // Clear selection on refetch
         } catch (error: any) {
             console.error("Error fetching classes:", JSON.stringify(error, null, 2))
@@ -246,11 +286,15 @@ export default function AdminClassesPage() {
         }
     }
 
-    const filteredClasses = classes.filter(cls => {
-        const matchesSearch = cls.name.toLowerCase().includes(searchQuery.toLowerCase())
-        const matchesStatus = statusFilter === "all" || cls.status === statusFilter
-        return matchesSearch && matchesStatus
-    })
+    const filteredClasses = useMemo(() => {
+        return classes
+            .filter(cls => {
+                const matchesSearch = cls.name.toLowerCase().includes(searchQuery.toLowerCase())
+                const matchesStatus = statusFilter === "all" || cls.status === statusFilter
+                return matchesSearch && matchesStatus
+            })
+            .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
+    }, [classes, searchQuery, statusFilter])
 
     // Group Classes by Category
     const groupedClasses = useMemo(() => {
@@ -274,6 +318,178 @@ export default function AdminClassesPage() {
         return groups
     }, [filteredClasses, categories])
 
+    const sensors = useSensors(
+        useSensor(PointerSensor),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
+
+    const handleDragEnd = async (event: DragEndEvent, groupClasses: any[]) => {
+        const { active, over } = event;
+        if (over && active.id !== over.id) {
+            const oldIndex = groupClasses.findIndex(c => c.id === active.id);
+            const newIndex = groupClasses.findIndex(c => c.id === over.id);
+
+            const newOrder = arrayMove(groupClasses, oldIndex, newIndex);
+
+            // Update local state first for immediate feedback
+            const updatedClasses = classes.map(c => {
+                const found = newOrder.find(nc => nc.id === c.id);
+                return found ? found : c;
+            })
+            // This is slightly complex because classes are mixed in local state
+            // Let's just update the ones in this group
+            const updatedGroupIds = newOrder.map(c => c.id);
+            const finalClasses = classes.map(c => {
+                const indexInNewOrder = updatedGroupIds.indexOf(c.id);
+                if (indexInNewOrder !== -1) {
+                    return { ...c, sort_order: indexInNewOrder };
+                }
+                return c;
+            });
+            setClasses(finalClasses);
+
+            // Persist to DB
+            try {
+                const updates = newOrder.map((cls, index) => ({
+                    id: cls.id,
+                    sort_order: index
+                }));
+
+                for (const update of updates) {
+                    await supabase
+                        .from('classes')
+                        .update({ sort_order: update.sort_order })
+                        .eq('id', update.id);
+                }
+                toast.success("Order updated");
+            } catch (error) {
+                console.error(error);
+                toast.error("Failed to save order");
+                fetchData(); // Rollback
+            }
+        }
+    };
+
+    function SortableClassRow({ cls, selectedIds, handleSelectRow, router, setSelectedClass, setActiveTab, setIsDetailOpen }: any) {
+        const {
+            attributes,
+            listeners,
+            setNodeRef,
+            transform,
+            transition,
+            isDragging
+        } = useSortable({ id: cls.id });
+
+        const style = {
+            transform: CSS.Transform.toString(transform),
+            transition,
+            zIndex: isDragging ? 100 : 0,
+            opacity: isDragging ? 0.5 : 1,
+        };
+
+        return (
+            <TableRow
+                ref={setNodeRef}
+                style={style}
+                key={cls.id}
+                className={`group transition-colors cursor-pointer border-b border-gray-50 hover:bg-gray-50/50 ${selectedIds.includes(cls.id) ? 'bg-primary/5 hover:bg-primary/10' : ''} ${isDragging ? 'shadow-2xl ring-2 ring-primary/20' : ''}`}
+                onClick={() => router.push(`/admin/classes/${cls.id}`)}
+            >
+                <TableCell className="w-[40px] pl-0" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center gap-1">
+                        <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing p-1 text-gray-300 hover:text-gray-600">
+                            <GripVertical className="h-4 w-4" />
+                        </div>
+                        <Checkbox
+                            checked={selectedIds.includes(cls.id)}
+                            onCheckedChange={(checked) => handleSelectRow(cls.id, checked as boolean)}
+                        />
+                    </div>
+                </TableCell>
+                <TableCell>
+                    <div>
+                        <div className="font-medium text-gray-900">{cls.name}</div>
+                        <div className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
+                            <Clock className="h-3 w-3" />
+                            {cls.daily_start_time?.slice(0, 5)} - {cls.daily_end_time?.slice(0, 5)}
+                        </div>
+                    </div>
+                </TableCell>
+                <TableCell>
+                    <Badge variant="secondary" className="text-[10px] px-2 py-0.5 h-6 font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 border-0">
+                        {cls.class_type || 'DE'}
+                    </Badge>
+                </TableCell>
+                <TableCell>
+                    <div className="text-sm text-gray-600 flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-gray-400" />
+                        <span>
+                            {formatDateSafe(cls.start_date, "MMM d")} - {formatDateSafe(cls.end_date, "MMM d, yyyy")}
+                        </span>
+                    </div>
+                </TableCell>
+                <TableCell>
+                    <div className="text-sm text-gray-900">
+                        {cls.instructors?.full_name || "Unassigned"}
+                    </div>
+                </TableCell>
+                <TableCell>
+                    <div className="flex items-center gap-2">
+                        <Users className="h-4 w-4 text-gray-400" />
+                        <span className="text-sm font-medium text-gray-900">
+                            {cls.enrollments?.[0]?.count || 0}
+                            <span className="text-gray-400 font-normal"> / {cls.capacity || 30}</span>
+                        </span>
+                    </div>
+                </TableCell>
+                <TableCell>
+                    <Badge
+                        variant="outline"
+                        className={`
+                            capitalize border-0
+                            ${cls.status === 'active' ? 'bg-green-50 text-green-700' : ''}
+                            ${cls.status === 'upcoming' ? 'bg-blue-50 text-blue-700' : ''}
+                            ${cls.status === 'completed' ? 'bg-gray-100 text-gray-700' : ''}
+                            ${cls.status === 'cancelled' ? 'bg-red-50 text-red-700' : ''}
+                        `}
+                    >
+                        {cls.status}
+                    </Badge>
+                </TableCell>
+                <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                    <div>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-gray-400 hover:text-gray-600">
+                                    <span className="sr-only">Open menu</span>
+                                    <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => {
+                                    setSelectedClass(cls)
+                                    setActiveTab("students")
+                                    setIsDetailOpen(true)
+                                }}>
+                                    <User className="mr-2 h-4 w-4" /> Add Student
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => router.push(`/admin/classes/${cls.id}`)}>
+                                    <Edit className="mr-2 h-4 w-4" /> Edit Class
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem className="text-red-600">Cancel Class</DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
+                </TableCell>
+            </TableRow>
+        );
+    }
+
     // Helper to render a table for a group of classes
     const renderClassTable = (groupClasses: any[], groupName: string, categoryId?: string) => {
         if (groupClasses.length === 0 && categoryId) return null
@@ -289,127 +505,58 @@ export default function AdminClassesPage() {
 
                 {/* Clean Table Design - No Box/Shadow */}
                 <div className="overflow-hidden">
-                    <Table>
-                        <TableHeader>
-                            <TableRow className="hover:bg-transparent border-b border-gray-100">
-                                <TableHead className="w-[40px] pl-0">
-                                    <Checkbox
-                                        checked={groupClasses.length > 0 && groupClasses.every(c => selectedIds.includes(c.id))}
-                                        onCheckedChange={(checked) => handleSelectAll(checked as boolean, groupClasses.map(c => c.id))}
-                                    />
-                                </TableHead>
-                                <TableHead className="text-gray-500 font-medium text-xs uppercase tracking-wider">Class Name</TableHead>
-                                <TableHead className="text-gray-500 font-medium text-xs uppercase tracking-wider">Type</TableHead>
-                                <TableHead className="text-gray-500 font-medium text-xs uppercase tracking-wider">Schedule</TableHead>
-                                <TableHead className="text-gray-500 font-medium text-xs uppercase tracking-wider">Instructor</TableHead>
-                                <TableHead className="text-gray-500 font-medium text-xs uppercase tracking-wider">Enrolled</TableHead>
-                                <TableHead className="text-gray-500 font-medium text-xs uppercase tracking-wider">Status</TableHead>
-                                <TableHead className="text-right text-gray-500 font-medium text-xs uppercase tracking-wider">Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {groupClasses.length > 0 ? (
-                                groupClasses.map((cls) => (
-                                    <TableRow
-                                        key={cls.id}
-                                        className={`group transition-colors cursor-pointer border-b border-gray-50 hover:bg-gray-50/50 ${selectedIds.includes(cls.id) ? 'bg-primary/5 hover:bg-primary/10' : ''}`}
-                                        onClick={() => router.push(`/admin/classes/${cls.id}`)}
+                    <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={(event) => handleDragEnd(event, groupClasses)}
+                    >
+                        <Table>
+                            <TableHeader>
+                                <TableRow className="hover:bg-transparent border-b border-gray-100">
+                                    <TableHead className="w-[40px] pl-0">
+                                        <Checkbox
+                                            checked={groupClasses.length > 0 && groupClasses.every(c => selectedIds.includes(c.id))}
+                                            onCheckedChange={(checked) => handleSelectAll(checked as boolean, groupClasses.map(c => c.id))}
+                                        />
+                                    </TableHead>
+                                    <TableHead className="text-gray-500 font-medium text-xs uppercase tracking-wider">Class Name</TableHead>
+                                    <TableHead className="text-gray-500 font-medium text-xs uppercase tracking-wider">Type</TableHead>
+                                    <TableHead className="text-gray-500 font-medium text-xs uppercase tracking-wider">Schedule</TableHead>
+                                    <TableHead className="text-gray-500 font-medium text-xs uppercase tracking-wider">Instructor</TableHead>
+                                    <TableHead className="text-gray-500 font-medium text-xs uppercase tracking-wider">Enrolled</TableHead>
+                                    <TableHead className="text-gray-500 font-medium text-xs uppercase tracking-wider">Status</TableHead>
+                                    <TableHead className="text-right text-gray-500 font-medium text-xs uppercase tracking-wider">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {groupClasses.length > 0 ? (
+                                    <SortableContext
+                                        items={groupClasses.map(c => c.id)}
+                                        strategy={verticalListSortingStrategy}
                                     >
-                                        <TableCell className="pl-0" onClick={(e) => e.stopPropagation()}>
-                                            <Checkbox
-                                                checked={selectedIds.includes(cls.id)}
-                                                onCheckedChange={(checked) => handleSelectRow(cls.id, checked as boolean)}
+                                        {groupClasses.map((cls) => (
+                                            <SortableClassRow
+                                                key={cls.id}
+                                                cls={cls}
+                                                selectedIds={selectedIds}
+                                                handleSelectRow={handleSelectRow}
+                                                router={router}
+                                                setSelectedClass={setSelectedClass}
+                                                setActiveTab={setActiveTab}
+                                                setIsDetailOpen={setIsDetailOpen}
                                             />
-                                        </TableCell>
-                                        <TableCell>
-                                            <div>
-                                                <div className="font-medium text-gray-900">{cls.name}</div>
-                                                <div className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
-                                                    <Clock className="h-3 w-3" />
-                                                    {cls.daily_start_time?.slice(0, 5)} - {cls.daily_end_time?.slice(0, 5)}
-                                                </div>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Badge variant="secondary" className="text-[10px] px-2 py-0.5 h-6 font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 border-0">
-                                                {cls.class_type || 'DE'}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="text-sm text-gray-600 flex items-center gap-2">
-                                                <Calendar className="h-4 w-4 text-gray-400" />
-                                                <span>
-                                                    {formatDateSafe(cls.start_date, "MMM d")} - {formatDateSafe(cls.end_date, "MMM d, yyyy")}
-                                                </span>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="text-sm text-gray-900">
-                                                {cls.instructors?.full_name || "Unassigned"}
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="flex items-center gap-2">
-                                                <Users className="h-4 w-4 text-gray-400" />
-                                                <span className="text-sm font-medium text-gray-900">
-                                                    {cls.enrollments?.[0]?.count || 0}
-                                                    <span className="text-gray-400 font-normal"> / {cls.capacity || 30}</span>
-                                                </span>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Badge
-                                                variant="outline"
-                                                className={`
-                                                    capitalize border-0
-                                                    ${cls.status === 'active' ? 'bg-green-50 text-green-700' : ''}
-                                                    ${cls.status === 'upcoming' ? 'bg-blue-50 text-blue-700' : ''}
-                                                    ${cls.status === 'completed' ? 'bg-gray-100 text-gray-700' : ''}
-                                                    ${cls.status === 'cancelled' ? 'bg-red-50 text-red-700' : ''}
-                                                `}
-                                            >
-                                                {cls.status}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                                            <div>
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild>
-                                                        <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-gray-400 hover:text-gray-600">
-                                                            <span className="sr-only">Open menu</span>
-                                                            <MoreHorizontal className="h-4 w-4" />
-                                                        </Button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end">
-                                                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                                        <DropdownMenuSeparator />
-                                                        <DropdownMenuItem onClick={() => {
-                                                            setSelectedClass(cls)
-                                                            setActiveTab("students")
-                                                            setIsDetailOpen(true)
-                                                        }}>
-                                                            <User className="mr-2 h-4 w-4" /> Add Student
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem onClick={() => router.push(`/admin/classes/${cls.id}`)}>
-                                                            <Edit className="mr-2 h-4 w-4" /> Edit Class
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuSeparator />
-                                                        <DropdownMenuItem className="text-red-600">Cancel Class</DropdownMenuItem>
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
-                                            </div>
+                                        ))}
+                                    </SortableContext>
+                                ) : (
+                                    <TableRow>
+                                        <TableCell colSpan={8} className="h-24 text-center text-gray-500">
+                                            No classes found in this group.
                                         </TableCell>
                                     </TableRow>
-                                ))
-                            ) : (
-                                <TableRow>
-                                    <TableCell colSpan={8} className="h-24 text-center text-gray-500">
-                                        No classes found in this group.
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </DndContext>
                 </div>
             </div >
         )
