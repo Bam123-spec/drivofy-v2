@@ -3,7 +3,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
 import { logAuditAction } from "@/app/actions/audit"
-import { sendTransactionalEmail, generateGradePassingEmail, generateGradeFailingEmail } from "@/lib/brevo"
+import { sendTransactionalEmail, generateGradePassingEmail, generateGradeFailingEmail, generateClassEnrollmentEmail } from "@/lib/brevo"
 import { cookies } from 'next/headers'
 import { createServerClient } from '@supabase/ssr'
 
@@ -109,6 +109,38 @@ export async function enrollStudent(classId: string, studentId: string) {
     }, `Student Enrolled in Class: ${classId}`)
 
     console.log("Enrollment successful")
+
+    // 4. Send Email Notification to Student
+    try {
+        const { data: student } = await supabase
+            .from('profiles')
+            .select('email, full_name')
+            .eq('id', studentId)
+            .single()
+
+        const { data: classData } = await supabase
+            .from('classes')
+            .select('name, start_date')
+            .eq('id', classId)
+            .single()
+
+        if (student?.email && classData) {
+            const { subject, htmlContent } = generateClassEnrollmentEmail(
+                student.full_name,
+                classData.name,
+                new Date(classData.start_date).toLocaleDateString()
+            )
+            await sendTransactionalEmail({
+                to: [{ email: student.email, name: student.full_name }],
+                subject,
+                htmlContent
+            })
+            console.log("✅ Enrollment confirmation email sent to student")
+        }
+    } catch (e) {
+        console.error("Failed to send enrollment email:", e)
+    }
+
     revalidatePath('/admin/classes')
     return { success: true }
 }

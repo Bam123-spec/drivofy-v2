@@ -45,7 +45,7 @@ export async function POST(request: Request) {
         console.log(`[API] Inviting user: ${email} as ${role}`)
 
         // 2. Generate Invitation Link
-        const liveUrl = 'https://selamdriving.drivofy.com';
+        const liveUrl = 'https://portifol.com';
         const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.generateLink({
             type: 'invite',
             email: email,

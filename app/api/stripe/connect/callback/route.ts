@@ -17,7 +17,7 @@ export async function GET(request: Request) {
 
         if (!BASE_URL) {
             console.error('Missing NEXT_PUBLIC_APP_URL environment variable')
-            console.error('Please set NEXT_PUBLIC_APP_URL=https://selamdriving.drivofy.com')
+            console.error('Please set NEXT_PUBLIC_APP_URL=https://portifol.com')
             return NextResponse.json({ error: 'System configuration error' }, { status: 500 })
         }
 
@@ -90,7 +90,7 @@ export async function GET(request: Request) {
 
     } catch (error) {
         console.error('Error in Stripe Connect callback:', error)
-        const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://selamdriving.drivofy.com'
+        const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://portifol.com'
         return NextResponse.redirect(`${BASE_URL}/admin/settings/payments?error=server_error`)
     }
 }

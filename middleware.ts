@@ -109,11 +109,16 @@ export async function middleware(request: NextRequest) {
     // 4. Subdomain Routing
     const hostname = request.headers.get('host') || ''
     const currentHost = process.env.NODE_ENV === 'production' && process.env.VERCEL === '1'
-        ? hostname.replace(`.drivofy.com`, '') // Replace with your actual domain
+        ? hostname.replace(`.portifol.com`, '') // Replace with your actual domain
         : hostname.replace(`.localhost:3000`, '')
 
     // If it's a subdomain (not www, not localhost, not the main domain)
-    if (currentHost !== 'drivofy.com' && currentHost !== 'www' && currentHost !== 'localhost:3000') {
+    if (
+        currentHost !== 'portifol.com' &&
+        currentHost !== 'drivofy.com' &&
+        currentHost !== 'www' &&
+        currentHost !== 'localhost:3000'
+    ) {
         // User Request: "go straight to thier loging and no other page just login" AND "remove the header"
 
         // We rewrite to /site/[domain] which will hold the Header-less Login Page

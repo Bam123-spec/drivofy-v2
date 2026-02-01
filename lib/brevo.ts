@@ -22,7 +22,7 @@ export async function sendTransactionalEmail({ to, subject, htmlContent, sender 
 
     const payload = {
         sender: sender || {
-            email: process.env.BREVO_SENDER_EMAIL || 'noreply@drivofy.com',
+            email: process.env.BREVO_SENDER_EMAIL || 'noreply@portifol.com',
             name: 'Selam Driving School',
         },
         to,
@@ -149,8 +149,8 @@ export function generateGradeFailingEmail(userName: string, courseName: string, 
 }
 
 export function generateBtwFinalEmail(userName: string) {
-    const extraPracticeLink = 'https://drivofy.com/extra-driving-practice';
-    const roadTestLink = 'https://drivofy.com/road-test-service';
+    const extraPracticeLink = 'https://portifol.com/extra-driving-practice';
+    const roadTestLink = 'https://portifol.com/road-test-service';
 
     return {
         subject: "Congratulations on completing your Behind-the-Wheel training!",
@@ -215,6 +215,56 @@ export function generateInvitationEmail(userName: string, inviteLink: string, ro
                     <div style="border-top: 1px solid #f1f5f9; pt: 24px;">
                         <p style="margin: 0; font-size: 14px; color: #64748b;">
                             If you have any questions, feel free to reply to this email or contact our support team.
+                        </p>
+                    </div>
+                </div>
+
+                <div style="text-align: center; margin-top: 32px;">
+                    <p style="margin: 0; font-size: 12px; color: #94a3b8; font-weight: 500;">
+                        &copy; ${new Date().getFullYear()} Selam Driving School. All rights reserved.
+                    </p>
+                </div>
+            </div>
+        `
+    };
+}
+
+export function generateClassEnrollmentEmail(userName: string, className: string, startDate: string) {
+    const dashboardLink = 'https://portifol.com/login';
+
+    return {
+        subject: `Enrolled in ${className} - Selam Driving School`,
+        htmlContent: `
+            <div style="font-family: 'Inter', sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; color: #1e293b; line-height: 1.6;">
+                <div style="text-align: center; margin-bottom: 32px;">
+                    <h1 style="color: #0f172a; font-size: 24px; font-weight: 800; margin: 0; letter-spacing: -0.025em;">SELAM DRIVING SCHOOL</h1>
+                    <div style="height: 4px; width: 40px; background: #2563eb; margin: 12px auto 0; border-radius: 2px;"></div>
+                </div>
+
+                <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 24px; padding: 32px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+                    <h2 style="color: #0f172a; font-size: 20px; font-weight: 700; margin: 0 0 16px 0;">Class Enrollment Confirmation 📚</h2>
+                    
+                    <p style="margin: 0 0 24px 0; font-size: 16px; color: #475569;">
+                        Hello ${userName}, you have been successfully enrolled in <strong>${className}</strong>.
+                    </p>
+
+                    <div style="background: #f8fafc; border-radius: 16px; padding: 24px; margin-bottom: 32px; border: 1px solid #f1f5f9;">
+                        <p style="margin: 0; color: #64748b; font-size: 14px;">Class Name</p>
+                        <p style="margin: 4px 0 16px 0; color: #1e293b; font-weight: bold; font-size: 16px;">${className}</p>
+                        
+                        <p style="margin: 0; color: #64748b; font-size: 14px;">Start Date</p>
+                        <p style="margin: 4px 0 0 0; color: #1e293b; font-weight: bold; font-size: 16px;">${startDate}</p>
+                    </div>
+
+                    <div style="text-align: center; margin-bottom: 32px;">
+                        <a href="${dashboardLink}" style="display: inline-block; background: #2563eb; color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 16px; transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);">
+                            Access Student Portal
+                        </a>
+                    </div>
+
+                    <div style="border-top: 1px solid #f1f5f9; pt: 24px;">
+                        <p style="margin: 0; font-size: 14px; color: #64748b;">
+                            Please log in to your portal to view the full schedule and session details.
                         </p>
                     </div>
                 </div>
