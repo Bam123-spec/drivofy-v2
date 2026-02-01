@@ -184,3 +184,47 @@ export function generateBtwFinalEmail(userName: string) {
         `
     };
 }
+
+export function generateInvitationEmail(userName: string, inviteLink: string, role: string) {
+    const roleDisplay = role === 'instructor' ? 'Instructor' : 'Student';
+
+    return {
+        subject: `Welcome to Selam Driving School! 🎉`,
+        htmlContent: `
+            <div style="font-family: 'Inter', sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; color: #1e293b; line-height: 1.6;">
+                <div style="text-align: center; margin-bottom: 32px;">
+                    <h1 style="color: #0f172a; font-size: 24px; font-weight: 800; margin: 0; letter-spacing: -0.025em;">SELAM DRIVING SCHOOL</h1>
+                    <div style="height: 4px; width: 40px; background: #2563eb; margin: 12px auto 0; border-radius: 2px;"></div>
+                </div>
+
+                <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 24px; padding: 32px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+                    <h2 style="color: #0f172a; font-size: 20px; font-weight: 700; margin: 0 0 16px 0;">Welcome to the Team! 🎉</h2>
+                    
+                    <p style="margin: 0 0 24px 0; font-size: 16px; color: #475569;">
+                        Hello ${userName}, you've been invited to join <strong>Selam Driving School</strong> as a <strong>${roleDisplay}</strong>. We're excited to have you on board!
+                    </p>
+
+                    <div style="background: #f8fafc; border-radius: 16px; padding: 24px; margin-bottom: 32px; text-align: center; border: 1px solid #f1f5f9;">
+                        <p style="margin: 0 0 16px 0; font-size: 14px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Finish Setting Up Your Account</p>
+                        <a href="${inviteLink}" style="display: inline-block; background: #2563eb; color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 16px; transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);">
+                            Activate Account
+                        </a>
+                        <p style="margin: 16px 0 0 0; font-size: 12px; color: #94a3b8;">Link expires in 24 hours</p>
+                    </div>
+
+                    <div style="border-top: 1px solid #f1f5f9; pt: 24px;">
+                        <p style="margin: 0; font-size: 14px; color: #64748b;">
+                            If you have any questions, feel free to reply to this email or contact our support team.
+                        </p>
+                    </div>
+                </div>
+
+                <div style="text-align: center; margin-top: 32px;">
+                    <p style="margin: 0; font-size: 12px; color: #94a3b8; font-weight: 500;">
+                        &copy; ${new Date().getFullYear()} Selam Driving School. All rights reserved.
+                    </p>
+                </div>
+            </div>
+        `
+    };
+}

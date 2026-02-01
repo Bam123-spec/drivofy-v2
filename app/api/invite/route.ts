@@ -1,6 +1,8 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
-
+import { cookies } from 'next/headers'
+import { createServerClient } from '@supabase/ssr'
+import { sendTransactionalEmail, generateInvitationEmail } from '@/lib/brevo'
 
 export async function POST(request: Request) {
     try {
@@ -15,33 +17,71 @@ export async function POST(request: Request) {
             )
         }
 
+        const cookieStore = await cookies()
+        const supabase = createServerClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            {
+                cookies: {
+                    getAll() { return cookieStore.getAll() }
+                }
+            }
+        )
+
+        // 1. Get inviter's profile and organization_id
+        const { data: { user: inviter } } = await supabase.auth.getUser()
+        if (!inviter) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
+        const { data: inviterProfile } = await supabase
+            .from('profiles')
+            .select('organization_id')
+            .eq('id', inviter.id)
+            .single()
+
         const supabaseAdmin = createAdminClient()
 
         console.log(`[API] Inviting user: ${email} as ${role}`)
 
-        // 1. Invite User with Supabase's native email system
-        // Database trigger will auto-create profile with metadata
+        // 2. Generate Invitation Link
         const liveUrl = 'https://selamdriving.drivofy.com';
-        const { data: authData, error: authError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
-            redirectTo: `${liveUrl}/update-password`,
-            data: {
-                full_name: full_name,
-                phone: phone,
-                role: role
+        const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.generateLink({
+            type: 'invite',
+            email: email,
+            options: {
+                redirectTo: `${liveUrl}/update-password`,
+                data: {
+                    full_name: full_name,
+                    phone: phone,
+                    role: role,
+                    organization_id: inviterProfile?.organization_id
+                }
             }
         })
 
-        if (authError) {
-            console.error('Auth Invite Error:', authError)
+        if (inviteError) {
+            console.error('Invite Link Error:', inviteError)
             return NextResponse.json(
-                { error: authError.message },
+                { error: inviteError.message },
                 { status: 500 }
             )
         }
 
-        console.log('[API] User invited successfully, user ID:', authData.user.id)
+        // 3. Send Branded Email via Brevo
+        const { subject, htmlContent } = generateInvitationEmail(full_name, inviteData.properties.action_link, role)
+        const emailRes = await sendTransactionalEmail({
+            to: [{ email, name: full_name }],
+            subject,
+            htmlContent
+        })
 
-        const userId = authData.user.id
+        if (!emailRes.success) {
+            console.error('Brevo Email Error:', emailRes.error)
+            // We continue even if email fails, but log it
+        }
+
+        const userId = inviteData.user.id
 
         // 4. If Instructor, add to 'instructors' table
         if (role === 'instructor') {
@@ -84,7 +124,7 @@ export async function POST(request: Request) {
             ip_address: 'api_route',
         })
 
-        return NextResponse.json({ success: true, user: authData.user })
+        return NextResponse.json({ success: true, user: inviteData.user })
     } catch (error: any) {
         console.error('API Error:', error)
         return NextResponse.json(
