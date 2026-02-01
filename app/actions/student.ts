@@ -46,20 +46,36 @@ export async function updateStudent(studentId: string, data: { full_name: string
     }
 }
 
-export async function deleteStudent(studentId: string) {
+export async function deleteStudent(studentId: string, type: 'registered' | 'lead') {
     const supabase = createAdminClient()
 
     try {
-        // 1. Delete User (this cascades to profiles usually)
-        const { error } = await supabase.auth.admin.deleteUser(studentId)
+        if (type === 'lead') {
+            // 1. Delete from enrollments table (Leads)
+            const { error: enrollError } = await supabase
+                .from('enrollments')
+                .delete()
+                .eq('id', studentId)
 
-        if (error) throw error
+            if (enrollError) throw enrollError
+        } else {
+            // 2. Registered Student - Handle dependencies that don't cascade
+            // Clear ten_hour_package_sessions first as it has NO ACTION delete rule
+            await supabase
+                .from('ten_hour_package_sessions')
+                .delete()
+                .eq('student_id', studentId)
 
-        // 2. Log Audit
+            // 3. Delete User (this cascades to profiles and most other tables)
+            const { error: authError } = await supabase.auth.admin.deleteUser(studentId)
+            if (authError) throw authError
+        }
+
+        // 4. Log Audit
         await logAuditAction(
             'delete_student',
-            { studentId },
-            `Student ID: ${studentId}`
+            { studentId, type },
+            `Terminated ${type}: ${studentId}`
         )
 
         revalidatePath('/admin/students')

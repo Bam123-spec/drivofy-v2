@@ -177,12 +177,12 @@ export default function AdminStudentsPage() {
         }
     }
 
-    const handleDeleteStudent = async (studentId: string) => {
+    const handleDeleteStudent = async (studentId: string, type: 'registered' | 'lead') => {
         if (!confirm("Are you sure you want to delete this student? This action cannot be undone.")) return
 
         try {
             setLoading(true)
-            const result = await deleteStudent(studentId)
+            const result = await deleteStudent(studentId, type)
 
             if (result.error) throw new Error(result.error)
 
@@ -431,16 +431,16 @@ export default function AdminStudentsPage() {
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end" className="w-48 rounded-xl border border-slate-200 shadow-xl p-1 bg-white">
                                                         <DropdownMenuLabel className="font-bold text-slate-900 text-[10px] uppercase tracking-wider mb-0.5 px-2">Management</DropdownMenuLabel>
-                                                        <DropdownMenuItem onClick={() => openEditDialog(student)} className="rounded-lg font-semibold py-2 cursor-pointer text-sm">
+                                                        <DropdownMenuItem onClick={() => openEditDialog(student)} className="rounded-lg font-semibold py-2 cursor-pointer text-sm text-slate-700 hover:text-slate-900">
                                                             <Pencil className="mr-2 h-3.5 w-3.5 text-blue-500" /> Edit Info
                                                         </DropdownMenuItem>
-                                                        <DropdownMenuItem className="rounded-lg font-semibold py-2 cursor-pointer text-sm">
+                                                        <DropdownMenuItem className="rounded-lg font-semibold py-2 cursor-pointer text-sm text-slate-700 hover:text-slate-900">
                                                             <Mail className="mr-2 h-3.5 w-3.5 text-slate-400" /> Message
                                                         </DropdownMenuItem>
                                                         <DropdownMenuSeparator className="bg-slate-100 my-1" />
                                                         <DropdownMenuItem
                                                             className="rounded-lg font-semibold py-2 text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer text-sm"
-                                                            onClick={() => handleDeleteStudent(student.id)}
+                                                            onClick={() => handleDeleteStudent(student.id, student.type)}
                                                         >
                                                             <Trash2 className="mr-2 h-3.5 w-3.5" /> Terminate
                                                         </DropdownMenuItem>
@@ -520,16 +520,16 @@ export default function AdminStudentsPage() {
                                                             </Button>
                                                         </DropdownMenuTrigger>
                                                         <DropdownMenuContent align="end" className="w-48 rounded-xl border border-slate-200 shadow-xl p-1 bg-white">
-                                                            <DropdownMenuItem onClick={() => openEditDialog(student)} className="rounded-lg font-semibold py-2 cursor-pointer text-sm">
+                                                            <DropdownMenuItem onClick={() => openEditDialog(student)} className="rounded-lg font-semibold py-2 cursor-pointer text-sm text-slate-700 hover:text-slate-900">
                                                                 <Pencil className="mr-2 h-3.5 w-3.5 text-blue-500" /> Edit Info
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem className="rounded-lg font-semibold py-2 cursor-pointer text-sm">
+                                                            <DropdownMenuItem className="rounded-lg font-semibold py-2 cursor-pointer text-sm text-slate-700 hover:text-slate-900">
                                                                 <Mail className="mr-2 h-3.5 w-3.5 text-slate-400" /> Message
                                                             </DropdownMenuItem>
                                                             <DropdownMenuSeparator className="bg-slate-100 my-1" />
                                                             <DropdownMenuItem
                                                                 className="rounded-lg font-semibold py-2 text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer text-sm"
-                                                                onClick={() => handleDeleteStudent(student.id)}
+                                                                onClick={() => handleDeleteStudent(student.id, student.type)}
                                                             >
                                                                 <Trash2 className="mr-2 h-3.5 w-3.5" /> Terminate
                                                             </DropdownMenuItem>
