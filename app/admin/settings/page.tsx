@@ -51,7 +51,6 @@ interface GeneralSettingsFormValues {
     notifyNewEnrollments: boolean
     notifyMonthlySummary: boolean
     primaryColor: string
-    primaryColor: string
     orgId: string | null
 }
 
@@ -66,7 +65,6 @@ const INITIAL_SETTINGS: GeneralSettingsFormValues = {
     notifyFailedPayments: true,
     notifyNewEnrollments: true,
     notifyMonthlySummary: false,
-    primaryColor: "blue",
     primaryColor: "blue",
     orgId: null
 }
@@ -102,13 +100,35 @@ function SettingsContent() {
             const { data: { user } } = await supabase.auth.getUser()
             if (!user) return
 
-            const { data: org, error } = await supabase
-                .from('organizations')
-                .select('*')
-                .eq('owner_user_id', user.id)
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('organization_id')
+                .eq('id', user.id)
                 .single()
 
-            if (error) throw error
+            let org: any = null
+
+            if (profile?.organization_id) {
+                const { data: existingOrg } = await supabase
+                    .from('organizations')
+                    .select('*')
+                    .eq('id', profile.organization_id)
+                    .maybeSingle()
+                org = existingOrg
+            }
+
+            if (!org) {
+                const { data: ownedOrg } = await supabase
+                    .from('organizations')
+                    .select('*')
+                    .eq('owner_user_id', user.id)
+                    .maybeSingle()
+                org = ownedOrg
+
+                if (org) {
+                    await supabase.from('profiles').update({ organization_id: org.id }).eq('id', user.id)
+                }
+            }
 
             if (org) {
                 setSettings({
@@ -122,7 +142,6 @@ function SettingsContent() {
                     notifyFailedPayments: org.notify_failed_payments ?? true,
                     notifyNewEnrollments: org.notify_new_enrollments ?? true,
                     notifyMonthlySummary: org.notify_monthly_summary ?? false,
-                    primaryColor: org.primary_color || "blue",
                     primaryColor: org.primary_color || "blue",
                     orgId: org.id
                 })

@@ -44,16 +44,43 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // Fetch or create organization
-        let { data: org, error: fetchError } = await supabase
-            .from('organizations')
-            .select('id, stripe_customer_id')
-            .eq('owner_user_id', user.id)
-            .maybeSingle();
+        // Fetch user profile to get organization_id
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('organization_id')
+            .eq('id', user.id)
+            .single();
 
-        if (fetchError) {
-            console.error('Error fetching organization:', fetchError);
-            throw new Error(`Database error: ${fetchError.message}`);
+        // Fetch or create organization
+        let org: any = null;
+
+        if (profile?.organization_id) {
+            const { data: existingOrg, error: fetchError } = await supabase
+                .from('organizations')
+                .select('id, stripe_customer_id')
+                .eq('id', profile.organization_id)
+                .maybeSingle();
+
+            if (fetchError) {
+                console.error('Error fetching organization:', fetchError);
+                throw new Error(`Database error: ${fetchError.message}`);
+            }
+            org = existingOrg;
+        }
+
+        // Fallback: If no org linked to profile, check if user owns an org
+        if (!org) {
+            const { data: ownedOrg } = await supabase
+                .from('organizations')
+                .select('id, stripe_customer_id')
+                .eq('owner_user_id', user.id)
+                .maybeSingle();
+            org = ownedOrg;
+
+            if (org) {
+                // Link this org to the profile for future use
+                await supabase.from('profiles').update({ organization_id: org.id }).eq('id', user.id);
+            }
         }
 
         if (!org) {
@@ -70,6 +97,9 @@ export async function POST(req: Request) {
             }
             if (!newOrg) throw new Error('Failed to create organization (no data returned)');
             org = newOrg;
+
+            // Link the new org to the profile
+            await supabase.from('profiles').update({ organization_id: org.id }).eq('id', user.id);
         }
 
         if (!org) throw new Error('Organization not found');

@@ -20,14 +20,24 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // 2. Get Stripe Customer ID
         let stripeCustomerId: string | undefined;
 
-        // Option A: Look up from Database (Organizations table)
+        // 2. Get user profile and organization_id
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('organization_id')
+            .eq('id', user.id)
+            .single();
+
+        if (!profile?.organization_id) {
+            return NextResponse.json({ error: 'User not associated with an organization' }, { status: 404 });
+        }
+
+        // 3. Get Stripe Customer ID from Organizations table
         const { data: org } = await supabase
             .from('organizations')
             .select('id, stripe_customer_id')
-            .eq('owner_user_id', user.id)
+            .eq('id', profile.organization_id)
             .single();
 
         if (org?.stripe_customer_id) {
@@ -50,7 +60,7 @@ export async function POST(request: Request) {
 
                     // Optional: Backfill DB if found
                     if (org && !org.stripe_customer_id) {
-                        await supabase.from('organizations').update({ stripe_customer_id: stripeCustomerId }).eq('owner_user_id', user.id);
+                        await supabase.from('organizations').update({ stripe_customer_id: stripeCustomerId }).eq('id', org.id);
                     }
                 }
             } catch (err) {

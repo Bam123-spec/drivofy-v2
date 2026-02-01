@@ -28,11 +28,35 @@ export default async function PaymentsSettingsPage({
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) redirect('/login')
 
-    let { data: org } = await supabase
-        .from('organizations')
-        .select('*')
-        .eq('owner_user_id', user.id)
-        .maybeSingle()
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('id', user.id)
+        .single()
+
+    let org: any = null
+
+    if (profile?.organization_id) {
+        const { data: existingOrg } = await supabase
+            .from('organizations')
+            .select('*')
+            .eq('id', profile.organization_id)
+            .maybeSingle()
+        org = existingOrg
+    }
+
+    if (!org) {
+        const { data: ownedOrg } = await supabase
+            .from('organizations')
+            .select('*')
+            .eq('owner_user_id', user.id)
+            .maybeSingle()
+        org = ownedOrg
+
+        if (org) {
+            await supabase.from('profiles').update({ organization_id: org.id }).eq('id', user.id)
+        }
+    }
 
     // Auto-create organization if missing for admin
     if (!org) {
@@ -58,6 +82,9 @@ export default async function PaymentsSettingsPage({
             )
         }
         org = newOrg
+
+        // Link the new org to the profile
+        await supabase.from('profiles').update({ organization_id: org.id }).eq('id', user.id)
     }
 
     // Determine Stripe status

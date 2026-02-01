@@ -48,11 +48,19 @@ export default async function BillingPage() {
         redirect('/login')
     }
 
-    const { data: org } = await supabase
-        .from('organizations')
-        .select('*')
-        .eq('owner_user_id', user.id)
-        .maybeSingle()
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('id', user.id)
+        .single()
+
+    const { data: org } = profile?.organization_id
+        ? await supabase
+            .from('organizations')
+            .select('*')
+            .eq('id', profile.organization_id)
+            .maybeSingle()
+        : { data: null }
 
     const isActive = org?.billing_status === 'active' || org?.billing_status === 'trialing'
     const isCanceled = org?.billing_status === 'canceled'

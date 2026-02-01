@@ -19,11 +19,22 @@ export async function POST(req: Request) {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+        // Fetch user profile to get organization_id
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('organization_id')
+            .eq('id', user.id)
+            .single();
+
+        if (!profile?.organization_id) {
+            return NextResponse.json({ error: 'User not associated with an organization' }, { status: 404 });
+        }
+
         // Fetch organization
         const { data: org, error: fetchError } = await supabase
             .from('organizations')
             .select('*')
-            .eq('owner_user_id', user.id)
+            .eq('id', profile.organization_id)
             .maybeSingle();
 
         if (fetchError || !org || !org.stripe_customer_id) {
