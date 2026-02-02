@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabaseClient"
 import {
     Card,
@@ -24,6 +24,7 @@ import {
 import { toast } from "sonner"
 import { Loader2, Save, Clock, Calendar, AlertCircle } from "lucide-react"
 import { parse, isAfter, isBefore } from "date-fns"
+import { SlotPreview } from "./SlotPreview"
 
 const DAYS = [
     { label: "Sun", value: 0 },
@@ -37,6 +38,7 @@ const DAYS = [
 
 export function InstructorScheduling({ instructor, onUpdate }: { instructor: any, onUpdate: () => void }) {
     const [loading, setLoading] = useState(false)
+    const [packageDuration, setPackageDuration] = useState<number>(120) // Default 2 hours
     const [formData, setFormData] = useState({
         working_days: instructor.working_days || [1, 2, 3, 4, 5],
         start_time: instructor.start_time || "7:00 AM",
@@ -47,6 +49,26 @@ export function InstructorScheduling({ instructor, onUpdate }: { instructor: any
         min_notice_hours: instructor.min_notice_hours || 12,
         is_active: instructor.is_active ?? true
     })
+
+    // Fetch service package duration for this instructor
+    useEffect(() => {
+        const fetchPackageDuration = async () => {
+            try {
+                const { data, error } = await supabase
+                    .from('service_packages')
+                    .select('duration_minutes')
+                    .eq('instructor_id', instructor.id)
+                    .single()
+
+                if (!error && data) {
+                    setPackageDuration(data.duration_minutes)
+                }
+            } catch (e) {
+                console.log('No service package found for instructor, using default')
+            }
+        }
+        fetchPackageDuration()
+    }, [instructor.id])
 
     const handleDayToggle = (day: number) => {
         setFormData(prev => ({
@@ -165,8 +187,8 @@ export function InstructorScheduling({ instructor, onUpdate }: { instructor: any
                                     key={day.value}
                                     onClick={() => handleDayToggle(day.value)}
                                     className={`flex items-center gap-2 px-4 py-3 rounded-xl border-2 transition-all cursor-pointer select-none ${formData.working_days.includes(day.value)
-                                            ? "border-blue-600 bg-blue-50 text-blue-700 shadow-sm"
-                                            : "border-slate-100 bg-slate-50 text-slate-400 hover:border-slate-200"
+                                        ? "border-blue-600 bg-blue-50 text-blue-700 shadow-sm"
+                                        : "border-slate-100 bg-slate-50 text-slate-400 hover:border-slate-200"
                                         }`}
                                 >
                                     <Checkbox
@@ -269,6 +291,16 @@ export function InstructorScheduling({ instructor, onUpdate }: { instructor: any
                             Times should be in 12-hour format (e.g., 9:00 AM). Changes here will be applied to the next available slots generated for students.
                         </p>
                     </div>
+
+                    {/* Slot Preview Panel */}
+                    <SlotPreview
+                        startTime={formData.start_time}
+                        endTime={formData.end_time}
+                        slotIntervalMinutes={formData.slot_minutes}
+                        packageDurationMinutes={packageDuration}
+                        breakStart={formData.break_start}
+                        breakEnd={formData.break_end}
+                    />
                 </CardContent>
                 <div className="p-6 bg-slate-50/50 border-t border-slate-100 flex justify-end">
                     <Button
