@@ -229,9 +229,7 @@ export function generateInvitationEmail(userName: string, inviteLink: string, ro
     };
 }
 
-export function generateClassEnrollmentEmail(userName: string, className: string, startDate: string) {
-    const dashboardLink = 'https://portifol.com/login';
-
+export function generateClassEnrollmentEmail(userName: string, className: string, startDate: string, recoveryLink: string) {
     return {
         subject: `Enrolled in ${className} - Selam Driving School`,
         htmlContent: `
@@ -257,14 +255,14 @@ export function generateClassEnrollmentEmail(userName: string, className: string
                     </div>
 
                     <div style="text-align: center; margin-bottom: 32px;">
-                        <a href="${dashboardLink}" style="display: inline-block; background: #2563eb; color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 16px; transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);">
+                        <a href="${recoveryLink}" style="display: inline-block; background: #2563eb; color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 16px; transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);">
                             Access Student Portal
                         </a>
                     </div>
 
                     <div style="border-top: 1px solid #f1f5f9; pt: 24px;">
                         <p style="margin: 0; font-size: 14px; color: #64748b;">
-                            Please log in to your portal to view the full schedule and session details.
+                            Click the button above to set your password and access your student portal. You'll be able to view your full class schedule and session details.
                         </p>
                     </div>
                 </div>

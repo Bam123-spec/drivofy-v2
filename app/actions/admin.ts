@@ -110,7 +110,7 @@ export async function enrollStudent(classId: string, studentId: string) {
 
     console.log("Enrollment successful")
 
-    // 4. Send Email Notification to Student
+    // 4. Send Email Notification to Student with Password Recovery Link
     try {
         const { data: student } = await supabase
             .from('profiles')
@@ -125,17 +125,35 @@ export async function enrollStudent(classId: string, studentId: string) {
             .single()
 
         if (student?.email && classData) {
+            // Generate recovery link using Supabase Admin API
+            const { data: recoveryData, error: recoveryError } = await supabase.auth.admin.generateLink({
+                type: 'recovery',
+                email: student.email,
+                options: {
+                    redirectTo: 'https://portifol.com/student/reset-password?next=/student/dashboard'
+                }
+            })
+
+            if (recoveryError) {
+                console.error('Failed to generate recovery link:', recoveryError)
+                // Fallback to basic email without link if recovery fails
+                throw recoveryError
+            }
+
+            const recoveryLink = recoveryData.properties.action_link
+
             const { subject, htmlContent } = generateClassEnrollmentEmail(
                 student.full_name,
                 classData.name,
-                new Date(classData.start_date).toLocaleDateString()
+                new Date(classData.start_date).toLocaleDateString(),
+                recoveryLink
             )
             await sendTransactionalEmail({
                 to: [{ email: student.email, name: student.full_name }],
                 subject,
                 htmlContent
             })
-            console.log("✅ Enrollment confirmation email sent to student")
+            console.log("✅ Enrollment confirmation email sent to student with recovery link")
         }
     } catch (e) {
         console.error("Failed to send enrollment email:", e)
