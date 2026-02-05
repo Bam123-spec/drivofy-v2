@@ -30,6 +30,7 @@ import { SessionDrawer } from "./components/SessionDrawer"
 import { ScheduleSessionModal } from "./components/ScheduleSessionModal"
 import { DrivingServicesTable } from "./components/DrivingServicesTable"
 import { ServiceAvailabilityDialog } from "./components/ServiceAvailabilityDialog"
+import { CreateDrivingServiceDialog } from "./components/CreateDrivingServiceDialog"
 
 export default function AdminDrivingPage() {
     const [activeTab, setActiveTab] = useState<'services' | 'sessions'>('services')
@@ -53,6 +54,7 @@ export default function AdminDrivingPage() {
     const [selectedService, setSelectedService] = useState<any | null>(null)
     const [selectedPlanKey, setSelectedPlanKey] = useState<string | undefined>(undefined)
     const [showAvailability, setShowAvailability] = useState(false)
+    const [showCreateService, setShowCreateService] = useState(false)
 
     useEffect(() => {
         fetchInitialData()
@@ -80,6 +82,15 @@ export default function AdminDrivingPage() {
             toast.error("Failed to load initial data")
         } finally {
             setLoading(false)
+        }
+    }
+
+    const fetchServices = async () => {
+        try {
+            const svc = await getDrivingServices()
+            setServices(svc || [])
+        } catch (error) {
+            toast.error("Failed to load services")
         }
     }
 
@@ -148,6 +159,14 @@ export default function AdminDrivingPage() {
                         >
                             <Plus className="mr-2 h-4 w-4" />
                             Add People
+                        </Button>
+                        <Button
+                            variant="outline"
+                            className="rounded-full"
+                            onClick={() => setShowCreateService(true)}
+                        >
+                            <Plus className="mr-2 h-4 w-4" />
+                            Add New Service
                         </Button>
                     </div>
                 </div>
@@ -341,6 +360,13 @@ export default function AdminDrivingPage() {
                 open={showAvailability}
                 onClose={() => setShowAvailability(false)}
                 service={selectedService}
+            />
+
+            <CreateDrivingServiceDialog
+                open={showCreateService}
+                onClose={() => setShowCreateService(false)}
+                instructors={instructors}
+                onSuccess={fetchServices}
             />
         </div>
     )

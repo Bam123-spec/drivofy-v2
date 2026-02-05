@@ -73,6 +73,27 @@ export async function getDrivingServices() {
     return data
 }
 
+export async function createDrivingService(data: {
+    display_name: string
+    plan_key: string
+    instructor_id: string
+    duration_minutes: number
+}) {
+    const { data: created, error } = await supabaseService
+        .from('service_packages')
+        .insert([{
+            display_name: data.display_name,
+            plan_key: data.plan_key,
+            instructor_id: data.instructor_id,
+            duration_minutes: data.duration_minutes
+        }])
+        .select('*')
+        .single()
+
+    if (error) throw new Error(error.message)
+    return created
+}
+
 export async function createDrivingSession(data: {
     studentId: string,
     instructorId: string,
