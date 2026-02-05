@@ -5,13 +5,18 @@ import { getDashboardStats } from "@/app/actions/adminDashboard"
 import {
     Loader2,
     Users,
+    BookOpen,
+    Car,
+    TrendingUp,
     Plus,
     Calendar,
+    ArrowUpRight,
     MoreHorizontal,
     Clock,
     CheckCircle2,
     XCircle,
     AlertCircle,
+    DollarSign,
     Activity
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -25,12 +30,34 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import {
+    AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+    BarChart, Bar, PieChart, Pie, Cell, Legend
+} from 'recharts';
 import { toast } from "sonner"
 
+const COLORS = ['#8b5cf6', '#10b981', '#f43f5e', '#f59e0b'];
+
 export default function AdminDashboard() {
+    const [stats, setStats] = useState({
+        instructors: { value: 0, trend: 0 },
+        activeClasses: { value: 0, trend: 0 },
+        todaySessions: { value: 0, trend: 0 },
+        totalStudents: { value: 0, trend: 0 },
+        revenue: { value: 0, trend: 0 }
+    })
     const [todaysSessions, setTodaysSessions] = useState<any[]>([])
     const [recentActivity, setRecentActivity] = useState<any[]>([])
+    const [distributionData, setDistributionData] = useState<any[]>([])
+    const [growthData, setGrowthData] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
@@ -42,8 +69,11 @@ export default function AdminDashboard() {
             const data = await getDashboardStats()
 
             if (data) {
+                setStats(data.stats)
                 setTodaysSessions(data.todaysSessions)
                 setRecentActivity(data.recentActivity)
+                setDistributionData(data.distributionData)
+                setGrowthData(data.growthData)
             } else {
                 toast.error("Failed to load dashboard data")
             }
@@ -69,14 +99,154 @@ export default function AdminDashboard() {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Dashboard</h1>
-                    <p className="text-slate-500 font-medium text-base mt-1">Operations overview and today’s schedule.</p>
+                    <p className="text-slate-500 font-medium text-base mt-1">Overview of your driving school operations.</p>
                 </div>
                 <div className="flex items-center gap-3">
+                    <Button variant="outline" className="hidden sm:flex bg-white hover:bg-slate-50 h-10 px-4 rounded-xl font-semibold border-slate-200">
+                        <Calendar className="mr-2 h-4 w-4 text-slate-400" />
+                        Last 7 Days
+                    </Button>
                     <Button className="h-10 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-sm transition-all">
                         <Plus className="mr-2 h-4 w-4" />
                         New Booking
                     </Button>
                 </div>
+            </div>
+
+            {/* KPI Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <KpiCard
+                    title="Total Students"
+                    value={stats.totalStudents.value}
+                    icon={Users}
+                    trend={`${stats.totalStudents.trend > 0 ? '+' : ''}${stats.totalStudents.trend}%`}
+                    trendUp={stats.totalStudents.trend >= 0}
+                    color="blue"
+                    description="Active learners"
+                />
+                <KpiCard
+                    title="Active Instructors"
+                    value={stats.instructors.value}
+                    icon={Car}
+                    trend={`${stats.instructors.trend > 0 ? '+' : ''}${stats.instructors.trend}%`}
+                    trendUp={stats.instructors.trend >= 0}
+                    color="purple"
+                    description="Currently teaching"
+                />
+                <KpiCard
+                    title="Active Classes"
+                    value={stats.activeClasses.value}
+                    icon={BookOpen}
+                    trend={`${stats.activeClasses.trend > 0 ? '+' : ''}${stats.activeClasses.trend}%`}
+                    trendUp={stats.activeClasses.trend >= 0}
+                    color="indigo"
+                    description="Open for enrollment"
+                />
+                <KpiCard
+                    title="Sessions Today"
+                    value={stats.todaySessions.value}
+                    icon={Clock}
+                    trend="On Track"
+                    trendUp={true}
+                    color="amber"
+                    description="Scheduled drives"
+                />
+            </div>
+
+            {/* Charts Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Growth Chart */}
+                <Card className="lg:col-span-2 border border-slate-200 shadow-sm rounded-2xl bg-white overflow-hidden">
+                    <CardHeader className="bg-white p-6 border-b border-slate-50">
+                        <CardTitle className="text-lg font-bold text-slate-900">Enrollment Growth</CardTitle>
+                        <CardDescription className="text-slate-500 font-medium">New student enrollments over the last 6 months</CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-6">
+                        <div className="h-[300px] w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={growthData}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                    <XAxis
+                                        dataKey="name"
+                                        axisLine={false}
+                                        tickLine={false}
+                                        tick={{ fontSize: 11, fill: '#94a3b8', fontWeight: 500 }}
+                                        dy={10}
+                                    />
+                                    <YAxis
+                                        axisLine={false}
+                                        tickLine={false}
+                                        tick={{ fontSize: 11, fill: '#94a3b8', fontWeight: 500 }}
+                                    />
+                                    <Tooltip
+                                        cursor={{ fill: '#f8fafc' }}
+                                        contentStyle={{
+                                            borderRadius: '12px',
+                                            border: '1px solid #e2e8f0',
+                                            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.05)',
+                                            backgroundColor: '#fff',
+                                            color: '#1e293b'
+                                        }}
+                                    />
+                                    <Bar
+                                        dataKey="students"
+                                        fill="#2563eb"
+                                        radius={[4, 4, 0, 0]}
+                                        barSize={32}
+                                    />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Distribution Chart */}
+                <Card className="border border-slate-200 shadow-sm rounded-2xl bg-white overflow-hidden">
+                    <CardHeader className="bg-white p-6 border-b border-slate-50">
+                        <CardTitle className="text-lg font-bold text-slate-900">Student Status</CardTitle>
+                        <CardDescription className="text-slate-500 font-medium">Current enrollment distribution</CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-6">
+                        <div className="h-[300px] w-full relative">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie
+                                        data={distributionData}
+                                        cx="50%"
+                                        cy="50%"
+                                        innerRadius={65}
+                                        outerRadius={85}
+                                        paddingAngle={4}
+                                        dataKey="value"
+                                    >
+                                        {distributionData.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip
+                                        contentStyle={{
+                                            borderRadius: '12px',
+                                            border: '1px solid #e2e8f0',
+                                            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.05)',
+                                            backgroundColor: '#fff'
+                                        }}
+                                    />
+                                    <Legend
+                                        verticalAlign="bottom"
+                                        height={36}
+                                        iconType="circle"
+                                        wrapperStyle={{ fontSize: '11px', fontWeight: 600, color: '#64748b' }}
+                                    />
+                                </PieChart>
+                            </ResponsiveContainer>
+                            {/* Center Text Overlay */}
+                            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none pb-8">
+                                <span className="text-2xl font-bold text-slate-900">{stats.totalStudents.value}</span>
+                                <span className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Total</span>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
             </div>
 
             {/* Bottom Row: Schedule & Activity */}
@@ -213,6 +383,39 @@ export default function AdminDashboard() {
                 </div>
             </div>
         </div>
+    )
+}
+
+// Helper Components
+
+function KpiCard({ title, value, icon: Icon, trend, trendUp, color, description }: any) {
+    const colorStyles: any = {
+        blue: "bg-blue-50 text-blue-600",
+        indigo: "bg-indigo-50 text-indigo-600",
+        green: "bg-emerald-50 text-emerald-600",
+        purple: "bg-indigo-50 text-indigo-600", // Standardizing
+        amber: "bg-amber-50 text-amber-600",
+    }
+
+    return (
+        <Card className="border border-slate-200 shadow-sm rounded-2xl bg-white overflow-hidden group hover:shadow-md transition-shadow">
+            <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                    <div className={`p-3 rounded-xl ${colorStyles[color] || colorStyles.blue}`}>
+                        <Icon className="h-5 w-5" />
+                    </div>
+                    <div className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${trendUp ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
+                        {trendUp ? <TrendingUp className="h-3 w-3" /> : <TrendingUp className="h-3 w-3 rotate-180" />}
+                        {trend}
+                    </div>
+                </div>
+                <div>
+                    <h3 className="text-2xl font-bold text-slate-900 tracking-tight">{value}</h3>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{title}</p>
+                    {description && <p className="text-[11px] text-slate-400 font-medium mt-1 truncate">{description}</p>}
+                </div>
+            </CardContent>
+        </Card>
     )
 }
 

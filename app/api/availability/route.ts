@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { generateAvailableSlots } from '@/lib/scheduling/availability';
-import { parseISO, format, startOfDay, endOfDay } from 'date-fns';
+import { parseISO, format } from 'date-fns';
 import { withCors, handleOptions } from '@/lib/cors';
 
 export async function OPTIONS() {
@@ -30,8 +30,10 @@ export async function GET(request: Request) {
         if (planKey === 'btw') {
             let studentId = studentIdParam;
 
-            // If no student_id param, try to get from session
-            if (!studentId) {
+            // If no student_id param, try to get from session ONLY IF not in an admin-like context (preview=true)
+            const isAvailabilityPreview = searchParams.get('preview') === 'true';
+
+            if (!studentId && !isAvailabilityPreview) {
                 const cookieStore = await cookies();
                 const supabaseClient = createClient(cookieStore);
                 const { data: { user } } = await supabaseClient.auth.getUser();
@@ -41,26 +43,28 @@ export async function GET(request: Request) {
             if (studentId) {
                 const { data: profile } = await supabase
                     .from('profiles')
-                    .select('btw_cooldown_until, driving_balance_sessions')
+                    .select('btw_cooldown_until, driving_balance_sessions, role')
                     .eq('id', studentId)
                     .single();
 
-                // Check for sessions balance
-                if (profile && (profile.driving_balance_sessions || 0) <= 0) {
-                    return withCors(NextResponse.json({
-                        slots: [],
-                        reason: "no_credits"
-                    }));
-                }
-
-                if (profile?.btw_cooldown_until) {
-                    const cooldownUntil = new Date(profile.btw_cooldown_until);
-                    if (cooldownUntil > new Date()) {
+                // Skip credit/cooldown checks for admins or preview mode
+                if (profile && profile.role !== 'admin' && !isAvailabilityPreview) {
+                    if ((profile.driving_balance_sessions || 0) <= 0) {
                         return withCors(NextResponse.json({
                             slots: [],
-                            reason: "cooldown",
-                            next_available_at: profile.btw_cooldown_until
+                            reason: "no_credits"
                         }));
+                    }
+
+                    if (profile.btw_cooldown_until) {
+                        const cooldownUntil = new Date(profile.btw_cooldown_until);
+                        if (cooldownUntil > new Date()) {
+                            return withCors(NextResponse.json({
+                                slots: [],
+                                reason: "cooldown",
+                                next_available_at: profile.btw_cooldown_until
+                            }));
+                        }
                     }
                 }
             }
@@ -69,117 +73,123 @@ export async function GET(request: Request) {
         // 2. Look up the service_package row by plan_key
         const { data: servicePackage, error: spError } = await supabase
             .from('service_packages')
-            .select('instructor_id, duration_minutes, display_name')
+            .select(`
+                id,
+                instructor_id,
+                duration_minutes,
+                display_name,
+                service_package_instructors (
+                    instructor_id,
+                    instructors (
+                        id,
+                        full_name
+                    )
+                )
+            `)
             .eq('plan_key', planKey)
             .single();
 
         if (spError || !servicePackage) {
-            console.error('[API] Service Package Error:', spError);
             return withCors(NextResponse.json(
                 { error: 'Service package not found' },
                 { status: 404 }
             ));
         }
 
-        const { instructor_id, duration_minutes } = servicePackage;
+        const durationMinutes = servicePackage.duration_minutes;
 
-        // 2. Load instructor schedule rules
-        const { data: instructor, error: instError } = await supabase
-            .from('instructors')
-            .select('*')
-            .eq('id', instructor_id)
-            .single();
+        // Get instructor IDs from join table
+        const instructorIds = (servicePackage.service_package_instructors || [])
+            .map((entry: any) => entry.instructor_id)
+            .filter(Boolean);
 
-        if (instError || !instructor) {
-            console.error('[API] Instructor Error:', instError);
-            return withCors(NextResponse.json(
-                { error: 'Instructor not found' },
-                { status: 404 }
-            ));
+        // Fallback to legacy instructor_id if join table is empty
+        if (instructorIds.length === 0 && servicePackage.instructor_id) {
+            instructorIds.push(servicePackage.instructor_id);
         }
 
-        // 3. Query driving_sessions for that instructor_id on that date
-        // We treat only "scheduled" as blocking as per instructions.
-        // Explanation: "cancelled" or "no_show" indicate the time slot is freed up.
-        // "completed" sessions are in the past and won't affect future bookings for today,
-        // but we technically only care about "scheduled" for active blockers.
-        const { data: sessions, error: sessionError } = await supabase
-            .from('driving_sessions')
-            .select('start_time, end_time')
-            .eq('instructor_id', instructor_id)
-            .eq('status', 'scheduled')
-            // Note: In a real app we'd filter by time range too:
-            // .gte('start_time', `${date}T00:00:00Z`)
-            // .lte('start_time', `${date}T23:59:59Z`)
-            // But for small datasets eq('status', 'scheduled') + local filtering is fine.
-            // Let's at least filter by date prefix if possible or just filter in JS.
-            .filter('start_time', 'like', `${date}%`);
-
-        if (sessionError) {
-            console.error('[API] Sessions Error:', sessionError);
-            return withCors(NextResponse.json(
-                { error: 'Failed to fetch sessions' },
-                { status: 500 }
-            ));
+        if (instructorIds.length === 0) {
+            return withCors(NextResponse.json({ slots: [] }));
         }
 
-        // 3b. Query instructor_availability for booked/blocked slots
-        const { data: bookedSlots } = await supabase
-            .from('instructor_availability')
-            .select('start_time, end_time')
-            .eq('instructor_id', instructor_id)
-            .eq('status', 'booked')
-            .filter('start_time', 'like', `${date}%`);
+        const slotResults: { start_time: string; instructor_id: string; instructor_name?: string }[] = [];
+        const isPreview = searchParams.get('preview') === 'true';
 
-        // 4. Merge all blocked times
-        const existingBookings = [
-            ...(sessions || []).map(s => ({
+        for (const instructorId of instructorIds) {
+            const { data: instructor, error: instError } = await supabase
+                .from('instructors')
+                .select('*')
+                .eq('id', instructorId)
+                .eq('status', 'active')
+                .single();
+
+            if (instError || !instructor) {
+                continue;
+            }
+
+            // --- WORKING DAYS CHECK ---
+            const [y, m, dayNum] = date.split('-').map(Number);
+            const dayOfWeek = new Date(y, m - 1, dayNum).getDay(); // 0 is Sunday
+
+            if (!instructor.working_days?.includes(dayOfWeek)) {
+                continue;
+            }
+
+            const startOfDayStr = `${date}T00:00:00Z`;
+            const endOfDayStr = `${date}T23:59:59Z`;
+
+            const { data: sessions, error: sessionError } = await supabase
+                .from('driving_sessions')
+                .select('start_time, end_time')
+                .eq('instructor_id', instructorId)
+                .eq('status', 'scheduled')
+                .gte('start_time', startOfDayStr)
+                .lte('start_time', endOfDayStr);
+
+            if (sessionError) {
+                console.error('[API] Sessions Fetch Error:', sessionError);
+                continue;
+            }
+
+            const existingBookings = (sessions || []).map(s => ({
                 start: s.start_time,
                 end: s.end_time
-            })),
-            ...(bookedSlots || []).map(s => ({
-                start: s.start_time,
-                end: s.end_time
-            }))
-        ];
+            }));
 
-        // 5. Call the slot generator
-        const slots = generateAvailableSlots({
-            date,
-            timezone: 'America/New_York',
-            startTime: instructor.start_time || '7:00 AM',
-            endTime: instructor.end_time || '7:00 PM',
-            breakStart: instructor.break_start,
-            breakEnd: instructor.break_end,
-            slotMinutes: instructor.slot_minutes || 60,
-            durationMinutes: duration_minutes,
-            minNoticeHours: instructor.min_notice_hours || 12,
-            existingBookings
-        });
+            const slots = generateAvailableSlots({
+                date,
+                timezone: 'America/New_York',
+                startTime: (instructor.start_time || '7:00 AM').trim(),
+                endTime: (instructor.end_time || '7:00 PM').trim(),
+                breakStart: instructor.break_start?.trim(),
+                breakEnd: instructor.break_end?.trim(),
+                slotMinutes: instructor.slot_minutes || 60,
+                durationMinutes,
+                minNoticeHours: isPreview ? 0 : (instructor.min_notice_hours || 12),
+                existingBookings
+            });
 
-        // 6. Return slots as ISO strings in America/New_York offset
-        // The utility returns ["9:00 AM", ...]. We need to convert back to ISO.
-        const isoSlots = slots.map(timeStr => {
-            // Create a date string that parseISO or equivalent can handle
-            // We know it's America/New_York. 
-            // For simplicity, we can create the ISO string by combining date + 24h time + offset.
-            const [time, period] = timeStr.split(' ');
-            let [hours, minutes] = time.split(':').map(Number);
-            if (period === 'PM' && hours < 12) hours += 12;
-            if (period === 'AM' && hours === 12) hours = 0;
+            const isoSlots = slots.map(timeStr => {
+                const [time, period] = timeStr.split(' ');
+                let [hours, minutes] = time.split(':').map(Number);
+                if (period === 'PM' && hours < 12) hours += 12;
+                if (period === 'AM' && hours === 12) hours = 0;
 
-            const pad = (n: number) => n.toString().padStart(2, '0');
-            // America/New_York is usually -05:00 or -04:00. 
-            // A more robust way would be to use a library or let the client handle it,
-            // but the prompt asks for ISO strings in America/New_York offset.
-            // Standard offset for NY is -05:00 (EST) or -04:00 (EDT).
-            // Since we don't have a TZ library, we'll use a simplified ISO format 
-            // that includes the time but might lack the exact DST-corrected offset.
-            // However, it's better to just return the full timestamp.
-            return `${date}T${pad(hours)}:${pad(minutes)}:00-05:00`;
-        });
+                const pad = (n: number) => n.toString().padStart(2, '0');
+                // Constructing a localized ISO string (-05:00 for Eastern Time)
+                return `${date}T${pad(hours)}:${pad(minutes)}:00-05:00`;
+            });
 
-        return withCors(NextResponse.json({ slots: isoSlots }));
+            isoSlots.forEach((start_time) => {
+                slotResults.push({
+                    start_time,
+                    instructor_id: instructorId,
+                    instructor_name: instructor.full_name
+                });
+            });
+        }
+
+        return withCors(NextResponse.json({ slots: slotResults }));
 
     } catch (error: any) {
         console.error('[API] Availability Error:', error);

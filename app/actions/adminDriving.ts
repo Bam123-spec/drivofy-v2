@@ -67,7 +67,16 @@ export async function getServicePackages() {
 export async function getDrivingServices() {
     const { data, error } = await supabaseService
         .from('service_packages')
-        .select('*, instructors(id, full_name)')
+        .select(`
+            *,
+            service_package_instructors (
+                instructor_id,
+                instructors (
+                    id,
+                    full_name
+                )
+            )
+        `)
         .order('display_name')
     if (error) throw new Error(error.message)
     return data
@@ -76,22 +85,149 @@ export async function getDrivingServices() {
 export async function createDrivingService(data: {
     display_name: string
     plan_key: string
-    instructor_id: string
+    instructor_ids: string[]
     duration_minutes: number
+    price?: number | null
+    price_cents?: number | null
+    category?: string
+    credits_granted?: number
 }) {
+    const payload: Record<string, any> = {
+        display_name: data.display_name,
+        plan_key: data.plan_key,
+        duration_minutes: data.duration_minutes,
+        category: data.category || 'service',
+        credits_granted: data.credits_granted || 0
+    }
+
+    if (data.price !== undefined) payload.price = data.price
+    if (data.price_cents !== undefined) payload.price_cents = data.price_cents
+
     const { data: created, error } = await supabaseService
         .from('service_packages')
-        .insert([{
-            display_name: data.display_name,
-            plan_key: data.plan_key,
-            instructor_id: data.instructor_id,
-            duration_minutes: data.duration_minutes
-        }])
+        .insert([payload])
         .select('*')
         .single()
 
     if (error) throw new Error(error.message)
+    if (data.instructor_ids?.length) {
+        const { error: linkError } = await supabaseService
+            .from('service_package_instructors')
+            .insert(data.instructor_ids.map((instructorId) => ({
+                service_package_id: created.id,
+                instructor_id: instructorId
+            })))
+        if (linkError) throw new Error(linkError.message)
+    }
     return created
+}
+
+export async function updateDrivingService(data: {
+    id: string
+    display_name: string
+    plan_key: string
+    instructor_ids: string[]
+    duration_minutes: number
+    price?: number | null
+    price_cents?: number | null
+    category?: string
+    credits_granted?: number
+}) {
+    const payload: Record<string, any> = {
+        display_name: data.display_name,
+        plan_key: data.plan_key,
+        duration_minutes: data.duration_minutes,
+        category: data.category,
+        credits_granted: data.credits_granted
+    }
+
+    if (data.price !== undefined) payload.price = data.price
+    if (data.price_cents !== undefined) payload.price_cents = data.price_cents
+
+    const { data: updated, error } = await supabaseService
+        .from('service_packages')
+        .update(payload)
+        .eq('id', data.id)
+        .select('*')
+        .single()
+
+    if (error) throw new Error(error.message)
+
+    await supabaseService
+        .from('service_package_instructors')
+        .delete()
+        .eq('service_package_id', data.id)
+
+    if (data.instructor_ids?.length) {
+        const { error: linkError } = await supabaseService
+            .from('service_package_instructors')
+            .insert(data.instructor_ids.map((instructorId) => ({
+                service_package_id: data.id,
+                instructor_id: instructorId
+            })))
+        if (linkError) throw new Error(linkError.message)
+    }
+    return updated
+}
+
+export async function grantPackageCredits(studentId: string, packageId: string) {
+    try {
+        // 1. Fetch Package Credits
+        const { data: pkg, error: pkgError } = await supabaseService
+            .from('service_packages')
+            .select('credits_granted, display_name')
+            .eq('id', packageId)
+            .single()
+
+        if (pkgError || !pkg) throw new Error("Package not found")
+
+        const creditsToGrant = pkg.credits_granted || 0
+        if (creditsToGrant <= 0) throw new Error("This package grants no sessions")
+
+        // 2. Fetch Student Profile
+        const { data: student, error: studentError } = await supabaseService
+            .from('profiles')
+            .select('driving_balance_sessions, full_name')
+            .eq('id', studentId)
+            .single()
+
+        if (studentError || !student) throw new Error("Student not found")
+
+        // 3. Increment Credits
+        const newBalance = (student.driving_balance_sessions || 0) + creditsToGrant
+
+        const { error: updateError } = await supabaseService
+            .from('profiles')
+            .update({
+                driving_balance_sessions: newBalance,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', studentId)
+
+        if (updateError) throw updateError
+
+        // 4. Log Audit
+        await supabaseService.from('audit_logs').insert([{
+            action: 'grant_credits',
+            entity_type: 'student',
+            entity_id: studentId,
+            metadata: {
+                package_id: packageId,
+                package_name: pkg.display_name,
+                credits_granted: creditsToGrant,
+                previous_balance: student.driving_balance_sessions,
+                new_balance: newBalance
+            },
+            message: `Granted ${creditsToGrant} sessions to ${student.full_name} via ${pkg.display_name}`
+        }])
+
+        revalidatePath('/admin/driving')
+        revalidatePath('/admin/students')
+        return { success: true, granted: creditsToGrant }
+    } catch (error: any) {
+        console.error("Grant Credits Error:", error)
+        return { success: false, error: error.message }
+    }
 }
 
 export async function createDrivingSession(data: {

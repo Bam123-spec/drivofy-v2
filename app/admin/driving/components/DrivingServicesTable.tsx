@@ -1,6 +1,6 @@
 "use client"
 
-import { MoreHorizontal, Calendar, Clipboard, Users, UserRound, Clock } from "lucide-react"
+import { MoreHorizontal, Calendar, Clipboard, Users, UserRound, Clock, Settings } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
     Table,
@@ -20,11 +20,13 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
+import Link from "next/link"
 
 interface DrivingServicesTableProps {
     services: any[]
     onShowAvailability: (service: any) => void
     onAddStudent: (service: any) => void
+    onEditService: (service: any) => void
 }
 
 const formatPrice = (service: any) => {
@@ -33,7 +35,7 @@ const formatPrice = (service: any) => {
     return "—"
 }
 
-export function DrivingServicesTable({ services, onShowAvailability, onAddStudent }: DrivingServicesTableProps) {
+export function DrivingServicesTable({ services, onShowAvailability, onAddStudent, onEditService }: DrivingServicesTableProps) {
     const handleCopyBaseLink = async (planKey?: string) => {
         if (!planKey) {
             toast.error("Missing plan key for this service")
@@ -71,17 +73,30 @@ export function DrivingServicesTable({ services, onShowAvailability, onAddStuden
                                             <Calendar className="h-4 w-4" />
                                         </div>
                                         <div className="flex flex-col">
-                                            <span className="font-semibold text-slate-900 text-sm">
-                                                {service.display_name || service.name || "Untitled Service"}
-                                            </span>
-                                            <div className="flex items-center gap-2 text-xs text-slate-500">
-                                                <Badge variant="outline" className="text-[10px] font-semibold uppercase tracking-wider">
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-semibold text-slate-900 text-sm">
+                                                    {service.display_name || service.name || "Untitled Service"}
+                                                </span>
+                                                <Badge
+                                                    variant={service.category === 'package' ? 'default' : 'secondary'}
+                                                    className={`text-[9px] font-bold uppercase px-1.5 py-0 h-4 border-0 ${service.category === 'package' ? 'bg-orange-500 hover:bg-orange-600' : 'bg-slate-100 text-slate-500 hover:bg-slate-100'}`}
+                                                >
+                                                    {service.category === 'package' ? 'Package' : 'Service'}
+                                                </Badge>
+                                            </div>
+                                            <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
+                                                <Badge variant="outline" className="text-[10px] font-semibold uppercase tracking-wider h-4">
                                                     {service.plan_key || service.slug || "service"}
                                                 </Badge>
-                                                {service.instructors?.full_name && (
+                                                {service.credits_granted > 0 && (
+                                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-orange-600">
+                                                        {service.credits_granted} sessions
+                                                    </span>
+                                                )}
+                                                {service.service_package_instructors?.length > 0 && (
                                                     <span className="inline-flex items-center gap-1">
                                                         <UserRound className="h-3 w-3" />
-                                                        {service.instructors.full_name}
+                                                        {service.service_package_instructors.length}
                                                     </span>
                                                 )}
                                             </div>
@@ -123,8 +138,33 @@ export function DrivingServicesTable({ services, onShowAvailability, onAddStuden
                                                 onClick={() => onAddStudent(service)}
                                             >
                                                 <Users className="h-4 w-4 mr-2" />
-                                                Add Student
+                                                {service.category === 'package' ? 'Enroll Student' : 'Add Student'}
                                             </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                                className="rounded-lg px-3 py-2 text-sm font-medium cursor-pointer"
+                                                onClick={() => onEditService(service)}
+                                            >
+                                                <Settings className="h-4 w-4 mr-2" />
+                                                Edit Service
+                                            </DropdownMenuItem>
+                                            {service?.service_package_instructors?.length ? (
+                                                service.service_package_instructors.map((entry: any) => (
+                                                    <DropdownMenuItem
+                                                        key={entry.instructor_id}
+                                                        asChild
+                                                        className="rounded-lg px-3 py-2 text-sm font-medium cursor-pointer"
+                                                    >
+                                                        <Link href={`/admin/instructors/${entry.instructor_id}`}>
+                                                            <UserRound className="h-4 w-4 mr-2" />
+                                                            Manage {entry.instructors?.full_name || "Instructor"}
+                                                        </Link>
+                                                    </DropdownMenuItem>
+                                                ))
+                                            ) : (
+                                                <DropdownMenuItem className="rounded-lg px-3 py-2 text-sm font-medium text-slate-400">
+                                                    No instructors assigned
+                                                </DropdownMenuItem>
+                                            )}
                                             <DropdownMenuItem
                                                 className="rounded-lg px-3 py-2 text-sm font-medium cursor-pointer"
                                                 onClick={() => handleCopyBaseLink(service.plan_key)}

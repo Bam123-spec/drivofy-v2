@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
-import { createDrivingService } from "@/app/actions/adminDriving"
+import { updateDrivingService } from "@/app/actions/adminDriving"
 import { toast } from "sonner"
 import {
     Select,
@@ -16,12 +16,12 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 
-interface CreateDrivingServiceDialogProps {
+interface EditDrivingServiceDialogProps {
     open: boolean
     onClose: () => void
     instructors: any[]
+    service: any | null
     onSuccess: () => void
-    usesPriceCents?: boolean
 }
 
 const slugify = (value: string) =>
@@ -31,13 +31,13 @@ const slugify = (value: string) =>
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/(^-|-$)+/g, '')
 
-export function CreateDrivingServiceDialog({
+export function EditDrivingServiceDialog({
     open,
     onClose,
     instructors,
-    onSuccess,
-    usesPriceCents
-}: CreateDrivingServiceDialogProps) {
+    service,
+    onSuccess
+}: EditDrivingServiceDialogProps) {
     const [loading, setLoading] = useState(false)
     const [formData, setFormData] = useState({
         display_name: "",
@@ -49,46 +49,46 @@ export function CreateDrivingServiceDialog({
         credits_granted: "0"
     })
 
-    useEffect(() => {
-        if (!open) {
-            setFormData({
-                display_name: "",
-                plan_key: "",
-                instructor_ids: [],
-                duration_minutes: "120",
-                price: "",
-                category: "service",
-                credits_granted: "0"
-            })
-        }
-    }, [open])
-
-    const suggestedPlanKey = useMemo(() => {
-        if (!formData.display_name) return ""
-        return slugify(formData.display_name)
-    }, [formData.display_name])
+    const usesPriceCents = useMemo(() => {
+        if (!service) return false
+        return typeof service.price_cents === "number"
+    }, [service])
 
     useEffect(() => {
-        if (!formData.plan_key && suggestedPlanKey) {
-            setFormData(prev => ({ ...prev, plan_key: suggestedPlanKey }))
-        }
-    }, [suggestedPlanKey, formData.plan_key])
+        if (!service || !open) return
+        setFormData({
+            display_name: service.display_name || service.name || "",
+            plan_key: service.plan_key || service.slug || "",
+            instructor_ids: (service.service_package_instructors || [])
+                .map((entry: any) => entry.instructor_id)
+                .filter(Boolean),
+            duration_minutes: service.duration_minutes?.toString() || "120",
+            price: service.price_cents !== undefined && service.price_cents !== null
+                ? (service.price_cents / 100).toString()
+                : service.price !== undefined && service.price !== null
+                    ? service.price.toString()
+                    : "",
+            category: service.category || "service",
+            credits_granted: service.credits_granted?.toString() || "0"
+        })
+    }, [service, open])
 
     const handleSubmit = async () => {
-        if (!formData.display_name || !formData.plan_key || formData.instructor_ids.length === 0) {
+        if (!service?.id || !formData.display_name || !formData.plan_key || formData.instructor_ids.length === 0) {
             toast.error("Please fill in all required fields")
+            return
+        }
+
+        const priceValue = formData.price ? Number(formData.price) : null
+        if (priceValue !== null && Number.isNaN(priceValue)) {
+            toast.error("Price must be a number")
             return
         }
 
         setLoading(true)
         try {
-            const priceValue = formData.price ? Number(formData.price) : null
-            if (priceValue !== null && Number.isNaN(priceValue)) {
-                toast.error("Price must be a number")
-                return
-            }
-
-            await createDrivingService({
+            await updateDrivingService({
+                id: service.id,
                 display_name: formData.display_name,
                 plan_key: formData.plan_key,
                 instructor_ids: formData.instructor_ids,
@@ -98,11 +98,11 @@ export function CreateDrivingServiceDialog({
                 category: formData.category,
                 credits_granted: Number(formData.credits_granted)
             })
-            toast.success("Driving service created")
+            toast.success("Service updated")
             onSuccess()
             onClose()
         } catch (error: any) {
-            toast.error(error?.message || "Failed to create service")
+            toast.error(error?.message || "Failed to update service")
         } finally {
             setLoading(false)
         }
@@ -112,9 +112,9 @@ export function CreateDrivingServiceDialog({
         <Dialog open={open} onOpenChange={onClose}>
             <DialogContent className="sm:max-w-[520px]">
                 <DialogHeader>
-                    <DialogTitle>Create Driving Service</DialogTitle>
+                    <DialogTitle>Edit Driving Service</DialogTitle>
                     <DialogDescription>
-                        Add a new driving service and connect it to an instructor schedule.
+                        Update the service details, pricing, and instructor assignment.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -122,7 +122,6 @@ export function CreateDrivingServiceDialog({
                     <div className="space-y-2">
                         <Label>Service Name *</Label>
                         <Input
-                            placeholder="Driving Practice (2 Hour)"
                             value={formData.display_name}
                             onChange={(e) => setFormData({ ...formData, display_name: e.target.value })}
                         />
@@ -131,11 +130,9 @@ export function CreateDrivingServiceDialog({
                     <div className="space-y-2">
                         <Label>Plan Key *</Label>
                         <Input
-                            placeholder="driving-practice-2hr"
                             value={formData.plan_key}
                             onChange={(e) => setFormData({ ...formData, plan_key: slugify(e.target.value) })}
                         />
-                        <p className="text-xs text-slate-500">Used by the availability sync URL.</p>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
@@ -187,35 +184,37 @@ export function CreateDrivingServiceDialog({
                                 )
                             })}
                         </div>
-                        <p className="text-xs text-slate-500">Assign multiple instructors to keep availability open.</p>
+                        <p className="text-xs text-slate-500">Removing instructors may reduce available slots.</p>
                     </div>
 
-                    <div className="space-y-2">
-                        <Label>Duration (minutes)</Label>
-                        <Input
-                            type="number"
-                            min={30}
-                            step={30}
-                            value={formData.duration_minutes}
-                            onChange={(e) => setFormData({ ...formData, duration_minutes: e.target.value })}
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label>Price</Label>
-                        <Input
-                            type="number"
-                            min={0}
-                            step="0.01"
-                            value={formData.price}
-                            onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                        />
+                    <div className="grid gap-4 md:grid-cols-2">
+                        <div className="space-y-2">
+                            <Label>Duration (minutes)</Label>
+                            <Input
+                                type="number"
+                                min={30}
+                                step={30}
+                                value={formData.duration_minutes}
+                                onChange={(e) => setFormData({ ...formData, duration_minutes: e.target.value })}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Price</Label>
+                            <Input
+                                type="number"
+                                min={0}
+                                step="0.01"
+                                value={formData.price}
+                                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                            />
+                        </div>
                     </div>
                 </div>
 
                 <div className="flex justify-end gap-2">
                     <Button variant="outline" onClick={onClose}>Cancel</Button>
                     <Button onClick={handleSubmit} disabled={loading}>
-                        {loading ? "Creating..." : "Create Service"}
+                        {loading ? "Saving..." : "Save Changes"}
                     </Button>
                 </div>
             </DialogContent>

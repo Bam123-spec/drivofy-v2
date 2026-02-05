@@ -39,6 +39,10 @@ export interface ServicePackage {
     duration_minutes: number;
     credits_granted?: number;
     created_at: string;
+    service_package_instructors?: {
+        instructor_id: string;
+        instructors?: Instructor;
+    }[];
 }
 
 export interface Course {

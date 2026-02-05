@@ -21,8 +21,9 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
-import { Loader2, Save, Clock, Calendar, AlertCircle } from "lucide-react"
+import { Loader2, Save, Clock, Calendar, AlertCircle, Package } from "lucide-react"
 import { parse, isAfter, isBefore } from "date-fns"
 import { SlotPreview } from "./SlotPreview"
 
@@ -38,6 +39,7 @@ const DAYS = [
 
 export function InstructorScheduling({ instructor, onUpdate }: { instructor: any, onUpdate: () => void }) {
     const [loading, setLoading] = useState(false)
+    const [assignedServices, setAssignedServices] = useState<any[]>([])
     const [packageDuration, setPackageDuration] = useState<number>(120) // Default 2 hours
     const [formData, setFormData] = useState({
         working_days: instructor.working_days || [1, 2, 3, 4, 5],
@@ -50,24 +52,31 @@ export function InstructorScheduling({ instructor, onUpdate }: { instructor: any
         is_active: instructor.is_active ?? true
     })
 
-    // Fetch service package duration for this instructor
+    // Fetch all service packages associated with this instructor
     useEffect(() => {
-        const fetchPackageDuration = async () => {
+        const fetchAssignedServices = async () => {
             try {
                 const { data, error } = await supabase
-                    .from('service_packages')
-                    .select('duration_minutes')
+                    .from('service_package_instructors')
+                    .select(`
+                        service_package:service_packages(*)
+                    `)
                     .eq('instructor_id', instructor.id)
-                    .single()
 
                 if (!error && data) {
-                    setPackageDuration(data.duration_minutes)
+                    const services = data.map((d: any) => d.service_package).filter(Boolean)
+                    setAssignedServices(services)
+
+                    // Set package duration from the first service if available
+                    if (services.length > 0) {
+                        setPackageDuration(services[0].duration_minutes)
+                    }
                 }
             } catch (e) {
-                console.log('No service package found for instructor, using default')
+                console.error('Error fetching assigned services:', e)
             }
         }
-        fetchPackageDuration()
+        fetchAssignedServices()
     }, [instructor.id])
 
     const handleDayToggle = (day: number) => {
@@ -281,6 +290,56 @@ export function InstructorScheduling({ instructor, onUpdate }: { instructor: any
                                 onChange={(e) => setFormData({ ...formData, min_notice_hours: parseInt(e.target.value) || 0 })}
                                 className="h-12 rounded-xl border-slate-200 focus:ring-blue-500 font-bold"
                             />
+                        </div>
+                    </div>
+
+                    {/* Assigned Services & Packages */}
+                    <div className="pt-8 border-t border-slate-50 space-y-4">
+                        <Label className="text-sm font-bold uppercase tracking-widest text-slate-400">Teaching Services</Label>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Individual Services */}
+                            <div className="space-y-3">
+                                <h4 className="text-xs font-bold text-slate-500 flex items-center gap-2">
+                                    <Clock className="h-3 w-3" />
+                                    INDIVIDUAL SERVICES
+                                </h4>
+                                <div className="space-y-2">
+                                    {assignedServices.filter(s => s.category !== 'package').length > 0 ? (
+                                        assignedServices.filter(s => s.category !== 'package').map(svc => (
+                                            <div key={svc.id} className="flex items-center justify-between p-3 bg-white border border-slate-100 rounded-xl shadow-sm">
+                                                <span className="text-sm font-semibold text-slate-700">{svc.display_name}</span>
+                                                <Badge variant="secondary" className="bg-slate-50 text-slate-500 border-slate-100">{svc.duration_minutes}m</Badge>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <p className="text-xs text-slate-400 italic">No individual services assigned</p>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Multi-session Packages */}
+                            <div className="space-y-3">
+                                <h4 className="text-xs font-bold text-orange-500 flex items-center gap-2">
+                                    <Package className="h-3 w-3" />
+                                    MULTI-SESSION PACKAGES
+                                </h4>
+                                <div className="space-y-2">
+                                    {assignedServices.filter(s => s.category === 'package').length > 0 ? (
+                                        assignedServices.filter(s => s.category === 'package').map(svc => (
+                                            <div key={svc.id} className="flex items-center justify-between p-3 bg-orange-50/30 border border-orange-100 rounded-xl shadow-sm">
+                                                <div className="flex flex-col">
+                                                    <span className="text-sm font-bold text-slate-800">{svc.display_name}</span>
+                                                    <span className="text-[10px] text-orange-600 font-bold uppercase tracking-tight">{svc.credits_granted} session package</span>
+                                                </div>
+                                                <Badge className="bg-orange-500 text-white border-0">{svc.duration_minutes}m</Badge>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <p className="text-xs text-slate-400 italic">No packages assigned</p>
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     </div>
 

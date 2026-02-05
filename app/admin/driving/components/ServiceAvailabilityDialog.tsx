@@ -16,7 +16,7 @@ interface ServiceAvailabilityDialogProps {
 
 export function ServiceAvailabilityDialog({ open, onClose, service }: ServiceAvailabilityDialogProps) {
     const [date, setDate] = useState<string>("")
-    const [slots, setSlots] = useState<string[]>([])
+    const [slots, setSlots] = useState<Array<{ start_time: string; instructor_id: string; instructor_name?: string }>>([])
     const [loading, setLoading] = useState(false)
 
     useEffect(() => {
@@ -35,9 +35,9 @@ export function ServiceAvailabilityDialog({ open, onClose, service }: ServiceAva
 
             setLoading(true)
             try {
-                const response = await fetch(`/api/availability?plan_key=${service.plan_key}&date=${date}`)
+                const response = await fetch(`/api/availability?plan_key=${service.plan_key}&date=${date}&preview=true`)
                 const data = await response.json()
-                setSlots(data.slots || [])
+                setSlots(Array.isArray(data.slots) ? data.slots : [])
             } catch (error) {
                 console.error("Error fetching availability:", error)
                 toast.error("Failed to load availability")
@@ -104,13 +104,16 @@ export function ServiceAvailabilityDialog({ open, onClose, service }: ServiceAva
                             ) : (
                                 <div className="grid grid-cols-3 gap-2">
                                     {slots.map(slot => {
-                                        const dateObj = parseISO(slot)
+                                        const dateObj = parseISO(slot.start_time)
                                         return (
                                             <div
-                                                key={slot}
+                                                key={`${slot.start_time}-${slot.instructor_id}`}
                                                 className="rounded-lg border border-slate-200 bg-white px-2 py-2 text-center text-xs font-semibold text-slate-700"
                                             >
-                                                {format(dateObj, "h:mm a")}
+                                                <div>{format(dateObj, "h:mm a")}</div>
+                                                {slot.instructor_name && (
+                                                    <div className="text-[10px] text-slate-500 font-medium">{slot.instructor_name}</div>
+                                                )}
                                             </div>
                                         )
                                     })}

@@ -31,6 +31,8 @@ import { ScheduleSessionModal } from "./components/ScheduleSessionModal"
 import { DrivingServicesTable } from "./components/DrivingServicesTable"
 import { ServiceAvailabilityDialog } from "./components/ServiceAvailabilityDialog"
 import { CreateDrivingServiceDialog } from "./components/CreateDrivingServiceDialog"
+import { EditDrivingServiceDialog } from "./components/EditDrivingServiceDialog"
+import { EnrollStudentPackageModal } from "./components/EnrollStudentPackageModal"
 
 export default function AdminDrivingPage() {
     const [activeTab, setActiveTab] = useState<'services' | 'sessions'>('services')
@@ -55,6 +57,8 @@ export default function AdminDrivingPage() {
     const [selectedPlanKey, setSelectedPlanKey] = useState<string | undefined>(undefined)
     const [showAvailability, setShowAvailability] = useState(false)
     const [showCreateService, setShowCreateService] = useState(false)
+    const [showEditService, setShowEditService] = useState(false)
+    const [showEnrollPackage, setShowEnrollPackage] = useState(false)
 
     useEffect(() => {
         fetchInitialData()
@@ -118,6 +122,10 @@ export default function AdminDrivingPage() {
             return matchesSearch && matchesInstructor
         })
     }, [services, serviceSearch, serviceInstructorFilter])
+
+    const usesPriceCents = useMemo(() => {
+        return services.some((service) => typeof service?.price_cents === "number")
+    }, [services])
 
     if (loading) {
         return (
@@ -254,8 +262,17 @@ export default function AdminDrivingPage() {
                                 setShowAvailability(true)
                             }}
                             onAddStudent={(service) => {
-                                setSelectedPlanKey(service.plan_key)
-                                setIsCreateOpen(true)
+                                setSelectedService(service)
+                                if (service.category === 'package') {
+                                    setShowEnrollPackage(true)
+                                } else {
+                                    setSelectedPlanKey(service.plan_key)
+                                    setIsCreateOpen(true)
+                                }
+                            }}
+                            onEditService={(service) => {
+                                setSelectedService(service)
+                                setShowEditService(true)
                             }}
                         />
                     </div>
@@ -367,6 +384,23 @@ export default function AdminDrivingPage() {
                 onClose={() => setShowCreateService(false)}
                 instructors={instructors}
                 onSuccess={fetchServices}
+                usesPriceCents={usesPriceCents}
+            />
+
+            <EditDrivingServiceDialog
+                open={showEditService}
+                onClose={() => setShowEditService(false)}
+                instructors={instructors}
+                service={selectedService}
+                onSuccess={fetchServices}
+            />
+
+            <EnrollStudentPackageModal
+                open={showEnrollPackage}
+                onClose={() => setShowEnrollPackage(false)}
+                students={students}
+                service={selectedService}
+                onSuccess={fetchInitialData}
             />
         </div>
     )
