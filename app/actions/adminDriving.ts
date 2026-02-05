@@ -64,6 +64,15 @@ export async function getServicePackages() {
     return data
 }
 
+export async function getDrivingServices() {
+    const { data, error } = await supabaseService
+        .from('service_packages')
+        .select('*, instructors(id, full_name)')
+        .order('display_name')
+    if (error) throw new Error(error.message)
+    return data
+}
+
 export async function createDrivingSession(data: {
     studentId: string,
     instructorId: string,
@@ -471,4 +480,3 @@ export async function deleteDrivingSession(id: string) {
     revalidatePath('/dashboard') // Revalidate Student Dashboard
     return { success: true }
 }
-

@@ -20,9 +20,18 @@ interface ScheduleModalProps {
     students: any[]
     vehicles: any[]
     onSuccess: () => void
+    initialPlanKey?: string
 }
 
-export function ScheduleSessionModal({ open, onClose, instructors, students, vehicles, onSuccess }: ScheduleModalProps) {
+export function ScheduleSessionModal({
+    open,
+    onClose,
+    instructors,
+    students,
+    vehicles,
+    onSuccess,
+    initialPlanKey
+}: ScheduleModalProps) {
     const [loading, setLoading] = useState(false)
     const [servicePackages, setServicePackages] = useState<any[]>([])
     const [slots, setSlots] = useState<string[]>([])
@@ -49,6 +58,15 @@ export function ScheduleSessionModal({ open, onClose, instructors, students, veh
         }
         if (open) fetchPackages()
     }, [open])
+
+    useEffect(() => {
+        if (open && initialPlanKey) {
+            setFormData(prev => ({
+                ...prev,
+                plan_key: initialPlanKey
+            }))
+        }
+    }, [open, initialPlanKey])
 
     useEffect(() => {
         const fetchSlots = async () => {
