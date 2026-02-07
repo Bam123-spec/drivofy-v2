@@ -9,7 +9,9 @@ import {
     Filter,
     Share2,
     Search,
-    ExternalLink
+    ExternalLink,
+    Car,
+    Bell
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -117,7 +119,9 @@ export default function AdminDrivingPage() {
                 || (service.plan_key || service.slug || "").toLowerCase().includes(serviceSearch.toLowerCase())
 
             const matchesInstructor = serviceInstructorFilter === "all"
-                || service.instructor_id === serviceInstructorFilter
+                || (service.service_package_instructors || []).some(
+                    (entry: any) => entry.instructor_id === serviceInstructorFilter
+                )
 
             return matchesSearch && matchesInstructor
         })
@@ -139,92 +143,116 @@ export default function AdminDrivingPage() {
         <div className="space-y-6 animate-in fade-in duration-500">
             <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val as 'services' | 'sessions')}>
                 {/* Header */}
-                <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-                    <div className="space-y-1">
-                        <div className="flex items-center gap-2 text-sm text-slate-500">
-                            Booking Services <span className="text-slate-400">{services.length}</span>
+                <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+                    <div className="space-y-1.5 font-sans">
+                        <div className="flex items-center gap-2 text-[10px] font-bold text-primary uppercase tracking-[0.25em] animate-in-fade opacity-70">
+                            <Car className="h-3.5 w-3.5" />
+                            Booking Services {services.length}
                         </div>
-                        <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Driving Sessions</h1>
-                        <p className="text-gray-500">
+                        <h1 className="text-4xl font-black text-slate-900 tracking-tight animate-in-fade">
+                            Driving Sessions
+                        </h1>
+                        <p className="text-slate-500 text-sm font-medium max-w-lg animate-in-fade leading-relaxed">
                             Create and manage driving services, availability, and booked sessions.
                         </p>
                     </div>
-                    <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-3 animate-in-fade">
                         <Button
                             variant="outline"
-                            className="rounded-full gap-2"
+                            className="h-11 rounded-2xl gap-2 font-semibold border-slate-200 hover:bg-slate-50 transition-all active:scale-95"
                             onClick={() => toast.info("Use the availability link per service to sync to your website.")}
                         >
                             <Share2 className="h-4 w-4" />
                             Share Services
                         </Button>
                         <Button
-                            className="rounded-full shadow-lg shadow-primary/25"
+                            className="h-11 rounded-2xl gap-2 font-bold shadow-premium bg-primary hover:bg-primary/90 transition-all active:scale-95 px-6"
                             onClick={() => {
                                 setSelectedPlanKey(undefined)
                                 setIsCreateOpen(true)
                             }}
                         >
-                            <Plus className="mr-2 h-4 w-4" />
+                            <Plus className="h-4 w-4" />
                             Add People
                         </Button>
                         <Button
                             variant="outline"
-                            className="rounded-full"
+                            className="h-11 rounded-2xl gap-2 font-semibold border-slate-200 hover:bg-slate-50 transition-all active:scale-95"
                             onClick={() => setShowCreateService(true)}
                         >
-                            <Plus className="mr-2 h-4 w-4" />
+                            <Plus className="h-4 w-4" />
                             Add New Service
                         </Button>
                     </div>
                 </div>
 
-                <TabsList className="bg-transparent p-0 border-b border-slate-200 rounded-none gap-6">
-                    <TabsTrigger value="services" className="rounded-none px-0 pb-3 data-[state=active]:border-b-2 data-[state=active]:border-blue-600">
-                        Services
-                    </TabsTrigger>
-                    <TabsTrigger value="sessions" className="rounded-none px-0 pb-3 data-[state=active]:border-b-2 data-[state=active]:border-blue-600">
-                        Sessions
-                    </TabsTrigger>
-                </TabsList>
+                <div className="border-b border-slate-100/60 mt-2">
+                    <TabsList className="bg-transparent h-12 p-0 gap-8 justify-start">
+                        <TabsTrigger
+                            value="services"
+                            className="relative h-12 rounded-none bg-transparent px-0 pb-4 pt-0 text-sm font-bold text-slate-400 data-[state=active]:text-primary data-[state=active]:shadow-none transition-all group"
+                        >
+                            Services
+                            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary scale-x-0 transition-transform duration-300 group-data-[state=active]:scale-x-100" />
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="sessions"
+                            className="relative h-12 rounded-none bg-transparent px-0 pb-4 pt-0 text-sm font-bold text-slate-400 data-[state=active]:text-primary data-[state=active]:shadow-none transition-all group"
+                        >
+                            Sessions
+                            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary scale-x-0 transition-transform duration-300 group-data-[state=active]:scale-x-100" />
+                        </TabsTrigger>
+                    </TabsList>
+                </div>
 
-                <TabsContent value="services" className="space-y-6">
-                    <div className="space-y-3">
-                        <div className="text-sm font-semibold text-slate-700">Business setup recommendations</div>
-                        <div className="grid gap-4 md:grid-cols-3">
-                            <Card className="border border-slate-200 shadow-sm">
-                                <CardContent className="p-5 space-y-2">
-                                    <div className="text-sm font-semibold text-slate-900">Sync availability</div>
-                                    <p className="text-xs text-slate-500">
+                <TabsContent value="services" className="space-y-10 mt-6 focus-visible:outline-none">
+                    <div className="space-y-5">
+                        <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] px-1">
+                            Business setup recommendations
+                        </div>
+                        <div className="grid gap-6 md:grid-cols-3">
+                            <div className="glass-card premium-card p-6 flex flex-col items-start gap-5 group hover:bg-white transition-all duration-500">
+                                <div className="h-12 w-12 rounded-2xl bg-blue-50/50 flex items-center justify-center text-primary shadow-sm border border-blue-100 group-hover:bg-primary group-hover:text-white transition-all duration-500">
+                                    <CalendarIcon className="h-6 w-6" />
+                                </div>
+                                <div className="space-y-2">
+                                    <div className="text-sm font-bold text-slate-900 tracking-tight">Sync availability</div>
+                                    <p className="text-xs text-slate-500 leading-relaxed font-medium">
                                         Copy availability links so your public site can show open driving slots.
                                     </p>
-                                    <Button variant="link" className="px-0 text-blue-600">
-                                        View links
-                                    </Button>
-                                </CardContent>
-                            </Card>
-                            <Card className="border border-slate-200 shadow-sm">
-                                <CardContent className="p-5 space-y-2">
-                                    <div className="text-sm font-semibold text-slate-900">Set up notifications</div>
-                                    <p className="text-xs text-slate-500">
+                                </div>
+                                <Button variant="link" className="px-0 h-auto text-primary font-bold text-[11px] uppercase tracking-wider hover:no-underline hover:text-primary/70 transition-colors">
+                                    View links
+                                </Button>
+                            </div>
+                            <div className="glass-card premium-card p-6 flex flex-col items-start gap-5 group hover:bg-white transition-all duration-500">
+                                <div className="h-12 w-12 rounded-2xl bg-amber-50/50 flex items-center justify-center text-amber-500 shadow-sm border border-amber-100 group-hover:bg-amber-500 group-hover:text-white transition-all duration-500">
+                                    <Bell className="h-6 w-6" />
+                                </div>
+                                <div className="space-y-2">
+                                    <div className="text-sm font-bold text-slate-900 tracking-tight">Set up notifications</div>
+                                    <p className="text-xs text-slate-500 leading-relaxed font-medium">
                                         Keep instructors and students updated when sessions are booked.
                                     </p>
-                                    <Button variant="link" className="px-0 text-blue-600">
-                                        Configure alerts
-                                    </Button>
-                                </CardContent>
-                            </Card>
-                            <Card className="border border-slate-200 shadow-sm">
-                                <CardContent className="p-5 space-y-2">
-                                    <div className="text-sm font-semibold text-slate-900">Connect your website</div>
-                                    <p className="text-xs text-slate-500">
+                                </div>
+                                <Button variant="link" className="px-0 h-auto text-primary font-bold text-[11px] uppercase tracking-wider hover:no-underline hover:text-primary/70 transition-colors">
+                                    Configure alerts
+                                </Button>
+                            </div>
+                            <div className="glass-card premium-card p-6 flex flex-col items-start gap-5 group hover:bg-white transition-all duration-500">
+                                <div className="h-12 w-12 rounded-2xl bg-emerald-50/50 flex items-center justify-center text-emerald-500 shadow-sm border border-emerald-100 group-hover:bg-emerald-500 group-hover:text-white transition-all duration-500">
+                                    <ExternalLink className="h-6 w-6" />
+                                </div>
+                                <div className="space-y-2">
+                                    <div className="text-sm font-bold text-slate-900 tracking-tight">Connect your website</div>
+                                    <p className="text-xs text-slate-500 leading-relaxed font-medium">
                                         Embed booking links so students can schedule sessions online.
                                     </p>
-                                    <Button variant="link" className="px-0 text-blue-600">
-                                        Learn more <ExternalLink className="ml-1 h-3 w-3" />
-                                    </Button>
-                                </CardContent>
-                            </Card>
+                                </div>
+                                <Button variant="link" className="px-0 h-auto text-primary font-bold text-[11px] uppercase tracking-wider hover:no-underline hover:text-primary/70 transition-colors">
+                                    Learn more
+                                </Button>
+                            </div>
                         </div>
                     </div>
 
@@ -363,7 +391,7 @@ export default function AdminDrivingPage() {
                 instructors={instructors}
                 students={students}
                 vehicles={vehicles}
-                onSuccess={fetchSessions}
+                onSuccess={fetchInitialData}
                 initialPlanKey={selectedPlanKey}
             />
 

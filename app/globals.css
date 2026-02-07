@@ -78,50 +78,54 @@
   --ring: #3740FF;
 }
 
-/* Light Theme for Admin Dashboard */
+/* Light Theme for Admin Dashboard - Refined for Premium Feel */
 .admin-light {
-  --background: oklch(0.985 0 0);
+  --background: #fbfbfc;
+  /* Softer, slightly blue-gray background */
   --foreground: oklch(0.12 0.01 285);
-  --card: oklch(1 0 0);
+  --card: #ffffff;
   --card-foreground: oklch(0.12 0.01 285);
-  --popover: oklch(1 0 0);
+  --popover: #ffffff;
   --popover-foreground: oklch(0.12 0.01 285);
   --primary: #3740FF;
   --primary-foreground: #ffffff;
-  --secondary: oklch(0.96 0.01 285);
-  --secondary-foreground: oklch(0.20 0.02 285);
-  --muted: oklch(0.96 0.01 285);
-  --muted-foreground: oklch(0.45 0.02 285);
-  --accent: oklch(0.96 0.01 285);
-  --accent-foreground: oklch(0.20 0.02 285);
+  --secondary: #f4f6fa;
+  --secondary-foreground: #1e293b;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #f1f5f9;
+  --accent-foreground: #1e293b;
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.92 0.01 285);
-  --input: oklch(0.92 0.01 285);
+  --border: #e2e8f0;
+  --input: #e2e8f0;
   --ring: #3740FF;
+  --radius: 1rem;
+  /* Larger base radius */
 }
 
 /* Light Theme for Instructor Portal */
 .instructor-light {
-  --background: oklch(0.985 0 0);
+  --background: #fbfbfc;
   --foreground: oklch(0.12 0.01 285);
-  --card: oklch(1 0 0);
+  --card: #ffffff;
   --card-foreground: oklch(0.12 0.01 285);
-  --popover: oklch(1 0 0);
+  --popover: #ffffff;
   --popover-foreground: oklch(0.12 0.01 285);
   --primary: #3740FF;
   --primary-foreground: #ffffff;
-  --secondary: oklch(0.96 0.01 285);
-  --secondary-foreground: oklch(0.20 0.02 285);
-  --muted: oklch(0.96 0.01 285);
-  --muted-foreground: oklch(0.45 0.02 285);
-  --accent: oklch(0.96 0.01 285);
-  --accent-foreground: oklch(0.20 0.02 285);
+  --secondary: #f4f6fa;
+  --secondary-foreground: #1e293b;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #f1f5f9;
+  --accent-foreground: #1e293b;
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.92 0.01 285);
-  --input: oklch(0.92 0.01 285);
+  --border: #e2e8f0;
+  --input: #e2e8f0;
   --ring: #3740FF;
+  --radius: 1rem;
 }
 
 @theme inline {
@@ -149,10 +153,12 @@
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
-  --radius-sm: calc(var(--radius) - 4px);
+  --radius-sm: calc(var(--radius) - 6px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  --radius-xl: calc(var(--radius) + 8px);
+  --radius-2xl: calc(var(--radius) + 16px);
+  --radius-3xl: calc(var(--radius) + 24px);
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -161,6 +167,8 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --shadow-premium: 0 10px 15px -3px rgba(0, 0, 0, 0.04), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+  --shadow-heavy: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
 @layer base {
@@ -172,9 +180,9 @@
     @apply bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary;
   }
 
-  /* Custom Scrollbar for a cleaner look */
+  /* Custom Scrollbar */
   ::-webkit-scrollbar {
-    width: 8px;
+    width: 6px;
   }
 
   ::-webkit-scrollbar-track {
@@ -182,28 +190,63 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-muted rounded-full;
+    @apply bg-slate-200 rounded-full;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-muted-foreground/50;
+    @apply bg-slate-300;
   }
 }
 
-/* Glassmorphism Utilities */
+/* Premium Graphics & Utilities */
 .glass {
-  @apply bg-white/5 backdrop-blur-lg border border-white/10 shadow-xl;
+  @apply bg-white/40 backdrop-blur-xl border border-white/40 shadow-premium;
 }
 
 .glass-card {
-  @apply bg-card/50 backdrop-blur-md border border-white/5 shadow-sm hover:border-white/10 transition-all duration-300;
+  @apply bg-white/60 backdrop-blur-md border border-white/50 shadow-premium hover:shadow-heavy transition-all duration-500 ease-out;
+}
+
+.premium-card {
+  @apply bg-white border border-slate-100 shadow-premium rounded-3xl overflow-hidden hover:border-primary/10 transition-all duration-300;
+}
+
+/* Animations */
+.animate-in-fade {
+  animation: fadeIn 0.6s ease-out forwards;
+}
+
+.animate-in-slide {
+  animation: slideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 /* Text Gradients */
 .text-gradient {
-  @apply bg-clip-text text-transparent bg-gradient-to-r from-white via-white/80 to-white/60;
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-slate-900 via-slate-700 to-slate-800;
 }
 
 .text-gradient-primary {
-  @apply bg-clip-text text-transparent bg-gradient-to-r from-primary via-blue-400 to-cyan-400;
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-primary via-blue-500 to-indigo-500;
 }

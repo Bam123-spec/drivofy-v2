@@ -47,130 +47,143 @@ export function DrivingServicesTable({ services, onShowAvailability, onAddStuden
     }
 
     return (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="bg-white rounded-[2rem] border border-slate-100 shadow-premium overflow-hidden">
             <Table>
                 <TableHeader>
-                    <TableRow className="bg-blue-50/60 border-b border-slate-200">
-                        <TableHead className="py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Service</TableHead>
-                        <TableHead className="py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Price</TableHead>
-                        <TableHead className="py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Schedule</TableHead>
-                        <TableHead className="py-4 text-right text-xs font-bold uppercase tracking-wider text-slate-500">Actions</TableHead>
+                    <TableRow className="bg-slate-50/50 border-b border-slate-100 hover:bg-slate-50/50">
+                        <TableHead className="h-14 px-6 text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">Service Details</TableHead>
+                        <TableHead className="h-14 px-6 text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">Pricing</TableHead>
+                        <TableHead className="h-14 px-6 text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">Scheduling</TableHead>
+                        <TableHead className="h-14 px-6 text-right text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">Actions</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
                     {services.length === 0 ? (
                         <TableRow>
-                            <TableCell colSpan={4} className="py-10 text-center text-sm text-slate-500">
+                            <TableCell colSpan={4} className="py-20 text-center text-sm text-slate-400 font-medium">
                                 No driving services found.
                             </TableCell>
                         </TableRow>
                     ) : (
                         services.map(service => (
-                            <TableRow key={service.id} className="border-b border-slate-100 last:border-0">
-                                <TableCell className="py-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="h-10 w-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-                                            <Calendar className="h-4 w-4" />
+                            <TableRow key={service.id} className="group hover:bg-slate-50/40 transition-colors border-b border-slate-50 last:border-0">
+                                <TableCell className="py-6 px-6">
+                                    <div className="flex items-center gap-4">
+                                        <div className="h-12 w-12 rounded-2xl bg-white shadow-sm border border-slate-100 text-primary flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
+                                            <Calendar className="h-5 w-5" />
                                         </div>
-                                        <div className="flex flex-col">
+                                        <div className="flex flex-col gap-1">
                                             <div className="flex items-center gap-2">
-                                                <span className="font-semibold text-slate-900 text-sm">
+                                                <span className="font-bold text-slate-900 text-base tracking-tight">
                                                     {service.display_name || service.name || "Untitled Service"}
                                                 </span>
                                                 <Badge
                                                     variant={service.category === 'package' ? 'default' : 'secondary'}
-                                                    className={`text-[9px] font-bold uppercase px-1.5 py-0 h-4 border-0 ${service.category === 'package' ? 'bg-orange-500 hover:bg-orange-600' : 'bg-slate-100 text-slate-500 hover:bg-slate-100'}`}
+                                                    className={`text-[9px] font-black uppercase px-2 py-0.5 h-auto border-0 tracking-wider ${service.category === 'package' ? 'bg-orange-500/10 text-orange-600 hover:bg-orange-500/20' : 'bg-blue-500/10 text-primary hover:bg-blue-500/20'}`}
                                                 >
-                                                    {service.category === 'package' ? 'Package' : 'Service'}
+                                                    {service.category === 'package' ? 'Package' : 'Standard'}
                                                 </Badge>
                                             </div>
-                                            <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
-                                                <Badge variant="outline" className="text-[10px] font-semibold uppercase tracking-wider h-4">
-                                                    {service.plan_key || service.slug || "service"}
-                                                </Badge>
+                                            <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 font-medium">
+                                                <div className="flex items-center gap-1 opacity-70">
+                                                    <span className="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-bold">{service.plan_key || "N/A"}</span>
+                                                </div>
                                                 {service.credits_granted > 0 && (
-                                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-orange-600">
-                                                        {service.credits_granted} sessions
-                                                    </span>
+                                                    <div className="flex items-center gap-1.5 text-orange-600 font-bold">
+                                                        <Clipboard className="h-3.5 w-3.5 opacity-70" />
+                                                        {service.credits_granted} Sessions
+                                                    </div>
                                                 )}
                                                 {service.service_package_instructors?.length > 0 && (
-                                                    <span className="inline-flex items-center gap-1">
-                                                        <UserRound className="h-3 w-3" />
-                                                        {service.service_package_instructors.length}
-                                                    </span>
+                                                    <div className="flex items-center gap-1.5 text-indigo-600 font-bold bg-indigo-50/50 px-2 py-0.5 rounded-lg border border-indigo-100/50">
+                                                        <UserRound className="h-3.5 w-3.5" />
+                                                        {service.service_package_instructors.length} Instructors
+                                                    </div>
                                                 )}
                                             </div>
                                         </div>
                                     </div>
                                 </TableCell>
-                                <TableCell className="py-4">
-                                    <div className="text-sm font-semibold text-slate-800">{formatPrice(service)}</div>
-                                    {service.duration_minutes && (
-                                        <div className="text-xs text-slate-500 flex items-center gap-1">
-                                            <Clock className="h-3 w-3" />
-                                            {Math.round(service.duration_minutes / 60)} hr session
-                                        </div>
-                                    )}
+                                <TableCell className="py-6 px-6">
+                                    <div className="flex flex-col gap-1">
+                                        <div className="text-lg font-black text-slate-900 tracking-tight">{formatPrice(service)}</div>
+                                        {service.duration_minutes && (
+                                            <div className="text-[11px] font-bold text-slate-400 flex items-center gap-1.5 uppercase tracking-wide">
+                                                <Clock className="h-3.5 w-3.5 opacity-60" />
+                                                {Math.round(service.duration_minutes / 60)} Hr Session
+                                            </div>
+                                        )}
+                                    </div>
                                 </TableCell>
-                                <TableCell className="py-4">
+                                <TableCell className="py-6 px-6">
                                     <Button
-                                        variant="link"
-                                        className="px-0 text-blue-600"
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-9 px-4 rounded-xl text-xs font-bold border-slate-200 hover:bg-white hover:border-primary hover:text-primary transition-all active:scale-95 shadow-sm"
                                         onClick={() => onShowAvailability(service)}
                                     >
-                                        Show Availability
+                                        Manage Window
                                     </Button>
                                 </TableCell>
-                                <TableCell className="py-4 text-right">
+                                <TableCell className="py-6 px-6 text-right">
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
-                                                <MoreHorizontal className="h-4 w-4 text-slate-500" />
+                                            <Button variant="ghost" size="icon" className="h-10 w-10 rounded-2xl hover:bg-white hover:shadow-sm border border-transparent hover:border-slate-100 transition-all">
+                                                <Settings className="h-5 w-5 text-slate-400 group-hover:text-primary transition-colors" />
                                             </Button>
                                         </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" className="w-48 rounded-xl border-slate-200 shadow-xl p-1">
-                                            <DropdownMenuLabel className="px-3 py-2 text-xs font-bold text-slate-400 uppercase tracking-widest">
-                                                Actions
-                                            </DropdownMenuLabel>
-                                            <DropdownMenuSeparator className="bg-slate-100" />
+                                        <DropdownMenuContent align="end" className="w-56 rounded-2xl border-slate-100 shadow-heavy p-2 animate-in slide-in-from-top-2 duration-300">
+                                            <div className="px-3 py-2.5 mb-1.5 border-b border-slate-50">
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Service Controls</p>
+                                            </div>
                                             <DropdownMenuItem
-                                                className="rounded-lg px-3 py-2 text-sm font-medium cursor-pointer"
+                                                className="rounded-xl px-3 py-2.5 text-sm font-bold text-slate-700 cursor-pointer focus:bg-primary/5 focus:text-primary transition-colors gap-3"
                                                 onClick={() => onAddStudent(service)}
                                             >
-                                                <Users className="h-4 w-4 mr-2" />
+                                                <div className="h-8 w-8 rounded-lg bg-blue-50 text-primary flex items-center justify-center">
+                                                    <Users className="h-4 w-4" />
+                                                </div>
                                                 {service.category === 'package' ? 'Enroll Student' : 'Add Student'}
                                             </DropdownMenuItem>
                                             <DropdownMenuItem
-                                                className="rounded-lg px-3 py-2 text-sm font-medium cursor-pointer"
+                                                className="rounded-xl px-3 py-2.5 text-sm font-bold text-slate-700 cursor-pointer focus:bg-primary/5 focus:text-primary transition-colors gap-3"
                                                 onClick={() => onEditService(service)}
                                             >
-                                                <Settings className="h-4 w-4 mr-2" />
-                                                Edit Service
+                                                <div className="h-8 w-8 rounded-lg bg-amber-50 text-amber-500 flex items-center justify-center">
+                                                    <Settings className="h-4 w-4" />
+                                                </div>
+                                                Edit Configuration
                                             </DropdownMenuItem>
-                                            {service?.service_package_instructors?.length ? (
-                                                service.service_package_instructors.map((entry: any) => (
-                                                    <DropdownMenuItem
-                                                        key={entry.instructor_id}
-                                                        asChild
-                                                        className="rounded-lg px-3 py-2 text-sm font-medium cursor-pointer"
-                                                    >
-                                                        <Link href={`/admin/instructors/${entry.instructor_id}`}>
-                                                            <UserRound className="h-4 w-4 mr-2" />
-                                                            Manage {entry.instructors?.full_name || "Instructor"}
-                                                        </Link>
-                                                    </DropdownMenuItem>
-                                                ))
+                                            <DropdownMenuSeparator className="my-2 bg-slate-50" />
+                                            {service?.service_package_instructors?.length > 0 ? (
+                                                <div className="space-y-1">
+                                                    {service.service_package_instructors.map((entry: any) => (
+                                                        <DropdownMenuItem
+                                                            key={entry.instructor_id}
+                                                            asChild
+                                                            className="rounded-xl px-3 py-2.5 text-sm font-bold text-slate-700 cursor-pointer focus:bg-primary/5 focus:text-primary transition-colors gap-3"
+                                                        >
+                                                            <Link href={`/admin/instructors/${entry.instructor_id}`}>
+                                                                <div className="h-8 w-8 rounded-lg bg-emerald-50 text-emerald-500 flex items-center justify-center">
+                                                                    <UserRound className="h-4 w-4" />
+                                                                </div>
+                                                                Manage {entry.instructors?.full_name?.split(' ')[0] || "Staff"}
+                                                            </Link>
+                                                        </DropdownMenuItem>
+                                                    ))}
+                                                </div>
                                             ) : (
-                                                <DropdownMenuItem className="rounded-lg px-3 py-2 text-sm font-medium text-slate-400">
-                                                    No instructors assigned
-                                                </DropdownMenuItem>
+                                                <div className="px-3 py-2 text-[10px] font-bold text-slate-300 italic">No assigned staff</div>
                                             )}
+                                            <DropdownMenuSeparator className="my-2 bg-slate-50" />
                                             <DropdownMenuItem
-                                                className="rounded-lg px-3 py-2 text-sm font-medium cursor-pointer"
+                                                className="rounded-xl px-3 py-2.5 text-sm font-bold text-slate-700 cursor-pointer focus:bg-primary/5 focus:text-primary transition-colors gap-3"
                                                 onClick={() => handleCopyBaseLink(service.plan_key)}
                                             >
-                                                <Clipboard className="h-4 w-4 mr-2" />
-                                                Copy Availability Link
+                                                <div className="h-8 w-8 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center">
+                                                    <Clipboard className="h-4 w-4" />
+                                                </div>
+                                                Copy Template Link
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>

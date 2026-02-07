@@ -43,7 +43,7 @@ export function EnrollStudentPackageModal({
         try {
             const result = await grantPackageCredits(selectedStudentId, service.id)
             if (result.success) {
-                toast.success(`Successfully granted ${result.granted} sessions to student`)
+                toast.success(`Successfully granted ${result.granted} sessions (${(result.granted * (service.duration_minutes || 120)) / 60} hours) to student`)
                 onSuccess()
                 onClose()
             } else {

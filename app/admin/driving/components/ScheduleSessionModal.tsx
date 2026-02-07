@@ -126,7 +126,7 @@ export function ScheduleSessionModal({
                 // Handle Package Enrollment
                 const result = await grantPackageCredits(formData.studentId, selectedService.id)
                 if (result.success) {
-                    toast.success(`Successfully enrolled student and granted ${result.granted} sessions`)
+                    toast.success(`Successfully enrolled student and granted ${result.granted} sessions (${(result.granted * (selectedService.duration_minutes || 120)) / 60} hours)`)
                     onSuccess()
                     onClose()
                     resetForm()
@@ -173,38 +173,43 @@ export function ScheduleSessionModal({
 
     return (
         <Dialog open={open} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-[500px]">
-                <DialogHeader>
-                    <DialogTitle>Schedule Driving Session</DialogTitle>
-                    <DialogDescription>
-                        Book a new behind-the-wheel lesson.
-                    </DialogDescription>
-                </DialogHeader>
+            <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden border-slate-100 rounded-[2rem] shadow-heavy bg-white">
+                <div className="relative p-6 pt-8 bg-slate-50/50 border-b border-slate-50">
+                    <div className="absolute top-4 right-6 text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] opacity-40">
+                        Admin Tool
+                    </div>
+                    <DialogHeader>
+                        <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight">Schedule Session</DialogTitle>
+                        <DialogDescription className="text-slate-500 font-medium">
+                            Create a new behind-the-wheel lesson or enroll package.
+                        </DialogDescription>
+                    </DialogHeader>
+                </div>
 
-                <div className="grid gap-4 py-4">
-                    <div className="grid grid-cols-2 gap-4">
+                <div className="p-8 space-y-6">
+                    <div className="grid grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <Label>Student *</Label>
+                            <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Student</Label>
                             <Select value={formData.studentId} onValueChange={(val) => setFormData({ ...formData, studentId: val })}>
-                                <SelectTrigger className="h-11 rounded-xl">
+                                <SelectTrigger className="h-12 rounded-2xl border-slate-100 bg-slate-50/50 hover:bg-white transition-all font-bold text-slate-700">
                                     <SelectValue placeholder="Select student" />
                                 </SelectTrigger>
-                                <SelectContent className="rounded-xl">
+                                <SelectContent className="rounded-2xl border-slate-100 shadow-heavy p-1">
                                     {students.map(s => (
-                                        <SelectItem key={s.id} value={s.id}>{s.full_name}</SelectItem>
+                                        <SelectItem key={s.id} value={s.id} className="rounded-xl font-bold py-2.5">{s.full_name}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
                         </div>
                         <div className="space-y-2">
-                            <Label>Service Plan *</Label>
+                            <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Service Plan</Label>
                             <Select value={formData.plan_key} onValueChange={(val) => setFormData({ ...formData, plan_key: val, time: "" })}>
-                                <SelectTrigger className="h-11 rounded-xl">
+                                <SelectTrigger className="h-12 rounded-2xl border-slate-100 bg-slate-50/50 hover:bg-white transition-all font-bold text-slate-700">
                                     <SelectValue placeholder="Select plan" />
                                 </SelectTrigger>
-                                <SelectContent className="rounded-xl">
+                                <SelectContent className="rounded-2xl border-slate-100 shadow-heavy p-1">
                                     {servicePackages.map(p => (
-                                        <SelectItem key={p.id} value={p.plan_key}>{p.display_name}</SelectItem>
+                                        <SelectItem key={p.id} value={p.plan_key} className="rounded-xl font-bold py-2.5">{p.display_name}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
@@ -212,33 +217,33 @@ export function ScheduleSessionModal({
                     </div>
 
                     {isPackage ? (
-                        <div className="p-6 bg-orange-50/50 border border-orange-100 rounded-2xl space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
-                            <div className="flex items-start gap-3">
-                                <div className="p-2 bg-orange-100 rounded-lg">
-                                    <PackageCheck className="h-5 w-5 text-orange-600" />
+                        <div className="p-6 bg-amber-50 rounded-3xl border border-amber-100/50 space-y-4 animate-in fade-in slide-in-from-top-2 duration-500">
+                            <div className="flex items-start gap-4">
+                                <div className="h-10 w-10 rounded-2xl bg-amber-100 flex items-center justify-center text-amber-600 shrink-0 shadow-sm">
+                                    <PackageCheck className="h-5 w-5" />
                                 </div>
                                 <div className="space-y-1">
-                                    <h4 className="text-sm font-bold text-slate-900">Package Enrollment</h4>
-                                    <p className="text-xs text-slate-500 leading-relaxed">
-                                        This is a multi-session package. Enrolling the student will grant them **{selectedService.credits_granted} sessions** to their balance.
+                                    <h4 className="text-sm font-black text-amber-900 uppercase tracking-tight">Package Enrollment</h4>
+                                    <p className="text-xs text-amber-700/80 leading-relaxed font-bold">
+                                        Granting <span className="text-amber-900">{selectedService.credits_granted} sessions</span> to student balance.
                                     </p>
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-2 p-3 bg-white/60 rounded-xl border border-orange-50 text-[11px] font-medium text-orange-700">
-                                <Info className="h-3.5 w-3.5 shrink-0" />
-                                Individual sessions can be booked by the student or admin after enrollment.
+                            <div className="p-3 bg-white/40 rounded-xl border border-amber-100/30 flex items-center gap-2 text-[10px] font-black uppercase tracking-wider text-amber-700">
+                                <Info className="h-3.5 w-3.5" />
+                                Individual sessions booked after enrollment.
                             </div>
                         </div>
                     ) : (
-                        <>
+                        <div className="space-y-6">
                             <div className="space-y-2">
-                                <Label>Date *</Label>
-                                <div className="relative">
-                                    <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Date Selection</Label>
+                                <div className="relative group">
+                                    <CalendarIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-hover:text-primary transition-colors" />
                                     <Input
                                         type="date"
-                                        className="h-11 pl-10 rounded-xl"
+                                        className="h-12 pl-11 rounded-2xl border-slate-100 bg-slate-50/50 hover:bg-white transition-all font-bold text-slate-700 focus:ring-primary/20"
                                         value={formData.date}
                                         onChange={(e) => setFormData({ ...formData, date: e.target.value, time: "" })}
                                     />
@@ -246,95 +251,105 @@ export function ScheduleSessionModal({
                             </div>
 
                             {formData.plan_key && formData.date && (
-                                <div className="space-y-3">
-                                    <Label className="text-sm font-bold text-slate-900 group flex items-center gap-2">
-                                        <Clock className="h-4 w-4 text-blue-600" />
-                                        Available Slots
+                                <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-500">
+                                    <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+                                        <Clock className="h-3.5 w-3.5 text-primary" />
+                                        Available Time Slots
                                     </Label>
-                                    {fetchingSlots ? (
-                                        <div className="flex items-center justify-center py-8">
-                                            <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
-                                        </div>
-                                    ) : slots.length > 0 ? (
-                                        <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto p-1">
-                                            {slots.map((slot) => {
-                                                const dateObj = parseISO(slot.start_time)
-                                                const displayTime = format(dateObj, "h:mm a")
-                                                const valueTime = format(dateObj, "HH:mm")
-                                                const isSelected = formData.time === valueTime && formData.instructorId === slot.instructor_id
+                                    <div className="p-4 bg-slate-50/50 rounded-3xl border border-slate-100 shadow-inner">
+                                        {fetchingSlots ? (
+                                            <div className="flex items-center justify-center py-12">
+                                                <Loader2 className="h-8 w-8 animate-spin text-primary opacity-20" />
+                                            </div>
+                                        ) : slots.length > 0 ? (
+                                            <div className="grid grid-cols-2 gap-2 max-h-[300px] overflow-y-auto pr-1 scrollbar-hide">
+                                                {slots.map((slot) => {
+                                                    const dateObj = parseISO(slot.start_time)
+                                                    const displayTime = format(dateObj, "h:mm a")
+                                                    const valueTime = format(dateObj, "HH:mm")
+                                                    const isSelected = formData.time === valueTime && formData.instructorId === slot.instructor_id
 
-                                                return (
-                                                    <Button
-                                                        key={`${slot.start_time}-${slot.instructor_id}`}
-                                                        type="button"
-                                                        variant={isSelected ? "default" : "outline"}
-                                                        className={`h-10 text-xs font-bold rounded-lg transition-all ${isSelected ? "bg-blue-600 shadow-md shadow-blue-600/20" : "hover:border-blue-200 hover:bg-blue-50"
-                                                            }`}
-                                                        onClick={() => handleSlotSelect(slot)}
-                                                    >
-                                                        <span className="flex flex-col leading-tight">
-                                                            <span>{displayTime}</span>
-                                                            {slot.instructor_name && <span className="text-[10px] font-medium opacity-80">{slot.instructor_name}</span>}
-                                                        </span>
-                                                    </Button>
-                                                )
-                                            })}
-                                        </div>
-                                    ) : (
-                                        <div className="text-center py-6 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                                            <p className="text-sm text-slate-500 font-medium">No slots available for this date.</p>
-                                        </div>
-                                    )}
+                                                    return (
+                                                        <Button
+                                                            key={`${slot.start_time}-${slot.instructor_id}`}
+                                                            type="button"
+                                                            variant="ghost"
+                                                            className={`h-auto flex flex-col items-center py-3 rounded-2xl border-2 transition-all group/slot ${isSelected
+                                                                ? "bg-primary border-primary text-white shadow-lg shadow-primary/20 scale-[0.98]"
+                                                                : "bg-white border-transparent hover:border-primary/10 hover:bg-white shadow-sm font-bold text-slate-600"
+                                                                }`}
+                                                            onClick={() => handleSlotSelect(slot)}
+                                                        >
+                                                            <span className="text-xs font-black tracking-tight">{displayTime}</span>
+                                                            {slot.instructor_name && (
+                                                                <span className={`text-[9px] font-black uppercase tracking-tighter opacity-60 mt-0.5 ${isSelected ? 'text-white' : ''}`}>
+                                                                    {slot.instructor_name.split(' ')[0]}
+                                                                </span>
+                                                            )}
+                                                        </Button>
+                                                    )
+                                                })}
+                                            </div>
+                                        ) : (
+                                            <div className="text-center py-12 space-y-2">
+                                                <div className="text-3xl">📅</div>
+                                                <p className="text-xs text-slate-400 font-black uppercase tracking-[0.2em]">No free slots found</p>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             )}
 
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-2 gap-6">
                                 <div className="space-y-2">
-                                    <Label>Vehicle (Optional)</Label>
+                                    <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Vehicle</Label>
                                     <Select value={formData.vehicleId} onValueChange={(val) => setFormData({ ...formData, vehicleId: val })}>
-                                        <SelectTrigger className="h-11 rounded-xl">
-                                            <SelectValue placeholder="Select vehicle" />
+                                        <SelectTrigger className="h-12 rounded-2xl border-slate-100 bg-slate-50/50 hover:bg-white transition-all font-bold text-slate-700">
+                                            <SelectValue placeholder="Unassigned" />
                                         </SelectTrigger>
-                                        <SelectContent className="rounded-xl">
+                                        <SelectContent className="rounded-2xl border-slate-100 shadow-heavy p-1">
                                             {vehicles.map(v => (
-                                                <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
+                                                <SelectItem key={v.id} value={v.id} className="rounded-xl font-bold py-2.5">{v.name}</SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
                                 </div>
                                 <div className="space-y-2">
-                                    <Label>Duration (hrs)</Label>
-                                    <Input
-                                        disabled
-                                        value={`${formData.duration} hours`}
-                                        className="h-11 rounded-xl bg-slate-50 font-medium"
-                                    />
+                                    <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Session Duration</Label>
+                                    <div className="h-12 rounded-2xl bg-slate-50 border border-slate-100 flex items-center px-4 text-sm font-black text-slate-400 cursor-not-allowed">
+                                        {formData.duration} HOURS
+                                    </div>
                                 </div>
                             </div>
-                        </>
+                        </div>
                     )}
 
                     <div className="space-y-2">
-                        <Label>Notes</Label>
+                        <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Internal Notes</Label>
                         <Textarea
-                            placeholder="Internal notes..."
+                            placeholder="Add administrative context..."
                             value={formData.notes}
                             onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                            className="bg-slate-50/50 border-slate-100 rounded-2xl p-4 text-sm font-medium focus:ring-primary/10 transition-all min-h-[100px] resize-none"
                         />
                     </div>
                 </div>
 
-                <DialogFooter>
-                    <Button variant="outline" onClick={onClose}>Cancel</Button>
-                    <Button
-                        onClick={handleSubmit}
-                        disabled={loading}
-                        className={isPackage ? "bg-orange-600 hover:bg-orange-700 shadow-lg shadow-orange-600/20" : "bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-600/20"}
-                    >
-                        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        {isPackage ? "Enroll Student" : "Schedule Session"}
-                    </Button>
-                </DialogFooter>
+                <div className="p-8 bg-slate-50/30 border-t border-slate-50">
+                    <DialogFooter className="flex items-center gap-3">
+                        <Button variant="ghost" onClick={onClose} className="rounded-2xl font-black uppercase tracking-widest text-xs text-slate-400 px-6 h-12">Cancel</Button>
+                        <Button
+                            onClick={handleSubmit}
+                            disabled={loading}
+                            className={`flex-1 rounded-2xl font-black uppercase tracking-[0.15em] text-xs h-12 transition-all active:scale-[0.98] shadow-lg ${isPackage
+                                ? "bg-amber-600 hover:bg-amber-700 shadow-amber-600/20"
+                                : "bg-primary hover:bg-primary/90 shadow-primary/20"
+                                }`}
+                        >
+                            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : (isPackage ? "Enroll Student" : "Confirm Booking")}
+                        </Button>
+                    </DialogFooter>
+                </div>
             </DialogContent>
         </Dialog>
     )
