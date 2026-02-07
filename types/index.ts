@@ -59,10 +59,17 @@ export interface Course {
 export interface Enrollment {
     id: string;
     user_id: string;
-    course_id: string;
-    status: 'active' | 'completed' | 'expired';
+    student_id?: string;
+    course_id?: string;
+    class_id?: string;
+    status: 'active' | 'completed' | 'expired' | 'enrolled';
     enrolled_at: string;
     completed_at?: string;
+    customer_details?: {
+        service_type?: 'TEN_HOUR_PACKAGE' | 'BTW_PACKAGE';
+        name?: string;
+        email?: string;
+    };
     courses?: Course;
     profiles?: Profile;
 }

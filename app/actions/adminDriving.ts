@@ -137,12 +137,12 @@ export async function updateDrivingService(data: {
         display_name: data.display_name,
         plan_key: data.plan_key,
         duration_minutes: data.duration_minutes,
-        category: data.category,
-        credits_granted: data.credits_granted
     }
 
     if (data.price !== undefined) payload.price = data.price
     if (data.price_cents !== undefined) payload.price_cents = data.price_cents
+    if (data.category !== undefined) payload.category = data.category
+    if (data.credits_granted !== undefined) payload.credits_granted = data.credits_granted
 
     const { data: updated, error } = await supabaseService
         .from('service_packages')
@@ -172,54 +172,183 @@ export async function updateDrivingService(data: {
 
 export async function grantPackageCredits(studentId: string, packageId: string) {
     try {
-        // 1. Fetch Package Credits
+        // 1. Fetch Package Details (including plan_key)
         const { data: pkg, error: pkgError } = await supabaseService
             .from('service_packages')
-            .select('credits_granted, display_name')
+            .select('credits_granted, display_name, duration_minutes, plan_key')
             .eq('id', packageId)
             .single()
 
         if (pkgError || !pkg) throw new Error("Package not found")
 
         const creditsToGrant = pkg.credits_granted || 0
+        const durationMinutes = pkg.duration_minutes || 120
+        const hoursToGrant = (creditsToGrant * durationMinutes) / 60
+
         if (creditsToGrant <= 0) throw new Error("This package grants no sessions")
 
         // 2. Fetch Student Profile
         const { data: student, error: studentError } = await supabaseService
             .from('profiles')
-            .select('driving_balance_sessions, full_name')
+            .select('driving_balance_sessions, driving_balance_hours, full_name, email, ten_hour_sessions_total, ten_hour_sessions_used')
             .eq('id', studentId)
             .single()
 
         if (studentError || !student) throw new Error("Student not found")
 
-        // 3. Increment Credits
-        const newBalance = (student.driving_balance_sessions || 0) + creditsToGrant
+        // 3. Route based on package type (plan_key)
+        const packageType = pkg.plan_key
 
-        const { error: updateError } = await supabaseService
-            .from('profiles')
-            .update({
-                driving_balance_sessions: newBalance,
-                updated_at: new Date().toISOString()
-            })
-            .eq('id', studentId)
+        if (packageType === 'TEN_HOUR') {
+            // === TEN_HOUR_PACKAGE ===
+            // Step 1: Create enrollment (unlocks /student/ten-hour route)
+            const { error: enrollmentError } = await supabaseService
+                .from('enrollments')
+                .insert([{
+                    student_id: studentId,
+                    user_id: studentId,
+                    status: 'enrolled',
+                    enrolled_at: new Date().toISOString(),
+                    customer_details: {
+                        service_type: 'TEN_HOUR_PACKAGE',
+                        name: student.full_name,
+                        email: student.email
+                    }
+                }])
 
-        if (updateError) throw updateError
+            if (enrollmentError) {
+                console.error('TEN_HOUR enrollment error:', enrollmentError)
+                throw new Error(`Failed to create enrollment: ${enrollmentError.message}`)
+            }
 
-        // 4. Log Audit
-        await supabaseService.from('audit_logs').insert([{
-            action: 'grant_credits',
-            entity_type: 'student',
-            entity_id: studentId,
-            metadata: {
-                package_id: packageId,
-                package_name: pkg.display_name,
-                credits_granted: creditsToGrant,
-                previous_balance: student.driving_balance_sessions,
-                new_balance: newBalance
-            },
-            message: `Granted ${creditsToGrant} sessions to ${student.full_name} via ${pkg.display_name}`
-        }])
+            // Step 2: Initialize ten_hour credits in profile
+            const newTenHourTotal = (student.ten_hour_sessions_total || 0) + creditsToGrant
+            const newTenHourUsed = student.ten_hour_sessions_used || 0
+
+            const { error: updateError } = await supabaseService
+                .from('profiles')
+                .update({
+                    ten_hour_package_paid: true,
+                    ten_hour_sessions_total: newTenHourTotal,
+                    ten_hour_sessions_used: newTenHourUsed,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', studentId)
+
+            if (updateError) throw updateError
+
+            // Audit Log
+            await supabaseService.from('audit_logs').insert([{
+                action: 'grant_ten_hour_package',
+                entity_type: 'student',
+                entity_id: studentId,
+                metadata: {
+                    package_id: packageId,
+                    package_name: pkg.display_name,
+                    package_type: 'TEN_HOUR_PACKAGE',
+                    credits_granted: creditsToGrant,
+                    new_ten_hour_total: newTenHourTotal,
+                    customer_details: {
+                        service_type: 'TEN_HOUR_PACKAGE',
+                        name: student.full_name,
+                        email: student.email
+                    }
+                },
+                message: `Granted TEN_HOUR_PACKAGE (${creditsToGrant} sessions) to ${student.full_name}`
+            }])
+
+        } else if (packageType === 'BTW_3_SESSION') {
+            // === BTW_PACKAGE ===
+            // Step 1: Create enrollment (unlocks /student/behind-the-wheel route)
+            const { error: enrollmentError } = await supabaseService
+                .from('enrollments')
+                .insert([{
+                    student_id: studentId,
+                    user_id: studentId,
+                    status: 'enrolled',
+                    enrolled_at: new Date().toISOString(),
+                    customer_details: {
+                        service_type: 'BTW_PACKAGE',
+                        name: student.full_name,
+                        email: student.email
+                    }
+                }])
+
+            if (enrollmentError) {
+                console.error('BTW enrollment error:', enrollmentError)
+                throw new Error(`Failed to create BTW enrollment: ${enrollmentError.message}`)
+            }
+
+            // Step 2: Create BTW allocation
+            const { error: allocationError } = await supabaseService
+                .from('student_btw_allocations')
+                .insert([{
+                    student_id: studentId,
+                    package_id: packageId,
+                    total_included_sessions: creditsToGrant,
+                    sessions_used: 0
+                }])
+
+            if (allocationError) {
+                console.error('BTW allocation error:', allocationError)
+                throw new Error(`Failed to create BTW allocation: ${allocationError.message}`)
+            }
+
+            // Audit Log
+            await supabaseService.from('audit_logs').insert([{
+                action: 'grant_btw_package',
+                entity_type: 'student',
+                entity_id: studentId,
+                metadata: {
+                    package_id: packageId,
+                    package_name: pkg.display_name,
+                    package_type: 'BTW_PACKAGE',
+                    credits_granted: creditsToGrant,
+                    customer_details: {
+                        service_type: 'BTW_PACKAGE',
+                        name: student.full_name,
+                        email: student.email
+                    }
+                },
+                message: `Granted BTW_PACKAGE (${creditsToGrant} sessions) to ${student.full_name}`
+            }])
+
+        } else {
+            // === ONE-OFF SESSIONS (PRACTICE, ROAD_TEST) ===
+            // Keep current approach: generic driving_balance fields
+            const newSessionsBalance = (student.driving_balance_sessions || 0) + creditsToGrant
+            const newHoursBalance = (student.driving_balance_hours || 0) + hoursToGrant
+
+            const { error: updateError } = await supabaseService
+                .from('profiles')
+                .update({
+                    driving_balance_sessions: newSessionsBalance,
+                    driving_balance_hours: newHoursBalance,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', studentId)
+
+            if (updateError) throw updateError
+
+            // Audit Log
+            await supabaseService.from('audit_logs').insert([{
+                action: 'grant_credits',
+                entity_type: 'student',
+                entity_id: studentId,
+                metadata: {
+                    package_id: packageId,
+                    package_name: pkg.display_name,
+                    package_type: packageType || 'ONE_OFF_SESSION',
+                    credits_granted: creditsToGrant,
+                    hours_granted: hoursToGrant,
+                    previous_sessions: student.driving_balance_sessions,
+                    new_sessions: newSessionsBalance,
+                    previous_hours: student.driving_balance_hours,
+                    new_hours: newHoursBalance
+                },
+                message: `Granted ${creditsToGrant} sessions (${hoursToGrant} hours) to ${student.full_name} via ${pkg.display_name}`
+            }])
+        }
 
         revalidatePath('/admin/driving')
         revalidatePath('/admin/students')
