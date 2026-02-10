@@ -54,13 +54,57 @@ export default async function BillingPage() {
         .eq('id', user.id)
         .single()
 
-    const { data: org } = profile?.organization_id
-        ? await supabase
+    let org: any = null
+
+    if (profile?.organization_id) {
+        const { data: linkedOrg } = await supabase
             .from('organizations')
             .select('*')
             .eq('id', profile.organization_id)
             .maybeSingle()
-        : { data: null }
+        org = linkedOrg
+    }
+
+    if (!org) {
+        const { data: ownedOrg } = await supabase
+            .from('organizations')
+            .select('*')
+            .eq('owner_user_id', user.id)
+            .maybeSingle()
+        org = ownedOrg
+
+        if (org && !profile?.organization_id) {
+            await supabase
+                .from('profiles')
+                .update({ organization_id: org.id })
+                .eq('id', user.id)
+        }
+    }
+
+    if (!org) {
+        const { data: createdOrg, error: createOrgError } = await supabase
+            .from('organizations')
+            .insert({
+                owner_user_id: user.id,
+                current_plan: 'core',
+                plan_status: 'active',
+                billing_status: 'inactive'
+            })
+            .select('*')
+            .single()
+
+        if (createOrgError) {
+            console.error('Failed to create organization for billing page:', createOrgError)
+            redirect('/admin')
+        }
+
+        org = createdOrg
+
+        await supabase
+            .from('profiles')
+            .update({ organization_id: org.id })
+            .eq('id', user.id)
+    }
 
     const isActive = org?.billing_status === 'active' || org?.billing_status === 'trialing'
     const isCanceled = org?.billing_status === 'canceled'
@@ -327,4 +371,3 @@ export default async function BillingPage() {
         </div>
     )
 }
-

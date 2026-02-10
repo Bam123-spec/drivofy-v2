@@ -5,6 +5,10 @@ import { stripe } from '@/lib/stripe';
 
 export async function POST(req: Request) {
     try {
+        if (!process.env.STRIPE_SECRET_KEY) {
+            return NextResponse.json({ error: 'Stripe is not configured (missing STRIPE_SECRET_KEY)' }, { status: 503 });
+        }
+
         const cookieStore = await cookies();
         const supabase = createServerClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -26,25 +30,50 @@ export async function POST(req: Request) {
             .eq('id', user.id)
             .single();
 
-        if (!profile?.organization_id) {
-            return NextResponse.json({ error: 'User not associated with an organization' }, { status: 404 });
+        // Resolve organization from profile first, then ownership fallback.
+        let org: any = null;
+        if (profile?.organization_id) {
+            const { data: linkedOrg, error: linkedOrgError } = await supabase
+                .from('organizations')
+                .select('*')
+                .eq('id', profile.organization_id)
+                .maybeSingle();
+
+            if (linkedOrgError) {
+                return NextResponse.json({ error: linkedOrgError.message }, { status: 500 });
+            }
+            org = linkedOrg;
         }
 
-        // Fetch organization
-        const { data: org, error: fetchError } = await supabase
-            .from('organizations')
-            .select('*')
-            .eq('id', profile.organization_id)
-            .maybeSingle();
+        if (!org) {
+            const { data: ownedOrg, error: ownedOrgError } = await supabase
+                .from('organizations')
+                .select('*')
+                .eq('owner_user_id', user.id)
+                .maybeSingle();
 
-        if (fetchError || !org || !org.stripe_customer_id) {
+            if (ownedOrgError) {
+                return NextResponse.json({ error: ownedOrgError.message }, { status: 500 });
+            }
+
+            org = ownedOrg;
+
+            if (org && !profile?.organization_id) {
+                await supabase
+                    .from('profiles')
+                    .update({ organization_id: org.id })
+                    .eq('id', user.id);
+            }
+        }
+
+        if (!org || !org.stripe_customer_id) {
             return NextResponse.json({ error: 'No billing record found' }, { status: 404 });
         }
 
-        // Fetch latest from Stripe including items to determine plan
+        // Fetch a reasonable window of recent subscriptions, then choose the first active/trialing/past_due.
         const subscriptions = await stripe.subscriptions.list({
             customer: org.stripe_customer_id,
-            limit: 1,
+            limit: 20,
             status: 'all', // Check all to get the most relevant one
         });
 
@@ -52,12 +81,15 @@ export async function POST(req: Request) {
         const sub = subscriptions.data.find(s => ['active', 'trialing', 'past_due'].includes(s.status)) as any;
 
         if (!sub) {
-            // No active subscription found, reset to core if it was active
+            // No active subscription found, reset to core.
             await supabase
                 .from('organizations')
                 .update({
+                    current_plan: 'core',
                     billing_status: 'inactive',
-                    plan_status: 'inactive'
+                    plan_status: 'inactive',
+                    stripe_subscription_id: null,
+                    current_period_end: null,
                 })
                 .eq('id', org.id);
             return NextResponse.json({ status: 'no_subscription' });
