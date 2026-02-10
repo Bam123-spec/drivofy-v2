@@ -57,6 +57,34 @@ import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
 import { updateStudent, deleteStudent } from "@/app/actions/student"
 
+type EnrollmentLike = {
+    email?: string | null
+    phone?: string | null
+    first_name?: string | null
+    last_name?: string | null
+    customer_details?: {
+        email?: string | null
+        phone?: string | null
+        name?: string | null
+    } | null
+}
+
+function getLeadEmail(lead: EnrollmentLike) {
+    return lead.email || lead.customer_details?.email || null
+}
+
+function getLeadPhone(lead: EnrollmentLike) {
+    return lead.phone || lead.customer_details?.phone || null
+}
+
+function getLeadName(lead: EnrollmentLike) {
+    const byColumns = [lead.first_name, lead.last_name].filter(Boolean).join(" ").trim()
+    if (byColumns) return byColumns
+    const byCustomer = lead.customer_details?.name?.trim()
+    if (byCustomer) return byCustomer
+    return "Unknown Student"
+}
+
 export default function AdminStudentsPage() {
     const [students, setStudents] = useState<any[]>([])
     const [leads, setLeads] = useState<any[]>([])
@@ -107,8 +135,31 @@ export default function AdminStudentsPage() {
 
             if (enrollError) throw enrollError
 
-            setStudents(profiles || [])
-            setLeads(enrollments || [])
+            // Build a quick lookup so registered students can still display phone
+            // captured at checkout even if profiles.phone hasn't been synced yet.
+            const contactByEmail = new Map<string, { phone?: string | null }>()
+            for (const lead of (enrollments || []) as EnrollmentLike[]) {
+                const email = getLeadEmail(lead)?.toLowerCase()
+                if (!email || contactByEmail.has(email)) continue
+                contactByEmail.set(email, { phone: getLeadPhone(lead) })
+            }
+
+            const hydratedStudents = (profiles || []).map((profile: any) => {
+                const email = profile.email?.toLowerCase()
+                const fallback = email ? contactByEmail.get(email) : null
+                return {
+                    ...profile,
+                    phone: profile.phone || fallback?.phone || null
+                }
+            })
+
+            setStudents(hydratedStudents)
+            setLeads((enrollments || []).map((lead: any) => ({
+                ...lead,
+                email: getLeadEmail(lead),
+                phone: getLeadPhone(lead),
+                full_name: getLeadName(lead),
+            })))
         } catch (error) {
             console.error("Error fetching data:", error)
             toast.error("Failed to load students")
@@ -197,15 +248,24 @@ export default function AdminStudentsPage() {
 
     // Merge logic: Combine profiles and enrollments uniquely by email
     const unifiedData = () => {
-        const profileEmails = new Set(students.map(s => s.email.toLowerCase()))
+        const profileEmails = new Set(
+            students
+                .map(s => s.email?.toLowerCase())
+                .filter(Boolean)
+        )
 
         const combined = [
             ...students.map(s => ({ ...s, type: 'registered' })),
             ...leads
-                .filter(l => !profileEmails.has(l.email?.toLowerCase()))
+                .filter(l => {
+                    const leadEmail = l.email?.toLowerCase()
+                    return !leadEmail || !profileEmails.has(leadEmail)
+                })
                 .map(l => ({
                     ...l,
-                    full_name: `${l.first_name} ${l.last_name}`,
+                    full_name: l.full_name || getLeadName(l),
+                    email: l.email || "",
+                    phone: l.phone || null,
                     created_at: l.enrolled_at,
                     type: 'lead'
                 }))
@@ -226,9 +286,15 @@ export default function AdminStudentsPage() {
 
     const displayData = unifiedData()
     const stats = {
-        total: students.length + leads.filter(l => !students.some(s => s.email === l.email)).length,
+        total: students.length + leads.filter(l => {
+            if (!l.email) return true
+            return !students.some(s => s.email?.toLowerCase() === l.email.toLowerCase())
+        }).length,
         registered: students.length,
-        leads: leads.filter(l => !students.some(s => s.email === l.email)).length,
+        leads: leads.filter(l => {
+            if (!l.email) return true
+            return !students.some(s => s.email?.toLowerCase() === l.email.toLowerCase())
+        }).length,
         recent: displayData.filter(s => new Date(s.created_at) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)).length
     }
 
