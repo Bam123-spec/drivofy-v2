@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabaseClient"
 import {
     Loader2,
@@ -86,6 +87,7 @@ function getLeadName(lead: EnrollmentLike) {
 }
 
 export default function AdminStudentsPage() {
+    const router = useRouter()
     const [students, setStudents] = useState<any[]>([])
     const [leads, setLeads] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
@@ -244,6 +246,10 @@ export default function AdminStudentsPage() {
         } finally {
             setLoading(false)
         }
+    }
+
+    const openStudentDetails = (student: any) => {
+        router.push(`/admin/students/${student.id}?type=${student.type}`)
     }
 
     // Merge logic: Combine profiles and enrollments uniquely by email
@@ -440,7 +446,11 @@ export default function AdminStudentsPage() {
                             <TableBody>
                                 {displayData.length > 0 ? (
                                     displayData.map((student) => (
-                                        <TableRow key={student.id} className="group hover:bg-slate-50/30 transition-colors border-slate-200 even:bg-slate-50/50">
+                                        <TableRow
+                                            key={student.id}
+                                            className="group hover:bg-slate-50/30 transition-colors border-slate-200 even:bg-slate-50/50 cursor-pointer"
+                                            onClick={() => openStudentDetails(student)}
+                                        >
                                             <TableCell className="pl-6 py-4">
                                                 <div className="flex items-center gap-3">
                                                     <div className="relative">
@@ -491,7 +501,7 @@ export default function AdminStudentsPage() {
                                             <TableCell className="pr-6 text-right">
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
-                                                        <Button variant="ghost" className="h-8 w-8 p-0 rounded-lg hover:bg-slate-100">
+                                                        <Button variant="ghost" className="h-8 w-8 p-0 rounded-lg hover:bg-slate-100" onClick={(event) => event.stopPropagation()}>
                                                             <MoreHorizontal className="h-4 w-4 text-slate-400" />
                                                         </Button>
                                                     </DropdownMenuTrigger>
@@ -534,7 +544,11 @@ export default function AdminStudentsPage() {
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {displayData.length > 0 ? (
                                     displayData.map((student) => (
-                                        <Card key={student.id} className="border border-slate-200 bg-white hover:shadow-md transition-shadow rounded-2xl overflow-hidden group">
+                                        <Card
+                                            key={student.id}
+                                            className="border border-slate-200 bg-white hover:shadow-md transition-shadow rounded-2xl overflow-hidden group cursor-pointer"
+                                            onClick={() => openStudentDetails(student)}
+                                        >
                                             <CardContent className="p-6 space-y-4">
                                                 <div className="flex items-start justify-between">
                                                     <div className="relative">
@@ -581,7 +595,12 @@ export default function AdminStudentsPage() {
                                                     </div>
                                                     <DropdownMenu>
                                                         <DropdownMenuTrigger asChild>
-                                                            <Button variant="ghost" size="sm" className="h-8 px-3 rounded-lg hover:bg-slate-100 font-bold text-[10px] uppercase tracking-wider">
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className="h-8 px-3 rounded-lg hover:bg-slate-100 font-bold text-[10px] uppercase tracking-wider"
+                                                                onClick={(event) => event.stopPropagation()}
+                                                            >
                                                                 Actions
                                                             </Button>
                                                         </DropdownMenuTrigger>
