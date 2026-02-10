@@ -100,6 +100,28 @@ import { ClassFormData } from "./components/types"
 import { ManageCategoriesDialog } from "./components/ManageCategoriesDialog"
 import { useMemo } from "react"
 
+const parseClassDate = (value: string | null | undefined) => {
+    if (!value) return Number.POSITIVE_INFINITY
+    const [year, month, day] = value.split("-").map(Number)
+    return new Date(year, month - 1, day).getTime()
+}
+
+const parseClassTime = (value: string | null | undefined) => {
+    if (!value) return Number.POSITIVE_INFINITY
+    const [hour = "0", minute = "0"] = value.split(":")
+    return Number(hour) * 60 + Number(minute)
+}
+
+const compareClassesChronologically = (a: any, b: any) => {
+    const dateDiff = parseClassDate(a.start_date) - parseClassDate(b.start_date)
+    if (dateDiff !== 0) return dateDiff
+
+    const timeDiff = parseClassTime(a.daily_start_time) - parseClassTime(b.daily_start_time)
+    if (timeDiff !== 0) return timeDiff
+
+    return (a.name || "").localeCompare(b.name || "")
+}
+
 export default function AdminClassesPage() {
     const router = useRouter()
     const [classes, setClasses] = useState<any[]>([])
@@ -153,6 +175,20 @@ export default function AdminClassesPage() {
                 setIsAdmin(userIsAdmin)
             }
 
+            const today = format(new Date(), "yyyy-MM-dd")
+            const { data: autoArchivedRows, error: autoArchiveError } = await supabase
+                .from("classes")
+                .update({ is_archived: true })
+                .eq("is_archived", false)
+                .lt("end_date", today)
+                .select("id")
+
+            if (autoArchiveError) {
+                console.error("Auto-archive failed:", autoArchiveError)
+            } else if (autoArchivedRows && autoArchivedRows.length > 0) {
+                toast.info(`Auto-archived ${autoArchivedRows.length} classes past end date`)
+            }
+
             const [clsRes, catRes] = await Promise.all([
                 supabase
                     .from('classes')
@@ -164,7 +200,9 @@ export default function AdminClassesPage() {
                         enrollments (count)
                     `)
                     .eq('is_archived', showArchived)
-                    .order('sort_order', { ascending: true }),
+                    .order('start_date', { ascending: true })
+                    .order('daily_start_time', { ascending: true })
+                    .order('created_at', { ascending: true }),
                 supabase
                     .from('class_categories')
                     .select('*')
@@ -174,28 +212,7 @@ export default function AdminClassesPage() {
             if (clsRes.error) throw clsRes.error
             if (catRes.data) setCategories(catRes.data)
 
-            let finalClasses = clsRes.data || []
-
-            // Auto-archive DIP/RESP past classes
-            if (!showArchived && catRes.data) {
-                const today = new Date().toISOString().split('T')[0]
-                const toArchive = finalClasses.filter(cls =>
-                    cls.end_date < today
-                )
-
-                if (toArchive.length > 0) {
-                    const ids = toArchive.map(c => c.id)
-                    await supabase
-                        .from('classes')
-                        .update({ is_archived: true })
-                        .in('id', ids)
-
-                    finalClasses = finalClasses.filter(c => !ids.includes(c.id))
-                    toast.info(`Auto-archived ${ids.length} past classes (DIP/RESP)`)
-                }
-            }
-
-            setClasses(finalClasses)
+            setClasses(clsRes.data || [])
             setSelectedIds([]) // Clear selection on refetch
         } catch (error: any) {
             console.error("Error fetching classes:", JSON.stringify(error, null, 2))
@@ -293,7 +310,7 @@ export default function AdminClassesPage() {
                 const matchesStatus = statusFilter === "all" || cls.status === statusFilter
                 return matchesSearch && matchesStatus
             })
-            .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
+            .sort(compareClassesChronologically)
     }, [classes, searchQuery, statusFilter])
 
     // Group Classes by Category
