@@ -4,6 +4,109 @@ import { stripe } from '@/lib/stripe';
 import { createServerClient } from '@supabase/ssr';
 import Stripe from 'stripe';
 
+async function syncStudentPhoneFromCheckoutSession(
+    session: Stripe.Checkout.Session,
+    supabaseAdmin: ReturnType<typeof createServerClient>
+) {
+    const metadata = session.metadata || {};
+
+    let phone =
+        session.customer_details?.phone ||
+        (metadata.phone as string | undefined) ||
+        (metadata.customer_phone as string | undefined) ||
+        null;
+
+    let email =
+        session.customer_details?.email ||
+        session.customer_email ||
+        (metadata.email as string | undefined) ||
+        (metadata.student_email as string | undefined) ||
+        null;
+
+    // Try to recover phone/email from Stripe customer if missing in checkout payload.
+    if ((!phone || !email) && typeof session.customer === 'string' && session.customer) {
+        try {
+            const customer = await stripe.customers.retrieve(session.customer);
+            if (!('deleted' in customer && customer.deleted)) {
+                if (!phone) phone = customer.phone || null;
+                if (!email) email = customer.email || null;
+            }
+        } catch (error) {
+            console.error('Failed to retrieve Stripe customer for phone sync:', error);
+        }
+    }
+
+    if (!phone) {
+        console.log('No phone found on checkout session; skipping student phone sync.');
+        return;
+    }
+
+    const possibleStudentIds = [
+        metadata.studentId,
+        metadata.student_id,
+        metadata.profileId,
+        metadata.profile_id,
+        metadata.userId,
+        metadata.user_id,
+    ].filter(Boolean) as string[];
+
+    const normalizedPhone = phone.trim();
+    let updated = false;
+
+    // Prefer exact student/profile id if present in metadata.
+    for (const studentId of possibleStudentIds) {
+        const { data, error } = await supabaseAdmin
+            .from('profiles')
+            .update({
+                phone: normalizedPhone,
+                updated_at: new Date().toISOString(),
+            })
+            .eq('id', studentId)
+            .eq('role', 'student')
+            .select('id')
+            .limit(1);
+
+        if (error) {
+            console.error('Error updating student phone by ID:', error);
+            continue;
+        }
+
+        if (data && data.length > 0) {
+            updated = true;
+            console.log(`Student phone synced by ID: ${studentId}`);
+            break;
+        }
+    }
+
+    // Fallback to student email match if no ID metadata is available.
+    if (!updated && email) {
+        const { data, error } = await supabaseAdmin
+            .from('profiles')
+            .update({
+                phone: normalizedPhone,
+                updated_at: new Date().toISOString(),
+            })
+            .ilike('email', email)
+            .eq('role', 'student')
+            .select('id')
+            .limit(1);
+
+        if (error) {
+            console.error('Error updating student phone by email:', error);
+        } else if (data && data.length > 0) {
+            updated = true;
+            console.log(`Student phone synced by email: ${email}`);
+        }
+    }
+
+    if (!updated) {
+        console.log('No matching student profile found for checkout phone sync.', {
+            email,
+            possibleStudentIds,
+        });
+    }
+}
+
 export async function POST(req: Request) {
     const body = await req.text();
     const headerList = await headers();
@@ -44,46 +147,47 @@ export async function POST(req: Request) {
             // Get orgId from metadata OR client_reference_id (passed in Payment Link URL)
             const orgId = session.metadata?.orgId || session.client_reference_id;
 
-            if (!orgId) {
-                console.error('Org ID is missing from session');
-                return new NextResponse('Org ID missing', { status: 400 });
-            }
+            if (orgId) {
+                // GLOBAL PREMIUM: No matter what they bought, if they paid, they get Premium
+                const plan = 'premium';
 
-            // GLOBAL PREMIUM: No matter what they bought, if they paid, they get Premium
-            const plan = 'premium';
+                console.log(`Webhook: Processing session for org ${orgId}. Enforcing Global Premium plan.`);
+                console.log(`Updating org ${orgId} to plan ${plan}`);
 
-            console.log(`Webhook: Processing session for org ${orgId}. Enforcing Global Premium plan.`);
+                const updateData: any = {
+                    current_plan: plan,
+                    plan_status: 'active',
+                    stripe_customer_id: session.customer as string,
+                };
 
-            console.log(`Updating org ${orgId} to plan ${plan}`);
+                // If it's a subscription, store the ID and period end
+                if (session.subscription) {
+                    const subId = session.subscription as string;
+                    const sub = await stripe.subscriptions.retrieve(subId);
+                    updateData.stripe_subscription_id = subId;
+                    updateData.billing_status = sub.status;
+                    updateData.current_period_end = new Date((sub as any).current_period_end * 1000).toISOString();
+                } else {
+                    // For one-time payments, just set active status
+                    updateData.billing_status = 'active';
+                }
 
-            const updateData: any = {
-                current_plan: plan,
-                plan_status: 'active',
-                stripe_customer_id: session.customer as string,
-            };
+                const { error } = await supabaseAdmin
+                    .from('organizations')
+                    .update(updateData)
+                    .eq('id', orgId);
 
-            // If it's a subscription, store the ID and period end
-            if (session.subscription) {
-                const subId = session.subscription as string;
-                const sub = await stripe.subscriptions.retrieve(subId);
-                updateData.stripe_subscription_id = subId;
-                updateData.billing_status = sub.status;
-                updateData.current_period_end = new Date((sub as any).current_period_end * 1000).toISOString();
+                if (error) {
+                    console.error('Database update error:', error);
+                    throw error;
+                }
+                console.log('Database updated successfully for org:', orgId);
             } else {
-                // For one-time payments, just set active status
-                updateData.billing_status = 'active';
+                console.log('No orgId found for checkout session; skipping org billing update.');
             }
 
-            const { error } = await supabaseAdmin
-                .from('organizations')
-                .update(updateData)
-                .eq('id', orgId);
-
-            if (error) {
-                console.error('Database update error:', error);
-                throw error;
-            }
-            console.log('Database updated successfully for org:', orgId);
+            // Always attempt to sync student phone from checkout details when present.
+            await syncStudentPhoneFromCheckoutSession(session, supabaseAdmin);
         }
 
         if (event.type === 'customer.subscription.updated') {
