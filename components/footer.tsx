@@ -67,12 +67,31 @@ export function Footer() {
                   Contact
                 </Link>
               </li>
+              <li>
+                <Link href="/privacy-policy" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  Privacy Policy
+                </Link>
+              </li>
+              <li>
+                <Link href="/terms-of-service" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  Terms of Service
+                </Link>
+              </li>
             </ul>
           </div>
         </div>
 
-        <div className="mt-12 pt-8 border-t border-border">
-          <p className="text-sm text-muted-foreground text-center">© {currentYear} Selam Driving School. All rights reserved.</p>
+        <div className="mt-12 pt-8 border-t border-border flex flex-col md:flex-row items-center justify-between gap-4">
+          <p className="text-sm text-muted-foreground text-center md:text-left">© {currentYear} Selam Driving School. All rights reserved.</p>
+          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <Link href="/privacy-policy" className="hover:text-foreground transition-colors">
+              Privacy Policy
+            </Link>
+            <span className="text-border">|</span>
+            <Link href="/terms-of-service" className="hover:text-foreground transition-colors">
+              Terms of Service
+            </Link>
+          </div>
         </div>
       </div>
     </footer>

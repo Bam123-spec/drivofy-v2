@@ -1,6 +1,24 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+function normalizeHost(rawHost: string) {
+    return rawHost.split(':')[0].toLowerCase()
+}
+
+function extractSubdomain(host: string) {
+    const roots = ['drivofy.com', 'portifol.com', 'localhost']
+
+    for (const root of roots) {
+        const suffix = `.${root}`
+        if (host.endsWith(suffix)) {
+            const candidate = host.slice(0, -suffix.length)
+            if (candidate && candidate !== 'www') return candidate
+        }
+    }
+
+    return null
+}
+
 export async function middleware(request: NextRequest) {
     let response = NextResponse.next({
         request: {
@@ -107,29 +125,26 @@ export async function middleware(request: NextRequest) {
     }
 
     // 4. Subdomain Routing
-    const hostname = request.headers.get('host') || ''
-    const currentHost = process.env.NODE_ENV === 'production' && process.env.VERCEL === '1'
-        ? hostname.replace(`.portifol.com`, '') // Replace with your actual domain
-        : hostname.replace(`.localhost:3000`, '')
+    const host = normalizeHost(request.headers.get('host') || '')
+    const subdomain = extractSubdomain(host)
 
-    // If it's a subdomain (not www, not localhost, not the main domain)
-    if (
-        currentHost !== 'portifol.com' &&
-        currentHost !== 'drivofy.com' &&
-        currentHost !== 'www' &&
-        currentHost !== 'localhost:3000'
-    ) {
-        // User Request: "go straight to thier loging and no other page just login" AND "remove the header"
+    // Subdomain behavior:
+    // - Root (/) shows a clean login page (no marketing bars)
+    // - Auth pages also resolve to the same clean login page
+    // - Main domain keeps normal home page
+    if (subdomain) {
+        const shouldShowSubdomainLogin =
+            path === '/' ||
+            path === '/login' ||
+            path === '/signup' ||
+            path === '/forgot-password'
 
-        // We rewrite to /site/[domain] which will hold the Header-less Login Page
-        if (path === '/') {
+        if (shouldShowSubdomainLogin) {
             const url = request.nextUrl.clone()
-            url.pathname = `/site/${currentHost}`
+            url.pathname = `/site/${subdomain}`
+            url.search = ''
             return NextResponse.rewrite(url)
         }
-
-        // Optional: If you want to strictly block marketing pages on subdomains, 
-        // you could add more logic here, but redirecting Root is the primary requirement.
     }
 
     return response
