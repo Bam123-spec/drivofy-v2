@@ -19,7 +19,7 @@ export async function getDrivingSessions(filters?: {
     startDate?: string,
     endDate?: string
 }) {
-    let query = supabaseService
+    let drivingQuery = supabaseService
         .from('driving_sessions')
         .select(`
             *,
@@ -29,15 +29,117 @@ export async function getDrivingSessions(filters?: {
         `)
         .order('start_time', { ascending: false })
 
-    if (filters?.instructorId && filters.instructorId !== 'all') query = query.eq('instructor_id', filters.instructorId)
-    if (filters?.studentId) query = query.eq('student_id', filters.studentId)
-    if (filters?.status && filters.status !== 'all') query = query.eq('status', filters.status)
-    if (filters?.startDate) query = query.gte('start_time', filters.startDate)
-    if (filters?.endDate) query = query.lte('start_time', filters.endDate)
+    let btwQuery = supabaseService
+        .from('behind_the_wheel_sessions')
+        .select('*')
+        .order('starts_at', { ascending: false })
 
-    const { data, error } = await query
-    if (error) throw new Error(error.message)
-    return data
+    let tenHourQuery = supabaseService
+        .from('ten_hour_package_sessions')
+        .select('*')
+        .order('start_time', { ascending: false })
+
+    if (filters?.instructorId && filters.instructorId !== 'all') {
+        drivingQuery = drivingQuery.eq('instructor_id', filters.instructorId)
+        btwQuery = btwQuery.eq('instructor_id', filters.instructorId)
+        tenHourQuery = tenHourQuery.eq('instructor_id', filters.instructorId)
+    }
+    if (filters?.studentId) {
+        drivingQuery = drivingQuery.eq('student_id', filters.studentId)
+        btwQuery = btwQuery.eq('student_id', filters.studentId)
+        tenHourQuery = tenHourQuery.eq('student_id', filters.studentId)
+    }
+    if (filters?.status && filters.status !== 'all') {
+        drivingQuery = drivingQuery.eq('status', filters.status)
+        btwQuery = btwQuery.eq('status', filters.status)
+        tenHourQuery = tenHourQuery.eq('status', filters.status)
+    }
+    if (filters?.startDate) {
+        drivingQuery = drivingQuery.gte('start_time', filters.startDate)
+        btwQuery = btwQuery.gte('starts_at', filters.startDate)
+        tenHourQuery = tenHourQuery.gte('start_time', filters.startDate)
+    }
+    if (filters?.endDate) {
+        drivingQuery = drivingQuery.lte('start_time', filters.endDate)
+        btwQuery = btwQuery.lte('starts_at', filters.endDate)
+        tenHourQuery = tenHourQuery.lte('start_time', filters.endDate)
+    }
+
+    const [
+        { data: drivingRows, error: drivingError },
+        { data: btwRows, error: btwError },
+        { data: tenHourRows, error: tenHourError }
+    ] = await Promise.all([drivingQuery, btwQuery, tenHourQuery])
+
+    if (drivingError) throw new Error(drivingError.message)
+    if (btwError) throw new Error(btwError.message)
+    if (tenHourError) throw new Error(tenHourError.message)
+
+    const packageRows = [...(btwRows || []), ...(tenHourRows || [])]
+    const packageStudentIds = Array.from(
+        new Set(packageRows.map((row: any) => row.student_id).filter(Boolean))
+    )
+    const packageInstructorIds = Array.from(
+        new Set(packageRows.map((row: any) => row.instructor_id).filter(Boolean))
+    )
+
+    let packageProfilesById = new Map<string, any>()
+    let packageInstructorsById = new Map<string, any>()
+
+    if (packageStudentIds.length > 0) {
+        const { data: packageProfiles, error: packageProfilesError } = await supabaseService
+            .from('profiles')
+            .select('id, full_name, email, phone')
+            .in('id', packageStudentIds)
+        if (packageProfilesError) throw new Error(packageProfilesError.message)
+        packageProfilesById = new Map((packageProfiles || []).map((profile: any) => [profile.id, profile]))
+    }
+
+    if (packageInstructorIds.length > 0) {
+        const { data: packageInstructors, error: packageInstructorsError } = await supabaseService
+            .from('instructors')
+            .select('id, full_name, email, phone')
+            .in('id', packageInstructorIds)
+        if (packageInstructorsError) throw new Error(packageInstructorsError.message)
+        packageInstructorsById = new Map((packageInstructors || []).map((instructor: any) => [instructor.id, instructor]))
+    }
+
+    const normalizedDriving = (drivingRows || []).map((row: any) => ({
+        ...row,
+        source_table: 'driving_sessions'
+    }))
+
+    const normalizedBTW = (btwRows || []).map((row: any) => ({
+        ...row,
+        source_table: 'behind_the_wheel_sessions',
+        start_time: row.starts_at,
+        end_time: row.ends_at,
+        service_slug: row.session_type || 'btw',
+        plan_key: row.session_type === 'road_test' ? 'road_test' : 'btw',
+        duration_minutes: row.starts_at && row.ends_at
+            ? Math.max(0, Math.round((new Date(row.ends_at).getTime() - new Date(row.starts_at).getTime()) / 60000))
+            : null,
+        profiles: packageProfilesById.get(row.student_id) || null,
+        instructors: packageInstructorsById.get(row.instructor_id) || null,
+        vehicles: null
+    }))
+
+    const normalizedTenHour = (tenHourRows || []).map((row: any) => ({
+        ...row,
+        source_table: 'ten_hour_package_sessions',
+        service_slug: 'ten_hour_package',
+        plan_key: 'TEN_HOUR',
+        duration_minutes: row.start_time && row.end_time
+            ? Math.max(0, Math.round((new Date(row.end_time).getTime() - new Date(row.start_time).getTime()) / 60000))
+            : null,
+        profiles: packageProfilesById.get(row.student_id) || null,
+        instructors: packageInstructorsById.get(row.instructor_id) || null,
+        vehicles: null
+    }))
+
+    return [...normalizedDriving, ...normalizedBTW, ...normalizedTenHour]
+        .filter((row: any) => !!row.start_time)
+        .sort((a: any, b: any) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime())
 }
 
 export async function getInstructors() {

@@ -176,6 +176,33 @@ export default function AdminClassesPage() {
             }
 
             const today = format(new Date(), "yyyy-MM-dd")
+
+            // Normalize class lifecycle statuses by date.
+            await supabase
+                .from("classes")
+                .update({ status: "completed" })
+                .eq("is_archived", false)
+                .lt("end_date", today)
+                .neq("status", "cancelled")
+                .neq("status", "completed")
+
+            await supabase
+                .from("classes")
+                .update({ status: "active" })
+                .eq("is_archived", false)
+                .lte("start_date", today)
+                .gte("end_date", today)
+                .neq("status", "cancelled")
+                .neq("status", "active")
+
+            await supabase
+                .from("classes")
+                .update({ status: "upcoming" })
+                .eq("is_archived", false)
+                .gt("start_date", today)
+                .neq("status", "cancelled")
+                .neq("status", "upcoming")
+
             const { data: autoArchivedRows, error: autoArchiveError } = await supabase
                 .from("classes")
                 .update({ is_archived: true })

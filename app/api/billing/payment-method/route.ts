@@ -5,6 +5,10 @@ import { stripe } from '@/lib/stripe';
 
 export async function GET() {
     try {
+        if (!process.env.STRIPE_SECRET_KEY) {
+            return NextResponse.json({ error: 'Stripe is not configured (missing STRIPE_SECRET_KEY)' }, { status: 503 });
+        }
+
         const cookieStore = await cookies();
         const supabase = createServerClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -19,14 +23,58 @@ export async function GET() {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-        // Fetch organization
-        const { data: org, error: fetchError } = await supabase
-            .from('organizations')
-            .select('stripe_customer_id')
-            .eq('owner_user_id', user.id)
+        // Resolve organization consistently across all admin users.
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('organization_id')
+            .eq('id', user.id)
             .maybeSingle();
 
-        if (fetchError || !org || !org.stripe_customer_id) {
+        let org: { id: string; stripe_customer_id: string | null } | null = null;
+
+        if (profile?.organization_id) {
+            const { data: linkedOrg } = await supabase
+                .from('organizations')
+                .select('id, stripe_customer_id')
+                .eq('id', profile.organization_id)
+                .maybeSingle();
+            org = linkedOrg;
+        }
+
+        const metadataOrgId = user.user_metadata?.organization_id as string | undefined;
+        if (!org && metadataOrgId) {
+            const { data: metaOrg } = await supabase
+                .from('organizations')
+                .select('id, stripe_customer_id')
+                .eq('id', metadataOrgId)
+                .maybeSingle();
+            org = metaOrg;
+
+            if (org && profile?.organization_id !== org.id) {
+                await supabase
+                    .from('profiles')
+                    .update({ organization_id: org.id })
+                    .eq('id', user.id);
+            }
+        }
+
+        if (!org) {
+            const { data: ownedOrg } = await supabase
+                .from('organizations')
+                .select('id, stripe_customer_id')
+                .eq('owner_user_id', user.id)
+                .maybeSingle();
+            org = ownedOrg;
+
+            if (org && !profile?.organization_id) {
+                await supabase
+                    .from('profiles')
+                    .update({ organization_id: org.id })
+                    .eq('id', user.id);
+            }
+        }
+
+        if (!org || !org.stripe_customer_id) {
             return NextResponse.json({ error: 'No billing record found' }, { status: 404 });
         }
 

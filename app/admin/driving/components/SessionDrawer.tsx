@@ -22,6 +22,7 @@ interface SessionDrawerProps {
 export function SessionDrawer({ session, open, onClose }: SessionDrawerProps) {
     const [notes, setNotes] = useState("")
     const [isSaving, setIsSaving] = useState(false)
+    const isReadOnlySource = !!session?.source_table && session.source_table !== 'driving_sessions'
 
     useEffect(() => {
         if (session) {
@@ -32,6 +33,10 @@ export function SessionDrawer({ session, open, onClose }: SessionDrawerProps) {
     if (!session) return null
 
     const handleStatusUpdate = async (status: string) => {
+        if (isReadOnlySource) {
+            toast.info("This session is synced from package bookings. Manage it in the package flow.")
+            return
+        }
         setIsSaving(true)
         const promise = updateSessionStatus(session.id, status)
         toast.promise(promise, {
@@ -50,6 +55,10 @@ export function SessionDrawer({ session, open, onClose }: SessionDrawerProps) {
     }
 
     const handleSaveNotes = async () => {
+        if (isReadOnlySource) {
+            toast.info("Notes are read-only for synced package sessions.")
+            return
+        }
         setIsSaving(true)
         try {
             await updateSessionNotes(session.id, notes)
@@ -87,20 +96,25 @@ export function SessionDrawer({ session, open, onClose }: SessionDrawerProps) {
                     <div className="absolute top-4 right-4 text-[10px] font-mono text-slate-500 uppercase tracking-widest opacity-80 font-bold">
                         #{session.id.slice(0, 8)}
                     </div>
-                    <div className="relative z-10 flex items-center gap-4">
+                        <div className="relative z-10 flex items-center gap-4">
                         <div className="h-14 w-14 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 flex items-center justify-center text-white shadow-2xl">
                             <Car className="h-7 w-7 text-blue-400" />
                         </div>
-                        <div>
-                            <h2 className="text-xl font-bold text-white tracking-tight">Driving Session</h2>
-                            <div className="flex items-center gap-2 mt-1">
-                                <Badge variant="outline" className={`rounded-full px-2 py-0 text-[10px] uppercase font-bold tracking-wider ${statusConfig.color}`}>
-                                    {statusConfig.icon}
-                                    <span className="ml-1">{statusConfig.label}</span>
-                                </Badge>
+                            <div>
+                                <h2 className="text-xl font-bold text-white tracking-tight">Driving Session</h2>
+                                <div className="flex items-center gap-2 mt-1">
+                                    <Badge variant="outline" className={`rounded-full px-2 py-0 text-[10px] uppercase font-bold tracking-wider ${statusConfig.color}`}>
+                                        {statusConfig.icon}
+                                        <span className="ml-1">{statusConfig.label}</span>
+                                    </Badge>
+                                    {isReadOnlySource && (
+                                        <Badge variant="outline" className="rounded-full px-2 py-0 text-[10px] uppercase font-bold tracking-wider border-white/20 text-slate-300">
+                                            Synced
+                                        </Badge>
+                                    )}
+                                </div>
                             </div>
                         </div>
-                    </div>
                 </div>
 
                 <div className="flex-1 overflow-y-auto custom-scrollbar bg-slate-950">
@@ -198,13 +212,14 @@ export function SessionDrawer({ session, open, onClose }: SessionDrawerProps) {
                                     placeholder="Add detailed session notes, performance feedback, or internal administrative comments..."
                                     value={notes}
                                     onChange={(e) => setNotes(e.target.value)}
+                                    disabled={isReadOnlySource}
                                     className="min-h-[140px] rounded-2xl border-white/10 focus:ring-blue-500 bg-slate-900 resize-none p-4 text-sm leading-relaxed shadow-sm transition-all text-white placeholder:text-slate-600"
                                 />
                                 <div className="absolute bottom-3 right-3 opacity-0 group-focus-within:opacity-100 transition-opacity">
                                     <Button
                                         size="sm"
                                         onClick={handleSaveNotes}
-                                        disabled={isSaving}
+                                        disabled={isSaving || isReadOnlySource}
                                         className="h-8 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-[10px] uppercase tracking-widest px-3 shadow-lg shadow-blue-600/20"
                                     >
                                         {isSaving ? <MoreVertical className="h-3 w-3 animate-pulse" /> : <Save className="h-3 w-3 mr-1.5" />}
@@ -219,7 +234,7 @@ export function SessionDrawer({ session, open, onClose }: SessionDrawerProps) {
                 {/* Sticky Footer Actions */}
                 <div className="p-6 bg-slate-950/80 backdrop-blur-md border-t border-white/5 shrink-0">
                     <div className="space-y-3">
-                        {session.status === 'scheduled' ? (
+                        {session.status === 'scheduled' && !isReadOnlySource ? (
                             <div className="grid grid-cols-2 gap-3">
                                 <Button
                                     className="h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-lg shadow-emerald-600/20 transition-all active:scale-[0.98]"
@@ -247,7 +262,9 @@ export function SessionDrawer({ session, open, onClose }: SessionDrawerProps) {
                             </div>
                         ) : (
                             <div className="flex items-center justify-center p-4 rounded-xl border border-dashed border-white/5 bg-white/5">
-                                <p className="text-xs font-bold text-slate-600 uppercase tracking-widest">No further actions required</p>
+                                <p className="text-xs font-bold text-slate-600 uppercase tracking-widest">
+                                    {isReadOnlySource ? 'Managed in package bookings' : 'No further actions required'}
+                                </p>
                             </div>
                         )}
                         <Button

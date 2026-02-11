@@ -38,7 +38,10 @@ export function DrivingSessionTable({ sessions, onSelectSession }: DrivingSessio
             'driving-practice-2hr': 'Driving Practice (2hr)',
             'road-test-1hr': 'Road Test',
             'btw': 'BTW Session',
-            'driving-practice-5hr': '5 Hour Class'
+            'driving-practice-5hr': '5 Hour Class',
+            'road_test': 'Road Test Session',
+            'ten_hour_package': '10 Hour Package Session',
+            'TEN_HOUR': '10 Hour Package Session'
         }
         return serviceMap[slug] || slug
     }
@@ -73,9 +76,11 @@ export function DrivingSessionTable({ sessions, onSelectSession }: DrivingSessio
                 </TableHeader>
                 <TableBody>
                     {sessions.length > 0 ? (
-                        sessions.map((session, index) => (
+                        sessions.map((session) => {
+                            const isReadOnlySource = !!session.source_table && session.source_table !== 'driving_sessions'
+                            return (
                             <TableRow
-                                key={session.id}
+                                key={`${session.source_table || 'driving_sessions'}-${session.id}`}
                                 className="group hover:bg-slate-50/40 transition-colors cursor-pointer border-b border-slate-50 last:border-0"
                                 onClick={() => onSelectSession(session)}
                             >
@@ -130,6 +135,11 @@ export function DrivingSessionTable({ sessions, onSelectSession }: DrivingSessio
                                         <Badge variant="outline" className="w-fit bg-white text-[10px] font-black uppercase px-2 py-0.5 border-slate-200 tracking-[0.05em] h-auto shadow-sm">
                                             {getServiceName(session.plan_key || session.service_slug)}
                                         </Badge>
+                                        {isReadOnlySource && (
+                                            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.08em]">
+                                                Synced from package flow
+                                            </span>
+                                        )}
                                         {session.vehicles ? (
                                             <div className="flex items-center gap-2 text-[11px] font-bold text-slate-500 opacity-80">
                                                 <Car className="h-3.5 w-3.5" />
@@ -162,7 +172,7 @@ export function DrivingSessionTable({ sessions, onSelectSession }: DrivingSessio
                                                 </div>
                                                 View Summary
                                             </DropdownMenuItem>
-                                            {session.status === 'scheduled' && (
+                                            {!isReadOnlySource && session.status === 'scheduled' && (
                                                 <>
                                                     <DropdownMenuItem
                                                         className="rounded-xl px-3 py-2.5 text-sm font-bold text-emerald-600 focus:bg-emerald-50 focus:text-emerald-700 cursor-pointer transition-colors gap-3"
@@ -217,29 +227,41 @@ export function DrivingSessionTable({ sessions, onSelectSession }: DrivingSessio
                                                     </DropdownMenuItem>
                                                 </>
                                             )}
-                                            <DropdownMenuSeparator className="my-2 bg-slate-50" />
-                                            <DropdownMenuItem
-                                                className="rounded-xl px-3 py-2.5 text-sm font-bold text-rose-600 focus:bg-rose-50 focus:text-rose-700 cursor-pointer transition-colors gap-3"
-                                                onClick={async (e) => {
-                                                    e.stopPropagation();
-                                                    if (confirm('Permanently delete this session?')) {
-                                                        const promise = deleteDrivingSession(session.id);
-                                                        toast.promise(promise, {
-                                                            loading: 'Deleting...',
-                                                            success: 'Session deleted',
-                                                            error: 'Failed to delete'
-                                                        });
-                                                    }
-                                                }}
-                                            >
-                                                <div className="h-8 w-8 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center font-black">×</div>
-                                                Erase History
-                                            </DropdownMenuItem>
+                                            {!isReadOnlySource ? (
+                                                <>
+                                                    <DropdownMenuSeparator className="my-2 bg-slate-50" />
+                                                    <DropdownMenuItem
+                                                        className="rounded-xl px-3 py-2.5 text-sm font-bold text-rose-600 focus:bg-rose-50 focus:text-rose-700 cursor-pointer transition-colors gap-3"
+                                                        onClick={async (e) => {
+                                                            e.stopPropagation();
+                                                            if (confirm('Permanently delete this session?')) {
+                                                                const promise = deleteDrivingSession(session.id);
+                                                                toast.promise(promise, {
+                                                                    loading: 'Deleting...',
+                                                                    success: 'Session deleted',
+                                                                    error: 'Failed to delete'
+                                                                });
+                                                            }
+                                                        }}
+                                                    >
+                                                        <div className="h-8 w-8 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center font-black">×</div>
+                                                        Erase History
+                                                    </DropdownMenuItem>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <DropdownMenuSeparator className="my-2 bg-slate-50" />
+                                                    <DropdownMenuLabel className="text-[10px] uppercase tracking-[0.1em] text-slate-400 px-3 py-2">
+                                                        Manage this session from package bookings
+                                                    </DropdownMenuLabel>
+                                                </>
+                                            )}
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                 </TableCell>
                             </TableRow>
-                        ))
+                            )
+                        })
                     ) : (
                         <TableRow>
                             <TableCell colSpan={6} className="h-72 text-center bg-slate-50/20">

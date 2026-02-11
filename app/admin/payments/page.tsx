@@ -52,7 +52,7 @@ export default async function BillingPage() {
         .from('profiles')
         .select('organization_id')
         .eq('id', user.id)
-        .single()
+        .maybeSingle()
 
     let org: any = null
 
@@ -63,6 +63,23 @@ export default async function BillingPage() {
             .eq('id', profile.organization_id)
             .maybeSingle()
         org = linkedOrg
+    }
+
+    const metadataOrgId = user.user_metadata?.organization_id as string | undefined
+    if (!org && metadataOrgId) {
+        const { data: metaOrg } = await supabase
+            .from('organizations')
+            .select('*')
+            .eq('id', metadataOrgId)
+            .maybeSingle()
+        org = metaOrg
+
+        if (org && profile?.organization_id !== org.id) {
+            await supabase
+                .from('profiles')
+                .update({ organization_id: org.id })
+                .eq('id', user.id)
+        }
     }
 
     if (!org) {
@@ -82,28 +99,23 @@ export default async function BillingPage() {
     }
 
     if (!org) {
-        const { data: createdOrg, error: createOrgError } = await supabase
-            .from('organizations')
-            .insert({
-                owner_user_id: user.id,
-                current_plan: 'core',
-                plan_status: 'active',
-                billing_status: 'inactive'
-            })
-            .select('*')
-            .single()
-
-        if (createOrgError) {
-            console.error('Failed to create organization for billing page:', createOrgError)
-            redirect('/admin')
-        }
-
-        org = createdOrg
-
-        await supabase
-            .from('profiles')
-            .update({ organization_id: org.id })
-            .eq('id', user.id)
+        return (
+            <div className="max-w-3xl mx-auto py-16 px-4">
+                <Card className="border-red-200 bg-red-50">
+                    <CardHeader>
+                        <CardTitle className="text-red-800">Billing Profile Not Linked</CardTitle>
+                        <CardDescription className="text-red-700">
+                            This admin account is not linked to your school organization yet, so subscription status cannot be shown.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-sm text-red-700">
+                            Please have the school owner re-invite this admin from the Admin Users page so the correct organization is attached.
+                        </p>
+                    </CardContent>
+                </Card>
+            </div>
+        )
     }
 
     const isActive = org?.billing_status === 'active' || org?.billing_status === 'trialing'

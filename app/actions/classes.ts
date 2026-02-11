@@ -27,6 +27,33 @@ export interface CreateClassData {
 export async function getClasses(type?: ClassType, classification?: string, categoryId?: string) {
     const cookieStore = await cookies()
     const supabase = createClient(cookieStore)
+    const today = format(new Date(), 'yyyy-MM-dd')
+
+    // Keep class status in sync with dates so "next class" becomes active automatically.
+    await supabase
+        .from('classes')
+        .update({ status: 'completed' })
+        .eq('is_archived', false)
+        .lt('end_date', today)
+        .neq('status', 'cancelled')
+        .neq('status', 'completed')
+
+    await supabase
+        .from('classes')
+        .update({ status: 'active' })
+        .eq('is_archived', false)
+        .lte('start_date', today)
+        .gte('end_date', today)
+        .neq('status', 'cancelled')
+        .neq('status', 'active')
+
+    await supabase
+        .from('classes')
+        .update({ status: 'upcoming' })
+        .eq('is_archived', false)
+        .gt('start_date', today)
+        .neq('status', 'cancelled')
+        .neq('status', 'upcoming')
 
     let query = supabase
         .from('classes')
@@ -36,6 +63,10 @@ export async function getClasses(type?: ClassType, classification?: string, cate
       enrollments(count)
     `)
         .order('start_date', { ascending: true })
+
+    query = query
+        .eq('is_archived', false)
+        .in('status', ['active', 'upcoming'])
 
     if (type) {
         query = query.eq('class_type', type)
@@ -62,6 +93,7 @@ export async function getClasses(type?: ClassType, classification?: string, cate
 export async function createClass(data: CreateClassData) {
     const cookieStore = await cookies()
     const supabase = createClient(cookieStore)
+    const today = format(new Date(), 'yyyy-MM-dd')
 
     // 1. Check if user is admin
     const { data: { user } } = await supabase.auth.getUser()
@@ -69,6 +101,13 @@ export async function createClass(data: CreateClassData) {
 
     // Ideally check for admin role here, but for now we assume the UI protects it or RLS handles it
     // (RLS policy "Admins manage classes" should enforce this)
+
+    const initialStatus =
+        data.end_date < today
+            ? 'completed'
+            : data.start_date <= today && data.end_date >= today
+                ? 'active'
+                : 'upcoming'
 
     // 2. Insert class
     const { data: newClass, error } = await supabase
@@ -83,7 +122,7 @@ export async function createClass(data: CreateClassData) {
             daily_end_time: data.daily_end_time,
             capacity: data.capacity,
             instructor_id: data.instructor_id || null,
-            status: 'upcoming'
+            status: initialStatus
         }])
         .select(`
             *,

@@ -22,23 +22,60 @@ export async function POST(request: Request) {
 
         let stripeCustomerId: string | undefined;
 
-        // 2. Get user profile and organization_id
+        // 2. Resolve organization context for this admin.
         const { data: profile } = await supabase
             .from('profiles')
             .select('organization_id')
             .eq('id', user.id)
-            .single();
+            .maybeSingle();
 
-        if (!profile?.organization_id) {
-            return NextResponse.json({ error: 'User not associated with an organization' }, { status: 404 });
+        let org: { id: string; stripe_customer_id: string | null } | null = null;
+
+        if (profile?.organization_id) {
+            const { data: linkedOrg } = await supabase
+                .from('organizations')
+                .select('id, stripe_customer_id')
+                .eq('id', profile.organization_id)
+                .maybeSingle();
+            org = linkedOrg;
         }
 
-        // 3. Get Stripe Customer ID from Organizations table
-        const { data: org } = await supabase
-            .from('organizations')
-            .select('id, stripe_customer_id')
-            .eq('id', profile.organization_id)
-            .single();
+        const metadataOrgId = user.user_metadata?.organization_id as string | undefined;
+        if (!org && metadataOrgId) {
+            const { data: metaOrg } = await supabase
+                .from('organizations')
+                .select('id, stripe_customer_id')
+                .eq('id', metadataOrgId)
+                .maybeSingle();
+            org = metaOrg;
+
+            if (org && profile?.organization_id !== org.id) {
+                await supabase
+                    .from('profiles')
+                    .update({ organization_id: org.id })
+                    .eq('id', user.id);
+            }
+        }
+
+        if (!org) {
+            const { data: ownedOrg } = await supabase
+                .from('organizations')
+                .select('id, stripe_customer_id')
+                .eq('owner_user_id', user.id)
+                .maybeSingle();
+            org = ownedOrg;
+
+            if (org && !profile?.organization_id) {
+                await supabase
+                    .from('profiles')
+                    .update({ organization_id: org.id })
+                    .eq('id', user.id);
+            }
+        }
+
+        if (!org) {
+            return NextResponse.json({ error: 'User not associated with an organization' }, { status: 404 });
+        }
 
         if (org?.stripe_customer_id) {
             stripeCustomerId = org.stripe_customer_id;
@@ -88,14 +125,6 @@ export async function POST(request: Request) {
                         .from('organizations')
                         .update({ stripe_customer_id: stripeCustomerId })
                         .eq('id', org.id);
-                } else {
-                    // Create org if missing (edge case)
-                    await supabase
-                        .from('organizations')
-                        .insert({
-                            owner_user_id: user.id,
-                            stripe_customer_id: stripeCustomerId
-                        });
                 }
             } catch (createErr) {
                 console.error("Error creating new Stripe customer:", createErr);

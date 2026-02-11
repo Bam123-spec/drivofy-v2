@@ -28,7 +28,7 @@ export async function POST(req: Request) {
             .from('profiles')
             .select('organization_id')
             .eq('id', user.id)
-            .single();
+            .maybeSingle();
 
         // Resolve organization from profile first, then ownership fallback.
         let org: any = null;
@@ -43,6 +43,28 @@ export async function POST(req: Request) {
                 return NextResponse.json({ error: linkedOrgError.message }, { status: 500 });
             }
             org = linkedOrg;
+        }
+
+        const metadataOrgId = user.user_metadata?.organization_id as string | undefined;
+        if (!org && metadataOrgId) {
+            const { data: metaOrg, error: metaOrgError } = await supabase
+                .from('organizations')
+                .select('*')
+                .eq('id', metadataOrgId)
+                .maybeSingle();
+
+            if (metaOrgError) {
+                return NextResponse.json({ error: metaOrgError.message }, { status: 500 });
+            }
+
+            org = metaOrg;
+
+            if (org && profile?.organization_id !== org.id) {
+                await supabase
+                    .from('profiles')
+                    .update({ organization_id: org.id })
+                    .eq('id', user.id);
+            }
         }
 
         if (!org) {
