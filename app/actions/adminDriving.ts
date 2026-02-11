@@ -12,6 +12,16 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 const supabaseService = createServiceClient(supabaseUrl, supabaseServiceKey)
 
+function enrollmentEmailFromRecord(enrollment: any) {
+    const customerEmail = enrollment?.customer_details?.email
+    return enrollment?.email || customerEmail || null
+}
+
+function enrollmentPhoneFromRecord(enrollment: any) {
+    const customerPhone = enrollment?.customer_details?.phone
+    return enrollment?.phone || customerPhone || null
+}
+
 export async function getDrivingSessions(filters?: {
     instructorId?: string,
     studentId?: string,
@@ -137,7 +147,58 @@ export async function getDrivingSessions(filters?: {
         vehicles: null
     }))
 
-    return [...normalizedDriving, ...normalizedBTW, ...normalizedTenHour]
+    const mergedSessions = [...normalizedDriving, ...normalizedBTW, ...normalizedTenHour]
+    const sessionStudentIds = Array.from(new Set(
+        mergedSessions.map((row: any) => row.student_id).filter(Boolean)
+    ))
+    const sessionStudentIdSet = new Set(sessionStudentIds)
+
+    const { data: enrollments, error: enrollmentsError } = await supabaseService
+        .from('enrollments')
+        .select('student_id, email, phone, customer_details, enrolled_at')
+        .order('enrolled_at', { ascending: false })
+
+    if (enrollmentsError) throw new Error(enrollmentsError.message)
+
+    const phoneByStudentId = new Map<string, string>()
+    const phoneByEmail = new Map<string, string>()
+
+    for (const enrollment of (enrollments || [])) {
+        const studentId = enrollment.student_id
+        const email = enrollmentEmailFromRecord(enrollment)
+        const phone = enrollmentPhoneFromRecord(enrollment)
+
+        if (!phone) continue
+        if (studentId && sessionStudentIdSet.has(studentId) && !phoneByStudentId.has(studentId)) {
+            phoneByStudentId.set(studentId, phone)
+        }
+
+        const normalizedEmail = String(email || '').toLowerCase().trim()
+        if (normalizedEmail && !phoneByEmail.has(normalizedEmail)) {
+            phoneByEmail.set(normalizedEmail, phone)
+        }
+    }
+
+    return mergedSessions
+        .map((row: any) => {
+            const profile = row.profiles || null
+            const existingPhone = profile?.phone || null
+            if (existingPhone) return row
+
+            const byStudentId = row.student_id ? phoneByStudentId.get(row.student_id) : null
+            const byEmail = profile?.email ? phoneByEmail.get(String(profile.email).toLowerCase().trim()) : null
+            const fallbackPhone = byStudentId || byEmail || null
+
+            if (!fallbackPhone) return row
+
+            return {
+                ...row,
+                profiles: {
+                    ...(profile || {}),
+                    phone: fallbackPhone
+                }
+            }
+        })
         .filter((row: any) => !!row.start_time)
         .sort((a: any, b: any) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime())
 }
