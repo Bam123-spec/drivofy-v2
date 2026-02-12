@@ -40,9 +40,10 @@ export default function AuditLogsPage() {
                     userId: userFilter
                 })
                 setLogs(data || [])
-            } catch (error) {
+            } catch (error: any) {
                 console.error("Error fetching logs:", error)
-                toast.error("Failed to load audit logs")
+                setLogs([])
+                toast.error(error?.message || "Failed to load audit logs")
             } finally {
                 setLoading(false)
             }

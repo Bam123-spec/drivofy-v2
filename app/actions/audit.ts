@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { cookies, headers } from 'next/headers'
+import { createAdminClient } from "@/lib/supabase/admin"
 
 export type AuditAction =
     | 'login'
@@ -30,14 +31,16 @@ export async function logAuditAction(
     try {
         const cookieStore = await cookies()
         const supabase = createClient(cookieStore)
+        const supabaseAdmin = createAdminClient()
 
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) return // Can't log if not authenticated (or handle differently)
 
         const headersList = await headers()
-        const ip = headersList.get('x-forwarded-for') || 'unknown'
+        const forwardedFor = headersList.get('x-forwarded-for')
+        const ip = forwardedFor ? forwardedFor.split(',')[0].trim() : 'unknown'
 
-        const { error } = await supabase.from('audit_logs').insert({
+        const { error } = await supabaseAdmin.from('audit_logs').insert({
             user_id: user.id,
             action,
             details,
@@ -60,18 +63,15 @@ export async function getAuditLogs(filters?: {
 }) {
     const cookieStore = await cookies()
     const supabase = createClient(cookieStore)
+    const supabaseAdmin = createAdminClient()
 
     try {
-        let query = supabase
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return []
+
+        let query = supabaseAdmin
             .from('audit_logs')
-            .select(`
-                *,
-                user:user_id (
-                    email,
-                    full_name,
-                    role
-                )
-            `)
+            .select('*')
             .order('created_at', { ascending: false })
 
         // Apply filters
@@ -95,16 +95,7 @@ export async function getAuditLogs(filters?: {
         }
 
         if (filters?.userId && filters.userId !== 'all') {
-            // Assuming userId passed is the email for now based on UI, 
-            // but ideally it should be UUID. The UI uses email in select values.
-            // We might need to join or filter differently if UI sends email.
-            // For now, let's assume the UI will be updated to send UUID or we filter on the joined table.
-            // Supabase doesn't support filtering on joined columns easily in one go without !inner
-            // Let's assume we pass UUID or handle it. 
-            // Actually, the current UI passes email. I should probably update UI to pass UUID if possible,
-            // or fetch user ID first.
-            // For simplicity, let's skip strict user filtering for a moment or try to filter by joined column if supported.
-            // query = query.eq('user.email', filters.userId) // This syntax depends on Supabase JS version support
+            query = query.eq('user_id', filters.userId)
         }
 
         if (filters?.action && filters.action !== 'all') {
@@ -113,11 +104,33 @@ export async function getAuditLogs(filters?: {
 
         const { data, error } = await query
 
-        if (error) throw error
+        if (error) {
+            if (String(error.message || '').includes("Could not find the table 'public.audit_logs'")) {
+                throw new Error("Audit log storage is not set up in this database yet.")
+            }
+            throw error
+        }
 
-        return data
+        const logs = data || []
+        const userIds = Array.from(new Set(logs.map((log: any) => log.user_id).filter(Boolean)))
+
+        let usersById = new Map<string, any>()
+        if (userIds.length > 0) {
+            const { data: users, error: usersError } = await supabaseAdmin
+                .from('profiles')
+                .select('id, email, full_name, role')
+                .in('id', userIds)
+
+            if (usersError) throw usersError
+            usersById = new Map((users || []).map((entry: any) => [entry.id, entry]))
+        }
+
+        return logs.map((log: any) => ({
+            ...log,
+            user: usersById.get(log.user_id) || null
+        }))
     } catch (error) {
         console.error("Error fetching audit logs:", error)
-        return []
+        throw error
     }
 }
