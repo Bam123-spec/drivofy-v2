@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { stripe } from '@/lib/stripe';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 export async function POST(req: Request) {
     try {
@@ -19,12 +20,13 @@ export async function POST(req: Request) {
                 }
             }
         );
+        const supabaseAdmin = createAdminClient();
 
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         // Fetch user profile to get organization_id
-        const { data: profile } = await supabase
+        const { data: profile } = await supabaseAdmin
             .from('profiles')
             .select('organization_id')
             .eq('id', user.id)
@@ -33,7 +35,7 @@ export async function POST(req: Request) {
         // Resolve organization from profile first, then ownership fallback.
         let org: any = null;
         if (profile?.organization_id) {
-            const { data: linkedOrg, error: linkedOrgError } = await supabase
+            const { data: linkedOrg, error: linkedOrgError } = await supabaseAdmin
                 .from('organizations')
                 .select('*')
                 .eq('id', profile.organization_id)
@@ -47,7 +49,7 @@ export async function POST(req: Request) {
 
         const metadataOrgId = user.user_metadata?.organization_id as string | undefined;
         if (!org && metadataOrgId) {
-            const { data: metaOrg, error: metaOrgError } = await supabase
+            const { data: metaOrg, error: metaOrgError } = await supabaseAdmin
                 .from('organizations')
                 .select('*')
                 .eq('id', metadataOrgId)
@@ -60,7 +62,7 @@ export async function POST(req: Request) {
             org = metaOrg;
 
             if (org && profile?.organization_id !== org.id) {
-                await supabase
+                await supabaseAdmin
                     .from('profiles')
                     .update({ organization_id: org.id })
                     .eq('id', user.id);
@@ -68,7 +70,7 @@ export async function POST(req: Request) {
         }
 
         if (!org) {
-            const { data: ownedOrg, error: ownedOrgError } = await supabase
+            const { data: ownedOrg, error: ownedOrgError } = await supabaseAdmin
                 .from('organizations')
                 .select('*')
                 .eq('owner_user_id', user.id)
@@ -81,7 +83,7 @@ export async function POST(req: Request) {
             org = ownedOrg;
 
             if (org && !profile?.organization_id) {
-                await supabase
+                await supabaseAdmin
                     .from('profiles')
                     .update({ organization_id: org.id })
                     .eq('id', user.id);
@@ -104,7 +106,7 @@ export async function POST(req: Request) {
 
         if (!sub) {
             // No active subscription found, reset to core.
-            await supabase
+            const { error: resetError } = await supabaseAdmin
                 .from('organizations')
                 .update({
                     current_plan: 'core',
@@ -114,6 +116,9 @@ export async function POST(req: Request) {
                     current_period_end: null,
                 })
                 .eq('id', org.id);
+            if (resetError) {
+                return NextResponse.json({ error: resetError.message }, { status: 500 });
+            }
             return NextResponse.json({ status: 'no_subscription' });
         }
 
@@ -138,7 +143,7 @@ export async function POST(req: Request) {
         console.log('Sync: Updating org to plan:', plan, 'status:', billingStatus);
 
         // Update DB
-        const { error: updateError } = await supabase
+        const { error: updateError } = await supabaseAdmin
             .from('organizations')
             .update({
                 stripe_subscription_id: sub.id,

@@ -2,6 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 export const dynamic = 'force-dynamic'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -41,6 +42,7 @@ export default async function BillingPage() {
             }
         }
     )
+    const supabaseAdmin = createAdminClient()
 
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -48,7 +50,7 @@ export default async function BillingPage() {
         redirect('/login')
     }
 
-    const { data: profile } = await supabase
+    const { data: profile } = await supabaseAdmin
         .from('profiles')
         .select('organization_id')
         .eq('id', user.id)
@@ -57,7 +59,7 @@ export default async function BillingPage() {
     let org: any = null
 
     if (profile?.organization_id) {
-        const { data: linkedOrg } = await supabase
+        const { data: linkedOrg } = await supabaseAdmin
             .from('organizations')
             .select('*')
             .eq('id', profile.organization_id)
@@ -67,7 +69,7 @@ export default async function BillingPage() {
 
     const metadataOrgId = user.user_metadata?.organization_id as string | undefined
     if (!org && metadataOrgId) {
-        const { data: metaOrg } = await supabase
+        const { data: metaOrg } = await supabaseAdmin
             .from('organizations')
             .select('*')
             .eq('id', metadataOrgId)
@@ -75,7 +77,7 @@ export default async function BillingPage() {
         org = metaOrg
 
         if (org && profile?.organization_id !== org.id) {
-            await supabase
+            await supabaseAdmin
                 .from('profiles')
                 .update({ organization_id: org.id })
                 .eq('id', user.id)
@@ -83,7 +85,7 @@ export default async function BillingPage() {
     }
 
     if (!org) {
-        const { data: ownedOrg } = await supabase
+        const { data: ownedOrg } = await supabaseAdmin
             .from('organizations')
             .select('*')
             .eq('owner_user_id', user.id)
@@ -91,7 +93,7 @@ export default async function BillingPage() {
         org = ownedOrg
 
         if (org && !profile?.organization_id) {
-            await supabase
+            await supabaseAdmin
                 .from('profiles')
                 .update({ organization_id: org.id })
                 .eq('id', user.id)
