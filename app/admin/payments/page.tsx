@@ -42,7 +42,13 @@ export default async function BillingPage() {
             }
         }
     )
-    const supabaseAdmin = createAdminClient()
+    let supabaseAdmin: ReturnType<typeof createAdminClient> | null = null
+    try {
+        supabaseAdmin = createAdminClient()
+    } catch (error) {
+        console.error("Billing page: falling back to session client because service role is unavailable.", error)
+    }
+    const db = supabaseAdmin || supabase
 
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -50,7 +56,7 @@ export default async function BillingPage() {
         redirect('/login')
     }
 
-    const { data: profile } = await supabaseAdmin
+    const { data: profile } = await db
         .from('profiles')
         .select('organization_id')
         .eq('id', user.id)
@@ -59,7 +65,7 @@ export default async function BillingPage() {
     let org: any = null
 
     if (profile?.organization_id) {
-        const { data: linkedOrg } = await supabaseAdmin
+        const { data: linkedOrg } = await db
             .from('organizations')
             .select('*')
             .eq('id', profile.organization_id)
@@ -69,7 +75,7 @@ export default async function BillingPage() {
 
     const metadataOrgId = user.user_metadata?.organization_id as string | undefined
     if (!org && metadataOrgId) {
-        const { data: metaOrg } = await supabaseAdmin
+        const { data: metaOrg } = await db
             .from('organizations')
             .select('*')
             .eq('id', metadataOrgId)
@@ -77,7 +83,7 @@ export default async function BillingPage() {
         org = metaOrg
 
         if (org && profile?.organization_id !== org.id) {
-            await supabaseAdmin
+            await db
                 .from('profiles')
                 .update({ organization_id: org.id })
                 .eq('id', user.id)
@@ -85,7 +91,7 @@ export default async function BillingPage() {
     }
 
     if (!org) {
-        const { data: ownedOrg } = await supabaseAdmin
+        const { data: ownedOrg } = await db
             .from('organizations')
             .select('*')
             .eq('owner_user_id', user.id)
@@ -93,7 +99,7 @@ export default async function BillingPage() {
         org = ownedOrg
 
         if (org && !profile?.organization_id) {
-            await supabaseAdmin
+            await db
                 .from('profiles')
                 .update({ organization_id: org.id })
                 .eq('id', user.id)

@@ -3,16 +3,12 @@
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabaseClient"
 import {
-    Loader2,
     Calendar,
     Users,
     ChevronRight,
-    GraduationCap,
     Clock,
-    Plus,
     Search,
-    BookOpen,
-    Car
+    BookOpen
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -29,6 +25,26 @@ export default function ManageClassPage() {
     useEffect(() => {
         fetchUpcomingClasses()
     }, [])
+
+    const formatTimeOnly = (value: string) => {
+        const match = String(value || "").match(/^(\d{1,2}):(\d{2})/)
+        if (!match) return value
+
+        const date = new Date()
+        date.setHours(Number(match[1]), Number(match[2]), 0, 0)
+        return format(date, "h:mm a")
+    }
+
+    const getDisplayTime = (cls: any) => {
+        if (cls.time_slot) return cls.time_slot
+        if (cls.daily_start_time && cls.daily_end_time) {
+            return `${formatTimeOnly(cls.daily_start_time)} - ${formatTimeOnly(cls.daily_end_time)}`
+        }
+        if (cls.firstClassStartDatetime) {
+            return format(new Date(cls.firstClassStartDatetime), "h:mm a")
+        }
+        return "No time specified"
+    }
 
     const fetchUpcomingClasses = async () => {
         try {
@@ -49,7 +65,53 @@ export default function ManageClassPage() {
                 .limit(6)
 
             if (error) throw error
-            setClasses(data || [])
+
+            const baseClasses = data || []
+            const classIds = baseClasses.map((cls: any) => cls.id)
+
+            if (classIds.length === 0) {
+                setClasses([])
+                return
+            }
+
+            const [classDaysRes, enrollmentsRes] = await Promise.all([
+                supabase
+                    .from('class_days')
+                    .select('class_id, date, start_datetime')
+                    .in('class_id', classIds)
+                    .order('date', { ascending: true })
+                    .order('start_datetime', { ascending: true }),
+                supabase
+                    .from('enrollments')
+                    .select('class_id')
+                    .in('class_id', classIds)
+            ])
+
+            if (classDaysRes.error) throw classDaysRes.error
+            if (enrollmentsRes.error) throw enrollmentsRes.error
+
+            const firstClassStartByClassId = new Map<string, string>()
+            for (const day of classDaysRes.data || []) {
+                if (!day.class_id || !day.start_datetime) continue
+                if (!firstClassStartByClassId.has(day.class_id)) {
+                    firstClassStartByClassId.set(day.class_id, day.start_datetime)
+                }
+            }
+
+            const studentCountByClassId = new Map<string, number>()
+            for (const enrollment of enrollmentsRes.data || []) {
+                if (!enrollment.class_id) continue
+                const prev = studentCountByClassId.get(enrollment.class_id) || 0
+                studentCountByClassId.set(enrollment.class_id, prev + 1)
+            }
+
+            const hydratedClasses = baseClasses.map((cls: any) => ({
+                ...cls,
+                firstClassStartDatetime: firstClassStartByClassId.get(cls.id) || null,
+                enrolledStudentCount: studentCountByClassId.get(cls.id) || 0
+            }))
+
+            setClasses(hydratedClasses)
         } catch (error) {
             console.error("Error fetching classes:", error)
             toast.error("Failed to load upcoming classes")
@@ -124,11 +186,13 @@ export default function ManageClassPage() {
                                         </div>
                                         <div className="flex items-center gap-2.5 text-slate-500 font-medium text-sm">
                                             <Clock className="h-4 w-4 text-slate-300" />
-                                            <span>{cls.time_slot || "No time specified"}</span>
+                                            <span>{getDisplayTime(cls)}</span>
                                         </div>
                                         <div className="flex items-center gap-2.5 text-slate-500 font-medium text-sm">
-                                            <Car className="h-4 w-4 text-slate-300" />
-                                            <span className="truncate">{cls.instructors?.full_name || "Unassigned"}</span>
+                                            <Users className="h-4 w-4 text-slate-300" />
+                                            <span className="truncate">
+                                                {cls.enrolledStudentCount} student{cls.enrolledStudentCount === 1 ? "" : "s"}
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
