@@ -60,7 +60,7 @@ export default function ManageClassPage() {
                 `)
                 .eq('class_type', 'DE')
                 .eq('is_archived', false)
-                .gte('start_date', today)
+                .gte('end_date', today)
                 .order('start_date', { ascending: true })
                 .limit(6)
 
