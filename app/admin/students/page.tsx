@@ -181,7 +181,9 @@ export default function AdminStudentsPage() {
             })
 
             if (!result.success) {
-                throw new Error(result.message || "Failed to add student")
+                const ref = result.requestId ? ` (Ref: ${result.requestId})` : ""
+                toast.error(`${result.message || "Failed to add student"}${ref}`)
+                return
             }
 
             toast.success(result.message || "Student created. Magic link email sent.")

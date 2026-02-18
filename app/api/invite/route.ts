@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { createServerClient } from '@supabase/ssr'
 import { sendTransactionalEmail, generateInvitationEmail } from '@/lib/brevo'
+import { createStudentViaCentralOnboarding } from '@/lib/onboarding'
 
 function isValidEmail(email: string) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
@@ -57,46 +58,17 @@ export async function POST(request: Request) {
         // Students are created via central onboarding service.
         // Keep this server-side to avoid exposing SELAM_ONBOARDING_KEY.
         if (role === 'student') {
-            const onboardingUrl = process.env.SELAM_ONBOARDING_URL
-            const onboardingKey = process.env.SELAM_ONBOARDING_KEY
-
-            if (!onboardingUrl || !onboardingKey) {
-                return NextResponse.json(
-                    { error: 'Onboarding service is not configured' },
-                    { status: 500 }
-                )
-            }
-
-            const onboardingResponse = await fetch(onboardingUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-admin-key': onboardingKey,
-                },
-                body: JSON.stringify({
-                    email: String(email).trim().toLowerCase(),
-                    fullName: String(full_name).trim(),
-                    phone: phone || undefined,
-                    source: 'admin_portal',
-                }),
-                cache: 'no-store',
+            const onboardingResult = await createStudentViaCentralOnboarding({
+                email: String(email || ''),
+                fullName: String(full_name || ''),
+                phone: phone || undefined,
+                source: 'admin_portal',
             })
 
-            const rawOnboarding = await onboardingResponse.text()
-            let onboardingPayload: any = {}
-            try {
-                onboardingPayload = rawOnboarding ? JSON.parse(rawOnboarding) : {}
-            } catch {
-                onboardingPayload = {}
-            }
-            if (!onboardingResponse.ok) {
-                const fallbackMessage =
-                    rawOnboarding?.trim()
-                    || onboardingResponse.statusText
-                    || `Onboarding request failed (${onboardingResponse.status})`
+            if (!onboardingResult.success) {
                 return NextResponse.json(
-                    { error: onboardingPayload?.error || fallbackMessage },
-                    { status: onboardingResponse.status || 500 }
+                    { error: onboardingResult.message, requestId: onboardingResult.requestId },
+                    { status: onboardingResult.statusCode || 500 }
                 )
             }
 
@@ -106,7 +78,8 @@ export async function POST(request: Request) {
                     email,
                     role,
                     name: full_name,
-                    source: 'central_onboarding'
+                    source: 'central_onboarding',
+                    requestId: onboardingResult.requestId
                 },
                 target_resource: `Student: ${full_name}`,
                 ip_address: 'api_route',
@@ -115,7 +88,8 @@ export async function POST(request: Request) {
             return NextResponse.json({
                 success: true,
                 message: 'Student created. Magic link email sent.',
-                userId: onboardingPayload?.userId || onboardingPayload?.user?.id || onboardingPayload?.id
+                userId: onboardingResult.userId,
+                requestId: onboardingResult.requestId
             })
         }
 

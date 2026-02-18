@@ -2,6 +2,7 @@
 
 import { createAdminClient } from "@/lib/supabase/admin"
 import { createClient } from "@/lib/supabase/server"
+import { createStudentViaCentralOnboarding } from "@/lib/onboarding"
 import { cookies } from "next/headers"
 
 type StudentViewType = "registered" | "lead"
@@ -32,32 +33,12 @@ function mergeUniqueById<T extends { id: string }>(...lists: T[][]): T[] {
     return Array.from(map.values())
 }
 
-function isValidEmail(email: string) {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-}
-
 export async function createStudentFromOnboarding(input: {
     email: string
     fullName: string
     phone?: string
-}): Promise<{ success: boolean, message: string, userId?: string }> {
-    const email = String(input?.email || "").trim().toLowerCase()
-    const fullName = String(input?.fullName || "").trim()
-    const phone = String(input?.phone || "").trim()
-
-    if (!email || !isValidEmail(email)) {
-        return { success: false, message: "A valid email is required." }
-    }
-    if (!fullName) {
-        return { success: false, message: "Full name is required." }
-    }
-
-    const onboardingUrl = process.env.SELAM_ONBOARDING_URL
-    const onboardingKey = process.env.SELAM_ONBOARDING_KEY
-
-    if (!onboardingUrl || !onboardingKey) {
-        return { success: false, message: "Onboarding service is not configured." }
-    }
+}): Promise<{ success: boolean, message: string, userId?: string, requestId?: string }> {
+    const requestId = crypto.randomUUID()
 
     try {
         const cookieStore = await cookies()
@@ -66,7 +47,7 @@ export async function createStudentFromOnboarding(input: {
 
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) {
-            return { success: false, message: "Unauthorized" }
+            return { success: false, message: "Unauthorized", requestId }
         }
 
         const { data: profile } = await supabaseAdmin
@@ -77,47 +58,23 @@ export async function createStudentFromOnboarding(input: {
 
         const allowedRoles = new Set(["admin", "super_admin", "owner", "manager", "staff"])
         if (!profile?.role || !allowedRoles.has(profile.role)) {
-            return { success: false, message: "Unauthorized" }
+            return { success: false, message: "Unauthorized", requestId }
         }
 
-        const response = await fetch(onboardingUrl, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "x-admin-key": onboardingKey,
-            },
-            body: JSON.stringify({
-                email,
-                fullName,
-                phone: phone || undefined,
+        return await createStudentViaCentralOnboarding(
+            {
+                email: input.email,
+                fullName: input.fullName,
+                phone: input.phone,
                 source: "admin_portal",
-            }),
-            cache: "no-store",
-        })
-
-        const raw = await response.text()
-        let payload: any = {}
-        try {
-            payload = raw ? JSON.parse(raw) : {}
-        } catch {
-            payload = {}
-        }
-        if (!response.ok) {
-            const fallbackMessage =
-                raw?.trim() || response.statusText || `Onboarding request failed (${response.status})`
-            return { success: false, message: payload?.error || fallbackMessage }
-        }
-
-        const userId = payload?.userId || payload?.user?.id || payload?.id || undefined
-        return {
-            success: true,
-            message: "Student created. Magic link email sent.",
-            userId,
-        }
+            },
+            { requestId }
+        )
     } catch (error: any) {
         return {
             success: false,
             message: error?.message || "Failed to create student.",
+            requestId,
         }
     }
 }
