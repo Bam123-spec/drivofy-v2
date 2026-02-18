@@ -4,6 +4,10 @@ import { cookies } from 'next/headers'
 import { createServerClient } from '@supabase/ssr'
 import { sendTransactionalEmail, generateInvitationEmail } from '@/lib/brevo'
 
+function isValidEmail(email: string) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+}
+
 export async function POST(request: Request) {
     try {
         const body = await request.json()
@@ -13,6 +17,12 @@ export async function POST(request: Request) {
         if (!email || !role || !full_name) {
             return NextResponse.json(
                 { error: 'Missing required fields' },
+                { status: 400 }
+            )
+        }
+        if (!isValidEmail(String(email))) {
+            return NextResponse.json(
+                { error: 'Invalid email address' },
                 { status: 400 }
             )
         }
@@ -43,6 +53,61 @@ export async function POST(request: Request) {
         const supabaseAdmin = createAdminClient()
 
         console.log(`[API] Inviting user: ${email} as ${role}`)
+
+        // Students are created via central onboarding service.
+        // Keep this server-side to avoid exposing SELAM_ONBOARDING_KEY.
+        if (role === 'student') {
+            const onboardingUrl = process.env.SELAM_ONBOARDING_URL
+            const onboardingKey = process.env.SELAM_ONBOARDING_KEY
+
+            if (!onboardingUrl || !onboardingKey) {
+                return NextResponse.json(
+                    { error: 'Onboarding service is not configured' },
+                    { status: 500 }
+                )
+            }
+
+            const onboardingResponse = await fetch(onboardingUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-admin-key': onboardingKey,
+                },
+                body: JSON.stringify({
+                    email: String(email).trim().toLowerCase(),
+                    fullName: String(full_name).trim(),
+                    phone: phone || undefined,
+                    source: 'admin_portal',
+                }),
+                cache: 'no-store',
+            })
+
+            const onboardingPayload = await onboardingResponse.json().catch(() => ({} as any))
+            if (!onboardingResponse.ok) {
+                return NextResponse.json(
+                    { error: onboardingPayload?.error || 'Failed to create student' },
+                    { status: onboardingResponse.status || 500 }
+                )
+            }
+
+            await supabaseAdmin.from('audit_logs').insert({
+                action: 'create_student',
+                details: {
+                    email,
+                    role,
+                    name: full_name,
+                    source: 'central_onboarding'
+                },
+                target_resource: `Student: ${full_name}`,
+                ip_address: 'api_route',
+            })
+
+            return NextResponse.json({
+                success: true,
+                message: 'Student created. Magic link email sent.',
+                userId: onboardingPayload?.userId || onboardingPayload?.user?.id || onboardingPayload?.id
+            })
+        }
 
         // 2. Generate Invitation Link
         const liveUrl = 'https://portifol.com';

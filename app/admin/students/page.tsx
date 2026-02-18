@@ -57,6 +57,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
 import { updateStudent, deleteStudent } from "@/app/actions/student"
+import { createStudentFromOnboarding } from "@/app/actions/adminStudents"
 
 type EnrollmentLike = {
     email?: string | null
@@ -173,24 +174,17 @@ export default function AdminStudentsPage() {
     const handleAddStudent = async () => {
         try {
             setLoading(true)
-            const response = await fetch('/api/invite', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    email: newStudent.email,
-                    full_name: newStudent.full_name,
-                    phone: newStudent.phone,
-                    role: 'student'
-                })
+            const result = await createStudentFromOnboarding({
+                email: newStudent.email,
+                fullName: newStudent.full_name,
+                phone: newStudent.phone || undefined
             })
 
-            const result = await response.json()
-
-            if (!response.ok) {
-                throw new Error(result.error || 'Failed to add student')
+            if (!result.success) {
+                throw new Error(result.message || "Failed to add student")
             }
 
-            toast.success("Student added successfully!")
+            toast.success(result.message || "Student created. Magic link email sent.")
             setIsAddOpen(false)
             setNewStudent({ email: "", full_name: "", phone: "" })
             fetchAllData()
