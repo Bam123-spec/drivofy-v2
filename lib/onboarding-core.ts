@@ -146,6 +146,21 @@ export async function createStudentViaCentralOnboarding(
         }
     }
 
+    try {
+        new URL(onboardingUrl)
+    } catch {
+        emit("error", "config_invalid_url", {
+            requestId,
+            onboardingUrl,
+        })
+        return {
+            success: false,
+            message: "Onboarding service URL is invalid. Check SELAM_ONBOARDING_URL.",
+            requestId,
+            statusCode: 500,
+        }
+    }
+
     const payload = normalized.value
     let lastStatusCode: number | undefined = undefined
 
