@@ -82,10 +82,20 @@ export async function POST(request: Request) {
                 cache: 'no-store',
             })
 
-            const onboardingPayload = await onboardingResponse.json().catch(() => ({} as any))
+            const rawOnboarding = await onboardingResponse.text()
+            let onboardingPayload: any = {}
+            try {
+                onboardingPayload = rawOnboarding ? JSON.parse(rawOnboarding) : {}
+            } catch {
+                onboardingPayload = {}
+            }
             if (!onboardingResponse.ok) {
+                const fallbackMessage =
+                    rawOnboarding?.trim()
+                    || onboardingResponse.statusText
+                    || `Onboarding request failed (${onboardingResponse.status})`
                 return NextResponse.json(
-                    { error: onboardingPayload?.error || 'Failed to create student' },
+                    { error: onboardingPayload?.error || fallbackMessage },
                     { status: onboardingResponse.status || 500 }
                 )
             }

@@ -95,9 +95,17 @@ export async function createStudentFromOnboarding(input: {
             cache: "no-store",
         })
 
-        const payload = await response.json().catch(() => ({} as any))
+        const raw = await response.text()
+        let payload: any = {}
+        try {
+            payload = raw ? JSON.parse(raw) : {}
+        } catch {
+            payload = {}
+        }
         if (!response.ok) {
-            return { success: false, message: payload?.error || "Failed to create student." }
+            const fallbackMessage =
+                raw?.trim() || response.statusText || `Onboarding request failed (${response.status})`
+            return { success: false, message: payload?.error || fallbackMessage }
         }
 
         const userId = payload?.userId || payload?.user?.id || payload?.id || undefined
