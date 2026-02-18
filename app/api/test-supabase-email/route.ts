@@ -15,12 +15,12 @@ export async function GET(request: Request) {
         }
 
         const supabaseAdmin = createAdminClient()
-        const liveUrl = 'https://selamdriving.drivofy.com'
+        const liveUrl = 'https://portifol.com'
 
         console.log('[TEST] Testing inviteUserByEmail for:', email)
 
         const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
-            redirectTo: `${liveUrl}/update-password`,
+            redirectTo: `${liveUrl}/auth/callback?next=/update-password`,
             data: {
                 full_name: 'Test User',
                 role: 'test'

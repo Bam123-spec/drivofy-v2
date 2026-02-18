@@ -50,7 +50,7 @@ export async function POST(request: Request) {
             type: 'invite',
             email: email,
             options: {
-                redirectTo: `${liveUrl}/update-password`,
+                redirectTo: `${liveUrl}/auth/callback?next=/update-password`,
                 data: {
                     full_name: full_name,
                     phone: phone,
