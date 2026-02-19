@@ -56,23 +56,9 @@ export async function POST(request: Request) {
 
         console.log(`[API] Inviting user: ${email} as ${role}`)
 
-        // Students use Supabase Confirm Signup template (not Invite template).
+        // Students use Supabase Magic Link email flow.
         if (role === 'student') {
             const existingEmail = String(email || '').trim().toLowerCase()
-
-            const { data: existingStudent } = await supabaseAdmin
-                .from('profiles')
-                .select('id')
-                .ilike('email', existingEmail)
-                .eq('role', 'student')
-                .maybeSingle()
-
-            if (existingStudent?.id) {
-                return NextResponse.json(
-                    { error: 'Student already exists.' },
-                    { status: 409 }
-                )
-            }
 
             const publicSupabase = createClient(
                 process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -86,12 +72,11 @@ export async function POST(request: Request) {
                 }
             )
 
-            const temporaryPassword = `Tmp!${crypto.randomUUID()}Aa1`
-            const { data: signUpData, error: signUpError } = await publicSupabase.auth.signUp({
+            const { data: magicLinkData, error: magicLinkError } = await publicSupabase.auth.signInWithOtp({
                 email: existingEmail,
-                password: temporaryPassword,
                 options: {
                     emailRedirectTo: `${liveUrl}/auth/callback?next=/update-password`,
+                    shouldCreateUser: true,
                     data: {
                         full_name: full_name,
                         phone: phone,
@@ -101,10 +86,10 @@ export async function POST(request: Request) {
                 }
             })
 
-            if (signUpError) {
-                console.error('Student SignUp Error:', signUpError)
+            if (magicLinkError) {
+                console.error('Student Magic Link Error:', magicLinkError)
                 return NextResponse.json(
-                    { error: signUpError.message },
+                    { error: magicLinkError.message },
                     { status: 500 }
                 )
             }
@@ -115,7 +100,7 @@ export async function POST(request: Request) {
                     email,
                     role,
                     name: full_name,
-                    source: 'supabase_confirm_signup'
+                    source: 'supabase_magic_link'
                 },
                 target_resource: `Student: ${full_name}`,
                 ip_address: 'api_route',
@@ -123,8 +108,8 @@ export async function POST(request: Request) {
 
             return NextResponse.json({
                 success: true,
-                message: 'Student added. Confirmation email sent.',
-                user: signUpData?.user || null
+                message: 'Student added. Magic link email sent.',
+                user: magicLinkData?.user || null
             })
         }
 
