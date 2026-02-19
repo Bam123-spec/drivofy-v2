@@ -1,9 +1,6 @@
 "use server"
 
 import { createAdminClient } from "@/lib/supabase/admin"
-import { createClient } from "@/lib/supabase/server"
-import { createStudentViaCentralOnboarding } from "@/lib/onboarding"
-import { cookies } from "next/headers"
 
 type StudentViewType = "registered" | "lead"
 
@@ -31,52 +28,6 @@ function mergeUniqueById<T extends { id: string }>(...lists: T[][]): T[] {
         }
     }
     return Array.from(map.values())
-}
-
-export async function createStudentFromOnboarding(input: {
-    email: string
-    fullName: string
-    phone?: string
-}): Promise<{ success: boolean, message: string, userId?: string, requestId?: string }> {
-    const requestId = crypto.randomUUID()
-
-    try {
-        const cookieStore = await cookies()
-        const supabase = createClient(cookieStore)
-        const supabaseAdmin = createAdminClient()
-
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) {
-            return { success: false, message: "Unauthorized", requestId }
-        }
-
-        const { data: profile } = await supabaseAdmin
-            .from("profiles")
-            .select("role")
-            .eq("id", user.id)
-            .maybeSingle()
-
-        const allowedRoles = new Set(["admin", "super_admin", "owner", "manager", "staff"])
-        if (!profile?.role || !allowedRoles.has(profile.role)) {
-            return { success: false, message: "Unauthorized", requestId }
-        }
-
-        return await createStudentViaCentralOnboarding(
-            {
-                email: input.email,
-                fullName: input.fullName,
-                phone: input.phone,
-                source: "admin_portal",
-            },
-            { requestId }
-        )
-    } catch (error: any) {
-        return {
-            success: false,
-            message: error?.message || "Failed to create student.",
-            requestId,
-        }
-    }
 }
 
 export async function getAdminStudentDetails(entityId: string, type: StudentViewType = "registered") {

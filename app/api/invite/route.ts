@@ -3,7 +3,6 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { createServerClient } from '@supabase/ssr'
 import { sendTransactionalEmail, generateInvitationEmail } from '@/lib/brevo'
-import { createStudentViaCentralOnboarding } from '@/lib/onboarding'
 
 function isValidEmail(email: string) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
@@ -54,44 +53,6 @@ export async function POST(request: Request) {
         const supabaseAdmin = createAdminClient()
 
         console.log(`[API] Inviting user: ${email} as ${role}`)
-
-        // Students are created via central onboarding service.
-        // Keep this server-side to avoid exposing SELAM_ONBOARDING_KEY.
-        if (role === 'student') {
-            const onboardingResult = await createStudentViaCentralOnboarding({
-                email: String(email || ''),
-                fullName: String(full_name || ''),
-                phone: phone || undefined,
-                source: 'admin_portal',
-            })
-
-            if (!onboardingResult.success) {
-                return NextResponse.json(
-                    { error: onboardingResult.message, requestId: onboardingResult.requestId },
-                    { status: onboardingResult.statusCode || 500 }
-                )
-            }
-
-            await supabaseAdmin.from('audit_logs').insert({
-                action: 'create_student',
-                details: {
-                    email,
-                    role,
-                    name: full_name,
-                    source: 'central_onboarding',
-                    requestId: onboardingResult.requestId
-                },
-                target_resource: `Student: ${full_name}`,
-                ip_address: 'api_route',
-            })
-
-            return NextResponse.json({
-                success: true,
-                message: 'Student created. Magic link email sent.',
-                userId: onboardingResult.userId,
-                requestId: onboardingResult.requestId
-            })
-        }
 
         // 2. Generate Invitation Link
         const liveUrl = 'https://portifol.com';
