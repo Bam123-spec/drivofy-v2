@@ -2,6 +2,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { createServerClient } from '@supabase/ssr'
+import { createClient } from '@supabase/supabase-js'
 import { sendTransactionalEmail, generateInvitationEmail } from '@/lib/brevo'
 
 function isValidEmail(email: string) {
@@ -55,22 +56,55 @@ export async function POST(request: Request) {
 
         console.log(`[API] Inviting user: ${email} as ${role}`)
 
-        // Students use Supabase native invite email/template.
+        // Students use Supabase Confirm Signup template (not Invite template).
         if (role === 'student') {
-            const { data: invitedStudent, error: studentInviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
-                redirectTo: `${liveUrl}/auth/callback?next=/update-password`,
-                data: {
-                    full_name: full_name,
-                    phone: phone,
-                    role: role,
-                    organization_id: inviterProfile?.organization_id
+            const existingEmail = String(email || '').trim().toLowerCase()
+
+            const { data: existingStudent } = await supabaseAdmin
+                .from('profiles')
+                .select('id')
+                .ilike('email', existingEmail)
+                .eq('role', 'student')
+                .maybeSingle()
+
+            if (existingStudent?.id) {
+                return NextResponse.json(
+                    { error: 'Student already exists.' },
+                    { status: 409 }
+                )
+            }
+
+            const publicSupabase = createClient(
+                process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+                {
+                    auth: {
+                        autoRefreshToken: false,
+                        persistSession: false,
+                        detectSessionInUrl: false,
+                    },
+                }
+            )
+
+            const temporaryPassword = `Tmp!${crypto.randomUUID()}Aa1`
+            const { data: signUpData, error: signUpError } = await publicSupabase.auth.signUp({
+                email: existingEmail,
+                password: temporaryPassword,
+                options: {
+                    emailRedirectTo: `${liveUrl}/auth/callback?next=/update-password`,
+                    data: {
+                        full_name: full_name,
+                        phone: phone,
+                        role: role,
+                        organization_id: inviterProfile?.organization_id
+                    }
                 }
             })
 
-            if (studentInviteError) {
-                console.error('Student Invite Error:', studentInviteError)
+            if (signUpError) {
+                console.error('Student SignUp Error:', signUpError)
                 return NextResponse.json(
-                    { error: studentInviteError.message },
+                    { error: signUpError.message },
                     { status: 500 }
                 )
             }
@@ -81,7 +115,7 @@ export async function POST(request: Request) {
                     email,
                     role,
                     name: full_name,
-                    source: 'supabase_invite'
+                    source: 'supabase_confirm_signup'
                 },
                 target_resource: `Student: ${full_name}`,
                 ip_address: 'api_route',
@@ -89,8 +123,8 @@ export async function POST(request: Request) {
 
             return NextResponse.json({
                 success: true,
-                message: 'Student added successfully!',
-                user: invitedStudent?.user || null
+                message: 'Student added. Confirmation email sent.',
+                user: signUpData?.user || null
             })
         }
 
