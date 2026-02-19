@@ -75,10 +75,9 @@ export async function POST(request: Request) {
             const { data: magicLinkData, error: magicLinkError } = await publicSupabase.auth.signInWithOtp({
                 email: existingEmail,
                 options: {
-                    // Magic-link/OTP returns hash tokens (#access_token...), which are
-                    // not available to server routes like /auth/callback.
-                    // /update-password is a client page that reads hash tokens and sets session.
-                    emailRedirectTo: `${liveUrl}/update-password`,
+                    // Send students to the student login entrypoint so the magic-link
+                    // session is established in the student app and they can continue in.
+                    emailRedirectTo: `${liveUrl}/student/login?next=/student/dashboard`,
                     shouldCreateUser: true,
                     data: {
                         full_name: full_name,
