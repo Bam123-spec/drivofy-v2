@@ -51,11 +51,50 @@ export async function POST(request: Request) {
             .single()
 
         const supabaseAdmin = createAdminClient()
+        const liveUrl = 'https://portifol.com'
 
         console.log(`[API] Inviting user: ${email} as ${role}`)
 
+        // Students use Supabase native invite email/template.
+        if (role === 'student') {
+            const { data: invitedStudent, error: studentInviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
+                redirectTo: `${liveUrl}/auth/callback?next=/update-password`,
+                data: {
+                    full_name: full_name,
+                    phone: phone,
+                    role: role,
+                    organization_id: inviterProfile?.organization_id
+                }
+            })
+
+            if (studentInviteError) {
+                console.error('Student Invite Error:', studentInviteError)
+                return NextResponse.json(
+                    { error: studentInviteError.message },
+                    { status: 500 }
+                )
+            }
+
+            await supabaseAdmin.from('audit_logs').insert({
+                action: 'create_student',
+                details: {
+                    email,
+                    role,
+                    name: full_name,
+                    source: 'supabase_invite'
+                },
+                target_resource: `Student: ${full_name}`,
+                ip_address: 'api_route',
+            })
+
+            return NextResponse.json({
+                success: true,
+                message: 'Student added successfully!',
+                user: invitedStudent?.user || null
+            })
+        }
+
         // 2. Generate Invitation Link
-        const liveUrl = 'https://portifol.com';
         const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.generateLink({
             type: 'invite',
             email: email,
