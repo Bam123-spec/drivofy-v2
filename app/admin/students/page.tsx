@@ -252,6 +252,23 @@ export default function AdminStudentsPage() {
         router.push(`/admin/students/${student.id}?type=${student.type}`)
     }
 
+    const openMessageComposer = (student: any) => {
+        const email = student?.email?.trim()
+        if (!email) {
+            toast.error("No email available for this student")
+            return
+        }
+
+        const subject = encodeURIComponent("Message from Selam Driving School")
+        const body = encodeURIComponent(`Hi ${student.full_name || "there"},\n\n`)
+        const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(email)}&su=${subject}&body=${body}`
+
+        const newWindow = window.open(gmailUrl, "_blank", "noopener,noreferrer")
+        if (!newWindow) {
+            window.location.href = `mailto:${email}`
+        }
+    }
+
     // Merge logic: Combine profiles and enrollments uniquely by email
     const unifiedData = () => {
         const profileEmails = new Set(
@@ -505,18 +522,37 @@ export default function AdminStudentsPage() {
                                                             <MoreHorizontal className="h-4 w-4 text-slate-400" />
                                                         </Button>
                                                     </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end" className="w-48 rounded-xl border border-slate-200 shadow-xl p-1 bg-white">
+                                                    <DropdownMenuContent
+                                                        align="end"
+                                                        className="w-48 rounded-xl border border-slate-200 shadow-xl p-1 bg-white"
+                                                        onClick={(event) => event.stopPropagation()}
+                                                    >
                                                         <DropdownMenuLabel className="font-bold text-slate-900 text-[10px] uppercase tracking-wider mb-0.5 px-2">Management</DropdownMenuLabel>
-                                                        <DropdownMenuItem onClick={() => openEditDialog(student)} className="rounded-lg font-semibold py-2 cursor-pointer text-sm text-slate-700 hover:text-slate-900">
+                                                        <DropdownMenuItem
+                                                            onClick={(event) => {
+                                                                event.stopPropagation()
+                                                                openEditDialog(student)
+                                                            }}
+                                                            className="rounded-lg font-semibold py-2 cursor-pointer text-sm text-slate-700 hover:text-slate-900"
+                                                        >
                                                             <Pencil className="mr-2 h-3.5 w-3.5 text-blue-500" /> Edit Info
                                                         </DropdownMenuItem>
-                                                        <DropdownMenuItem className="rounded-lg font-semibold py-2 cursor-pointer text-sm text-slate-700 hover:text-slate-900">
+                                                        <DropdownMenuItem
+                                                            onClick={(event) => {
+                                                                event.stopPropagation()
+                                                                openMessageComposer(student)
+                                                            }}
+                                                            className="rounded-lg font-semibold py-2 cursor-pointer text-sm text-slate-700 hover:text-slate-900"
+                                                        >
                                                             <Mail className="mr-2 h-3.5 w-3.5 text-slate-400" /> Message
                                                         </DropdownMenuItem>
                                                         <DropdownMenuSeparator className="bg-slate-100 my-1" />
                                                         <DropdownMenuItem
                                                             className="rounded-lg font-semibold py-2 text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer text-sm"
-                                                            onClick={() => handleDeleteStudent(student.id, student.type)}
+                                                            onClick={(event) => {
+                                                                event.stopPropagation()
+                                                                handleDeleteStudent(student.id, student.type)
+                                                            }}
                                                         >
                                                             <Trash2 className="mr-2 h-3.5 w-3.5" /> Terminate
                                                         </DropdownMenuItem>
@@ -604,17 +640,36 @@ export default function AdminStudentsPage() {
                                                                 Actions
                                                             </Button>
                                                         </DropdownMenuTrigger>
-                                                        <DropdownMenuContent align="end" className="w-48 rounded-xl border border-slate-200 shadow-xl p-1 bg-white">
-                                                            <DropdownMenuItem onClick={() => openEditDialog(student)} className="rounded-lg font-semibold py-2 cursor-pointer text-sm text-slate-700 hover:text-slate-900">
+                                                        <DropdownMenuContent
+                                                            align="end"
+                                                            className="w-48 rounded-xl border border-slate-200 shadow-xl p-1 bg-white"
+                                                            onClick={(event) => event.stopPropagation()}
+                                                        >
+                                                            <DropdownMenuItem
+                                                                onClick={(event) => {
+                                                                    event.stopPropagation()
+                                                                    openEditDialog(student)
+                                                                }}
+                                                                className="rounded-lg font-semibold py-2 cursor-pointer text-sm text-slate-700 hover:text-slate-900"
+                                                            >
                                                                 <Pencil className="mr-2 h-3.5 w-3.5 text-blue-500" /> Edit Info
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem className="rounded-lg font-semibold py-2 cursor-pointer text-sm text-slate-700 hover:text-slate-900">
+                                                            <DropdownMenuItem
+                                                                onClick={(event) => {
+                                                                    event.stopPropagation()
+                                                                    openMessageComposer(student)
+                                                                }}
+                                                                className="rounded-lg font-semibold py-2 cursor-pointer text-sm text-slate-700 hover:text-slate-900"
+                                                            >
                                                                 <Mail className="mr-2 h-3.5 w-3.5 text-slate-400" /> Message
                                                             </DropdownMenuItem>
                                                             <DropdownMenuSeparator className="bg-slate-100 my-1" />
                                                             <DropdownMenuItem
                                                                 className="rounded-lg font-semibold py-2 text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer text-sm"
-                                                                onClick={() => handleDeleteStudent(student.id, student.type)}
+                                                                onClick={(event) => {
+                                                                    event.stopPropagation()
+                                                                    handleDeleteStudent(student.id, student.type)
+                                                                }}
                                                             >
                                                                 <Trash2 className="mr-2 h-3.5 w-3.5" /> Terminate
                                                             </DropdownMenuItem>
