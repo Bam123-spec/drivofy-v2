@@ -155,6 +155,44 @@ export function AdminScheduleCalendar() {
         return events
     }
 
+    const positionDayEvents = (events: any[]) => {
+        const sorted = [...events].sort((a, b) => {
+            const startDiff = a.start.getTime() - b.start.getTime()
+            if (startDiff !== 0) return startDiff
+            return b.end.getTime() - a.end.getTime()
+        })
+
+        const active: Array<{ endMs: number, lane: number }> = []
+        const placed: any[] = []
+
+        for (const event of sorted) {
+            const startMs = event.start.getTime()
+            const endMs = event.end.getTime()
+
+            for (let i = active.length - 1; i >= 0; i--) {
+                if (active[i].endMs <= startMs) active.splice(i, 1)
+            }
+
+            const usedLanes = new Set(active.map((a) => a.lane))
+            let lane = 0
+            while (usedLanes.has(lane)) lane++
+
+            active.push({ endMs, lane })
+            placed.push({ ...event, lane, startMs, endMs })
+        }
+
+        return placed.map((event) => {
+            const overlaps = placed.filter((other) =>
+                other.id !== event.id &&
+                other.startMs < event.endMs &&
+                event.startMs < other.endMs
+            )
+            const group = [event, ...overlaps]
+            const columns = Math.max(...group.map((e) => e.lane)) + 1
+            return { ...event, columns }
+        })
+    }
+
     return (
         <div className="flex flex-col min-h-[1000px] bg-white rounded-[2.5rem] border border-gray-100 shadow-2xl shadow-gray-200/40 overflow-hidden animate-in fade-in duration-700 mb-10">
             {/* Calendar Controls */}
@@ -217,7 +255,7 @@ export function AdminScheduleCalendar() {
 
                     {/* Day Columns */}
                     {weekDays.map((day, dayIndex) => {
-                        const dayEvents = getEventsForDay(day)
+                        const dayEvents = positionDayEvents(getEventsForDay(day))
                         const isToday = isSameDay(day, new Date())
 
                         return (
@@ -243,16 +281,16 @@ export function AdminScheduleCalendar() {
 
                                 {/* Interactive Events Overlay */}
                                 {dayEvents.map((event) => {
-                                    const start = event.start
-                                    const end = event.end
+                                    const start = event.start as Date
+                                    const end = event.end as Date
                                     const startHr = start.getHours() + start.getMinutes() / 60
                                     const endHr = end.getHours() + end.getMinutes() / 60
-                                    const duration = endHr - startHr
+                                    const clampedStartHr = Math.max(5, startHr)
+                                    const clampedEndHr = Math.min(24, endHr)
+                                    if (clampedEndHr <= clampedStartHr) return null
 
-                                    const top = (startHr - 5) * 56 // 56px per hour (h-14)
-                                    const height = duration * 56
-
-                                    if (startHr < 5 || startHr >= 24) return null
+                                    const top = (clampedStartHr - 5) * 56 // 56px per hour (h-14)
+                                    const height = Math.max((clampedEndHr - clampedStartHr) * 56 - 2, 26)
 
                                     let bgClass = "bg-blue-600 shadow-blue-200"
                                     let borderClass = "border-blue-700"
@@ -275,11 +313,17 @@ export function AdminScheduleCalendar() {
                                     return (
                                         <div
                                             key={event.id}
-                                            className={`absolute left-1 right-1 rounded-2xl px-4 py-3 text-[11px] font-bold border-2 shadow-xl overflow-hidden transition-all hover:z-50 hover:scale-[1.02] hover:shadow-2xl flex flex-col justify-between group cursor-default
+                                            className={`absolute rounded-2xl px-3 py-2 text-[11px] font-bold border-2 shadow-lg overflow-hidden transition-shadow hover:shadow-xl flex flex-col justify-between group cursor-default
                                                 ${bgClass} ${borderClass} ${textClass}
                                                 ${event.type === 'google' ? 'opacity-90 grayscale-[0.2] hover:grayscale-0' : ''}
                                             `}
-                                            style={{ top: `${top + 96 + 2}px`, height: `${height - 2}px` }}
+                                            style={{
+                                                top: `${top + 96 + 2}px`,
+                                                height: `${height}px`,
+                                                left: `calc(${(100 / event.columns) * event.lane}% + 3px)`,
+                                                width: `calc(${100 / event.columns}% - 6px)`,
+                                                zIndex: 10 + event.lane
+                                            }}
                                         >
                                             <div className="space-y-1">
                                                 <div className="flex items-start justify-between gap-2">
