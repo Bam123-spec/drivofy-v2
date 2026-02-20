@@ -34,11 +34,12 @@ export async function getAdminSchedule(timeMin: string, timeMax: string) {
 
     const { data: profile } = await supabase
         .from('profiles')
-        .select('role')
+        .select('role, organization_id')
         .eq('id', user.id)
         .single()
 
-    if (profile?.role !== 'admin') throw new Error("Unauthorized")
+    const allowedRoles = new Set(['admin', 'super_admin', 'owner', 'manager', 'staff'])
+    if (!profile?.role || !allowedRoles.has(profile.role)) throw new Error("Unauthorized")
 
     // 2. Fetch Driving Sessions
     const { data: drivingSessions, error: drivingError } = await supabase
@@ -48,8 +49,9 @@ export async function getAdminSchedule(timeMin: string, timeMax: string) {
             profiles (full_name),
             instructors (full_name)
         `)
-        .gte('start_time', timeMin)
-        .lte('end_time', timeMax)
+        // include sessions that overlap this time window (not only fully contained)
+        .lte('start_time', timeMax)
+        .gte('end_time', timeMin)
 
     if (drivingError) throw drivingError
 
@@ -70,18 +72,51 @@ export async function getAdminSchedule(timeMin: string, timeMax: string) {
 
     if (classError) throw classError
 
-    // 4. Fetch Google Calendar Events for ALL connected profiles (Instructors + Admins)
-    const { data: tokens } = await supabase
-        .from('user_google_tokens')
-        .select('profile_id, email')
+    // 4. Fetch class days within week so schedule mirrors real class sessions,
+    // including weekend classes and non-default patterns.
+    const classIds = (classes || []).map((c: any) => c.id).filter(Boolean)
+    const { data: classDays, error: classDaysError } = classIds.length > 0
+        ? await supabase
+            .from('class_days')
+            .select('id, class_id, start_datetime, end_datetime')
+            .in('class_id', classIds)
+            // include rows overlapping this week
+            .lte('start_datetime', timeMax)
+            .gte('end_datetime', timeMin)
+        : { data: [], error: null as any }
+
+    if (classDaysError) throw classDaysError
+
+    // 5. Fetch Google Calendar Events for connected profiles in the same organization.
+    const orgProfilesResult = profile.organization_id
+        ? await supabase
+            .from('profiles')
+            .select('id')
+            .eq('organization_id', profile.organization_id)
+        : { data: [{ id: user.id }], error: null as any }
+    if (orgProfilesResult.error) throw orgProfilesResult.error
+
+    const profileIds = (orgProfilesResult.data || []).map((p: any) => p.id).filter(Boolean)
+    const { data: tokens, error: tokensError } = profileIds.length > 0
+        ? await supabase
+            .from('user_google_tokens')
+            .select('profile_id, email')
+            .in('profile_id', profileIds)
+        : { data: [], error: null as any }
+    if (tokensError) throw tokensError
 
     let googleEvents: any[] = []
 
     // Add current user to potential tokens if not already there (to ensure admin sync)
-    const allTokens = tokens || []
-    if (user.id && !allTokens.some(t => t.profile_id === user.id)) {
-        allTokens.push({ profile_id: user.id, email: user.email || 'Admin' })
+    const tokenMap = new Map<string, { profile_id: string, email: string }>()
+    for (const token of tokens || []) {
+        if (!token?.profile_id) continue
+        tokenMap.set(token.profile_id, token)
     }
+    if (user.id && !tokenMap.has(user.id)) {
+        tokenMap.set(user.id, { profile_id: user.id, email: user.email || 'Admin' })
+    }
+    const allTokens = Array.from(tokenMap.values())
 
     if (allTokens.length > 0) {
         console.log(`🔍 Unified Sync: Fetching for ${allTokens.length} accounts`)
@@ -135,6 +170,7 @@ export async function getAdminSchedule(timeMin: string, timeMax: string) {
     return {
         drivingSessions,
         classes,
+        classDays: classDays || [],
         googleEvents
     }
 }

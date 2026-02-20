@@ -2,24 +2,23 @@
 
 import { useState, useEffect } from "react"
 import { format, startOfWeek, addDays, isSameDay, parseISO, addWeeks, subWeeks, startOfDay, endOfDay } from "date-fns"
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Loader2, AlertTriangle, ExternalLink, Info } from "lucide-react"
+import { ChevronLeft, ChevronRight, Loader2, AlertTriangle, ExternalLink } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { getAdminSchedule } from "@/app/actions/schedule"
 import { toast } from "sonner"
-import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { Suspense } from "react"
-import { GoogleCalendarConnect } from "@/app/instructor/profile/components/GoogleCalendarConnect"
 
 export function AdminScheduleCalendar() {
     const [currentDate, setCurrentDate] = useState(new Date())
     const [data, setData] = useState<{
         drivingSessions: any[],
         classes: any[],
+        classDays: any[],
         googleEvents: any[]
     }>({
         drivingSessions: [],
         classes: [],
+        classDays: [],
         googleEvents: []
     })
     const [loading, setLoading] = useState(true)
@@ -50,6 +49,8 @@ export function AdminScheduleCalendar() {
 
     const getEventsForDay = (date: Date) => {
         const events: any[] = []
+        const classById = new Map((data.classes || []).map((c: any) => [c.id, c]))
+        const classesWithDays = new Set((data.classDays || []).map((d: any) => d.class_id))
 
         // 1. Driving Sessions
         data.drivingSessions.forEach(s => {
@@ -66,16 +67,43 @@ export function AdminScheduleCalendar() {
             }
         })
 
-        // 2. Classes (Theory)
+        // 2. Classes (Theory) - prefer real class_days schedule.
+        data.classDays.forEach((day: any) => {
+            if (!day?.start_datetime || !day?.end_datetime) return
+            const start = parseISO(day.start_datetime)
+            const end = parseISO(day.end_datetime)
+            if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return
+            if (!isSameDay(start, date)) return
+
+            const cls = classById.get(day.class_id)
+            events.push({
+                id: `class-day-${day.id}`,
+                type: 'class',
+                title: `Class: ${cls?.name || "Theory Session"}`,
+                subtitle: `Instr: ${cls?.instructors?.full_name || "Unassigned"}`,
+                start,
+                end,
+                status: cls?.status
+            })
+        })
+
+        // Fallback for legacy rows that do not have class_days.
         data.classes.forEach(c => {
+            if (classesWithDays.has(c.id)) return
             const classStart = parseISO(c.start_date)
             const classEnd = parseISO(c.end_date)
 
             if (date >= startOfDay(classStart) && date <= endOfDay(classEnd)) {
                 const dayOfWeek = date.getDay()
-                if (dayOfWeek >= 1 && dayOfWeek <= 5) {
-                    const [sh, sm] = (c.daily_start_time || "00:00:00").split(':').map(Number)
-                    const [eh, em] = (c.daily_end_time || "00:00:00").split(':').map(Number)
+                const classification = String(c.classification || "").toLowerCase()
+                const isWeekendClass = classification.includes("weekend")
+                const dayMatches = isWeekendClass
+                    ? dayOfWeek === 0 || dayOfWeek === 6
+                    : dayOfWeek >= 1 && dayOfWeek <= 5
+                if (dayMatches && c.daily_start_time && c.daily_end_time) {
+                    const [sh, sm] = String(c.daily_start_time).split(':').map(Number)
+                    const [eh, em] = String(c.daily_end_time).split(':').map(Number)
+                    if ([sh, sm, eh, em].some((n) => Number.isNaN(n))) return
 
                     const start = new Date(date)
                     start.setHours(sh, sm, 0)
@@ -98,13 +126,25 @@ export function AdminScheduleCalendar() {
 
         // 3. Google Calendar Events
         data.googleEvents.forEach((b) => {
-            const start = parseISO(b.start)
-            const end = parseISO(b.end)
-            if (isSameDay(start, date)) {
+            const rawStart = String(b.start || "")
+            if (!rawStart) return
+            const startDay = parseISO(rawStart)
+            if (Number.isNaN(startDay.getTime())) return
+
+            if (isSameDay(startDay, date)) {
+                const isAllDay = !rawStart.includes("T")
+                const start = isAllDay ? new Date(date.getFullYear(), date.getMonth(), date.getDate(), 5, 0, 0) : parseISO(rawStart)
+                const parsedEnd = b.end ? parseISO(String(b.end)) : null
+                const end = isAllDay
+                    ? new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 0)
+                    : parsedEnd && !Number.isNaN(parsedEnd.getTime())
+                        ? parsedEnd
+                        : new Date(start.getTime() + 60 * 60 * 1000)
+
                 events.push({
                     id: b.id,
                     type: 'google',
-                    title: b.title || 'Unknown Event',
+                    title: isAllDay ? `All Day: ${b.title || 'Busy'}` : b.title || 'Unknown Event',
                     start,
                     end,
                     isGoogle: true

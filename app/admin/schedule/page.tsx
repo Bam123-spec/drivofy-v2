@@ -3,8 +3,6 @@
 import { Suspense } from "react"
 import { AdminScheduleCalendar } from "./components/AdminScheduleCalendar"
 import { GoogleCalendarConnect } from "@/app/instructor/profile/components/GoogleCalendarConnect"
-import { CalendarDays, Info, ShieldAlert } from "lucide-react"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 export default function AdminSchedulePage() {
     return (
