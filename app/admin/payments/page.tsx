@@ -30,6 +30,10 @@ interface BillingInvoice {
 }
 
 const INVOICE_HISTORY: BillingInvoice[] = []
+const FORCED_PREMIUM_ADMIN_EMAILS = new Set([
+    "basnael7@gmail.com",
+    "selamdrivingschool@gmail.com",
+])
 
 export default async function BillingPage() {
     const cookieStore = await cookies()
@@ -55,6 +59,9 @@ export default async function BillingPage() {
     if (!user) {
         redirect('/login')
     }
+
+    const userEmail = user.email?.toLowerCase() || ""
+    const isForcedPremiumAdmin = FORCED_PREMIUM_ADMIN_EMAILS.has(userEmail)
 
     const { data: profile } = await db
         .from('profiles')
@@ -106,7 +113,7 @@ export default async function BillingPage() {
         }
     }
 
-    if (!org) {
+    if (!org && !isForcedPremiumAdmin) {
         return (
             <div className="max-w-3xl mx-auto py-16 px-4">
                 <Card className="border-red-200 bg-red-50">
@@ -126,8 +133,21 @@ export default async function BillingPage() {
         )
     }
 
-    const isActive = org?.billing_status === 'active' || org?.billing_status === 'trialing'
-    const isCanceled = org?.billing_status === 'canceled'
+    if (!org && isForcedPremiumAdmin) {
+        org = {
+            id: null,
+            current_plan: "premium",
+            plan_status: "active",
+            billing_status: "active",
+        }
+    }
+
+    const effectiveCurrentPlan = isForcedPremiumAdmin ? "premium" : (org?.current_plan || "core")
+    const effectiveBillingStatus = isForcedPremiumAdmin ? "active" : org?.billing_status
+    const effectivePlanStatus = isForcedPremiumAdmin ? "active" : org?.plan_status
+
+    const isActive = effectiveBillingStatus === 'active' || effectiveBillingStatus === 'trialing'
+    const isCanceled = effectiveBillingStatus === 'canceled'
 
     return (
         <div className="max-w-6xl mx-auto pb-20 px-4 sm:px-6">
@@ -165,13 +185,13 @@ export default async function BillingPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
                 {/* Core Plan */}
-                <Card className={`relative group overflow-hidden border-2 transition-all ${org?.current_plan === 'core' || !org?.current_plan ? 'border-blue-600 shadow-xl' : 'border-slate-100 hover:border-slate-200'}`}>
+                <Card className={`relative group overflow-hidden border-2 transition-all ${effectiveCurrentPlan === 'core' ? 'border-blue-600 shadow-xl' : 'border-slate-100 hover:border-slate-200'}`}>
                     <CardHeader>
                         <div className="flex justify-between items-start mb-4">
                             <div className="p-2 rounded-xl bg-slate-100 text-slate-600">
                                 <ShieldCheck className="h-6 w-6" />
                             </div>
-                            {(org?.current_plan === 'core' || !org?.current_plan) && (
+                            {effectiveCurrentPlan === 'core' && (
                                 <Badge className="bg-blue-600 text-white border-0">Current Plan</Badge>
                             )}
                         </div>
@@ -206,13 +226,13 @@ export default async function BillingPage() {
                 </Card>
 
                 {/* Standard Plan */}
-                <Card className={`relative group overflow-hidden border-2 transition-all ${org?.current_plan === 'standard' ? 'border-blue-600 shadow-xl' : 'border-slate-100 hover:border-slate-200'}`}>
+                <Card className={`relative group overflow-hidden border-2 transition-all ${effectiveCurrentPlan === 'standard' ? 'border-blue-600 shadow-xl' : 'border-slate-100 hover:border-slate-200'}`}>
                     <CardHeader>
                         <div className="flex justify-between items-start mb-4">
                             <div className="p-2 rounded-xl bg-blue-50 text-blue-600">
                                 <Zap className="h-6 w-6" />
                             </div>
-                            {org?.current_plan === 'standard' && (
+                            {effectiveCurrentPlan === 'standard' && (
                                 <Badge className="bg-blue-600 text-white border-0">Current Plan</Badge>
                             )}
                         </div>
@@ -240,7 +260,7 @@ export default async function BillingPage() {
                         </ul>
                     </CardContent>
                     <CardFooter>
-                        {org?.current_plan === 'standard' && isActive ? (
+                        {effectiveCurrentPlan === 'standard' && isActive ? (
                             <ManageBillingButton
                                 className="w-full bg-slate-900 hover:bg-blue-600 text-white font-bold h-12 rounded-xl transition-all"
                             />
@@ -250,7 +270,7 @@ export default async function BillingPage() {
                                 className="w-full"
                             >
                                 <Button className="w-full bg-slate-900 hover:bg-blue-600 text-white font-bold h-12 rounded-xl transition-all">
-                                    {org?.current_plan === 'standard' ? 'Reactivate Standard' : 'Buy Now'}
+                                    {effectiveCurrentPlan === 'standard' ? 'Reactivate Standard' : 'Buy Now'}
                                 </Button>
                             </a>
                         )}
@@ -258,13 +278,13 @@ export default async function BillingPage() {
                 </Card>
 
                 {/* Premium Plan */}
-                <Card className={`relative group overflow-hidden border-2 transition-all ${org?.current_plan === 'premium' ? 'border-blue-600 shadow-xl' : 'border-indigo-600/20 shadow-lg shadow-indigo-500/5'}`}>
+                <Card className={`relative group overflow-hidden border-2 transition-all ${effectiveCurrentPlan === 'premium' ? 'border-blue-600 shadow-xl' : 'border-indigo-600/20 shadow-lg shadow-indigo-500/5'}`}>
                     <CardHeader>
                         <div className="flex justify-between items-start mb-4">
                             <div className="p-2 rounded-xl bg-indigo-50 text-indigo-600">
                                 <Zap className="h-6 w-6 fill-current" />
                             </div>
-                            {org?.current_plan === 'premium' && (
+                            {effectiveCurrentPlan === 'premium' && (
                                 <Badge className="bg-blue-600 text-white border-0">Current Plan</Badge>
                             )}
                         </div>
@@ -292,17 +312,23 @@ export default async function BillingPage() {
                         </ul>
                     </CardContent>
                     <CardFooter>
-                        {org?.current_plan === 'premium' && isActive ? (
-                            <ManageBillingButton
-                                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-12 rounded-xl transition-all"
-                            />
+                        {effectiveCurrentPlan === 'premium' && isActive ? (
+                            isForcedPremiumAdmin ? (
+                                <Button disabled className="w-full bg-indigo-600 text-white font-bold h-12 rounded-xl opacity-100">
+                                    Premium Unlocked
+                                </Button>
+                            ) : (
+                                <ManageBillingButton
+                                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-12 rounded-xl transition-all"
+                                />
+                            )
                         ) : (
                             <a
                                 href={`https://buy.stripe.com/aFa9AS5iNczF2Tve8d2go02?client_reference_id=${org?.id}`}
                                 className="w-full"
                             >
                                 <Button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-12 rounded-xl transition-all">
-                                    {org?.current_plan === 'premium' ? 'Reactivate Premium' : 'Upgrade to Premium'}
+                                    {effectiveCurrentPlan === 'premium' ? 'Reactivate Premium' : 'Upgrade to Premium'}
                                 </Button>
                             </a>
                         )}
@@ -371,12 +397,12 @@ export default async function BillingPage() {
                             <div className="space-y-6">
                                 <div className="flex justify-between items-end">
                                     <div className="text-sm font-bold text-blue-100">Current Plan</div>
-                                    <div className="text-4xl font-black tracking-tight capitalize">{org?.current_plan || 'Core'}</div>
+                                    <div className="text-4xl font-black tracking-tight capitalize">{effectiveCurrentPlan || 'core'}</div>
                                 </div>
                                 <div className="pt-6 border-t border-white/10 space-y-4">
                                     <div className="flex justify-between text-sm font-medium text-blue-100">
                                         <span>Status</span>
-                                        <Badge className="bg-white/20 text-white border-0 capitalize">{org?.plan_status || 'active'}</Badge>
+                                        <Badge className="bg-white/20 text-white border-0 capitalize">{effectivePlanStatus || 'active'}</Badge>
                                     </div>
                                     <div className="flex justify-between text-sm font-medium text-blue-100">
                                         <span>Billing Cycle</span>

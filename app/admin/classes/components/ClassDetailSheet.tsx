@@ -34,8 +34,10 @@ export function ClassDetailSheet({
     classData,
     instructors,
     onUpdate,
+    defaultTab = "details",
 }: ClassDetailSheetProps) {
     const [isDetailsOpen, setIsDetailsOpen] = useState(false)
+    const canManageStudents = defaultTab === "students"
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
@@ -107,7 +109,7 @@ export function ClassDetailSheet({
                             <div className="flex items-center justify-between">
                                 <h3 className="font-semibold text-sm text-gray-900">Students & Grading</h3>
                             </div>
-                            <AddStudentForm classId={classData.id} />
+                            <AddStudentForm classId={classData.id} isEditMode={canManageStudents} />
                         </div>
                     </div>
                 )}

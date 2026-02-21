@@ -20,8 +20,6 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { formatDistanceToNow } from "date-fns"
 import { ShieldAlert, User, Calendar, Activity, Loader2 } from "lucide-react"
-import { getAuditLogs } from "@/app/actions/audit"
-import { toast } from "sonner"
 
 export default function AuditLogsPage() {
     const [logs, setLogs] = useState<any[]>([])
@@ -34,16 +32,21 @@ export default function AuditLogsPage() {
         const fetchLogs = async () => {
             setLoading(true)
             try {
-                const data = await getAuditLogs({
+                const params = new URLSearchParams({
                     dateRange: dateFilter,
                     action: actionFilter,
-                    userId: userFilter
+                    userId: userFilter,
                 })
-                setLogs(data || [])
+                const response = await fetch(`/api/admin/audit?${params.toString()}`, { cache: "no-store" })
+                if (!response.ok) {
+                    setLogs([])
+                    return
+                }
+                const payload = await response.json()
+                setLogs(Array.isArray(payload?.logs) ? payload.logs : [])
             } catch (error: any) {
                 console.error("Error fetching logs:", error)
                 setLogs([])
-                toast.error(error?.message || "Failed to load audit logs")
             } finally {
                 setLoading(false)
             }

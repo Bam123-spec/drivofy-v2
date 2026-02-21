@@ -8,14 +8,10 @@ import {
     Github,
     GitBranch,
     CheckCircle2,
-    Clock,
-    Globe,
     Terminal,
     Shield,
-    Activity,
-    BarChart3
+    Activity
 } from "lucide-react"
-import Link from "next/link"
 
 export default function HostingPage() {
     return (
@@ -25,7 +21,7 @@ export default function HostingPage() {
                 <div>
                     <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Hosting</h1>
                     <div className="flex items-center gap-2 mt-1 text-sm text-gray-500">
-                        <span>drivofy-v2</span>
+                        <span>selamdrivingschool@gmail.com</span>
                         <span className="text-gray-300">/</span>
                         <span className="font-medium text-gray-900">Production</span>
                     </div>
@@ -126,7 +122,7 @@ export default function HostingPage() {
             </div>
 
             {/* Bottom Cards Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Card className="hover:shadow-md transition-shadow cursor-pointer group">
                     <CardHeader className="pb-3">
                         <CardTitle className="text-sm font-medium text-gray-500 uppercase tracking-wider flex items-center gap-2">
@@ -162,25 +158,6 @@ export default function HostingPage() {
                             {[40, 60, 45, 70, 50, 65, 55, 45, 60, 50, 75, 60].map((h, i) => (
                                 <div key={i} style={{ height: `${h}%` }} className="flex-1 bg-gray-200 group-hover:bg-blue-500 transition-colors rounded-sm"></div>
                             ))}
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card className="hover:shadow-md transition-shadow cursor-pointer group">
-                    <CardHeader className="pb-3">
-                        <CardTitle className="text-sm font-medium text-gray-500 uppercase tracking-wider flex items-center gap-2">
-                            <BarChart3 className="h-4 w-4" />
-                            Analytics
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex items-baseline gap-2">
-                            <span className="text-2xl font-bold text-gray-900">2.4k</span>
-                            <span className="text-sm text-emerald-600 font-medium">+12%</span>
-                        </div>
-                        <p className="text-xs text-gray-500 mt-1">Visitors (Last 24h)</p>
-                        <div className="mt-4 h-1 w-full bg-gray-100 rounded-full overflow-hidden">
-                            <div className="h-full bg-blue-500 w-[65%] rounded-full"></div>
                         </div>
                     </CardContent>
                 </Card>

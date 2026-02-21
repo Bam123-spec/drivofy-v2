@@ -260,9 +260,9 @@ export function generateClassEnrollmentEmail(userName: string, className: string
                         </a>
                     </div>
 
-                    <div style="border-top: 1px solid #f1f5f9; pt: 24px;">
+                    <div style="border-top: 1px solid #f1f5f9; padding-top: 24px;">
                         <p style="margin: 0; font-size: 14px; color: #64748b;">
-                            Click the button above to set your password and access your student portal. You'll be able to view your full class schedule and session details.
+                            Click the button above to sign in instantly and open your student dashboard. If the link has expired, sign in directly to your student portal.
                         </p>
                     </div>
                 </div>

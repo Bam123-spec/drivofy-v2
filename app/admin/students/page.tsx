@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { Fragment, useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabaseClient"
 import {
@@ -78,21 +78,11 @@ function getLeadPhone(lead: EnrollmentLike) {
     return lead.phone || lead.customer_details?.phone || null
 }
 
-function getLeadName(lead: EnrollmentLike) {
-    const byColumns = [lead.first_name, lead.last_name].filter(Boolean).join(" ").trim()
-    if (byColumns) return byColumns
-    const byCustomer = lead.customer_details?.name?.trim()
-    if (byCustomer) return byCustomer
-    return "Unknown Student"
-}
-
 export default function AdminStudentsPage() {
     const router = useRouter()
     const [students, setStudents] = useState<any[]>([])
-    const [leads, setLeads] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
     const [searchQuery, setSearchQuery] = useState("")
-    const [filter, setFilter] = useState<'all' | 'registered' | 'leads'>('all')
     const [viewMode, setViewMode] = useState<'table' | 'grid'>('table')
 
     // Add Student State
@@ -129,7 +119,7 @@ export default function AdminStudentsPage() {
 
             if (profileError) throw profileError
 
-            // 2. Fetch Website Enrollments (Leads)
+            // 2. Fetch website enrollments for contact fallback (phone/email).
             const { data: enrollments, error: enrollError } = await supabase
                 .from('enrollments')
                 .select('*')
@@ -156,12 +146,6 @@ export default function AdminStudentsPage() {
             })
 
             setStudents(hydratedStudents)
-            setLeads((enrollments || []).map((lead: any) => ({
-                ...lead,
-                email: getLeadEmail(lead),
-                phone: getLeadPhone(lead),
-                full_name: getLeadName(lead),
-            })))
         } catch (error) {
             console.error("Error fetching data:", error)
             toast.error("Failed to load students")
@@ -230,7 +214,7 @@ export default function AdminStudentsPage() {
         }
     }
 
-    const handleDeleteStudent = async (studentId: string, type: 'registered' | 'lead') => {
+    const handleDeleteStudent = async (studentId: string, type: 'registered') => {
         if (!confirm("Are you sure you want to delete this student? This action cannot be undone.")) return
 
         try {
@@ -269,37 +253,10 @@ export default function AdminStudentsPage() {
         }
     }
 
-    // Merge logic: Combine profiles and enrollments uniquely by email
+    // Registered-only list
     const unifiedData = () => {
-        const profileEmails = new Set(
-            students
-                .map(s => s.email?.toLowerCase())
-                .filter(Boolean)
-        )
-
-        const combined = [
-            ...students.map(s => ({ ...s, type: 'registered' })),
-            ...leads
-                .filter(l => {
-                    const leadEmail = l.email?.toLowerCase()
-                    return !leadEmail || !profileEmails.has(leadEmail)
-                })
-                .map(l => ({
-                    ...l,
-                    full_name: l.full_name || getLeadName(l),
-                    email: l.email || "",
-                    phone: l.phone || null,
-                    created_at: l.enrolled_at,
-                    type: 'lead'
-                }))
-        ]
-
+        const combined = students.map((s) => ({ ...s, type: 'registered' as const }))
         return combined
-            .filter(item =>
-                (filter === 'all') ||
-                (filter === 'registered' && item.type === 'registered') ||
-                (filter === 'leads' && item.type === 'lead')
-            )
             .filter(item =>
                 item.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 item.email?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -308,18 +265,60 @@ export default function AdminStudentsPage() {
     }
 
     const displayData = unifiedData()
-    const stats = {
-        total: students.length + leads.filter(l => {
-            if (!l.email) return true
-            return !students.some(s => s.email?.toLowerCase() === l.email.toLowerCase())
-        }).length,
-        registered: students.length,
-        leads: leads.filter(l => {
-            if (!l.email) return true
-            return !students.some(s => s.email?.toLowerCase() === l.email.toLowerCase())
-        }).length,
-        recent: displayData.filter(s => new Date(s.created_at) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)).length
-    }
+
+    const studentsByMonth = useMemo(() => {
+        const monthLabelFormatter = new Intl.DateTimeFormat(undefined, { month: "long", year: "numeric" })
+        const rangeFormatter = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" })
+        const groups = new Map<
+            string,
+            {
+                sortDate: number
+                label: string
+                range: string
+                students: any[]
+            }
+        >()
+
+        for (const student of displayData) {
+            const createdAt = student.created_at ? new Date(student.created_at) : null
+            if (!createdAt || Number.isNaN(createdAt.getTime())) {
+                const unknown = groups.get("unknown")
+                if (unknown) {
+                    unknown.students.push(student)
+                } else {
+                    groups.set("unknown", {
+                        sortDate: -1,
+                        label: "Unknown Date",
+                        range: "Registration date unavailable",
+                        students: [student],
+                    })
+                }
+                continue
+            }
+
+            const year = createdAt.getFullYear()
+            const month = createdAt.getMonth()
+            const key = `${year}-${String(month + 1).padStart(2, "0")}`
+            const startOfMonth = new Date(year, month, 1)
+            const endOfMonth = new Date(year, month + 1, 0)
+
+            const existing = groups.get(key)
+            if (existing) {
+                existing.students.push(student)
+            } else {
+                groups.set(key, {
+                    sortDate: startOfMonth.getTime(),
+                    label: monthLabelFormatter.format(startOfMonth),
+                    range: `${rangeFormatter.format(startOfMonth)} - ${rangeFormatter.format(endOfMonth)}`,
+                    students: [student],
+                })
+            }
+        }
+
+        return Array.from(groups.entries())
+            .map(([key, value]) => ({ key, ...value }))
+            .sort((a, b) => b.sortDate - a.sortDate)
+    }, [displayData])
 
     if (loading && students.length === 0) {
         return (
@@ -328,7 +327,7 @@ export default function AdminStudentsPage() {
                     <Loader2 className="h-16 w-16 animate-spin text-blue-600 absolute inset-0 opacity-20" />
                     <Loader2 className="h-16 w-16 animate-spin text-blue-600 absolute inset-0" style={{ animationDirection: 'reverse', animationDuration: '2s' }} />
                 </div>
-                <p className="text-slate-500 font-medium animate-pulse">Loading students and leads...</p>
+                <p className="text-slate-500 font-medium animate-pulse">Loading students...</p>
             </div>
         )
     }
@@ -338,8 +337,8 @@ export default function AdminStudentsPage() {
             {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-1">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Students & Leads</h1>
-                    <p className="text-slate-500 font-medium text-base mt-1">Manage registrations and website enrollment inquiries.</p>
+                    <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Students</h1>
+                    <p className="text-slate-500 font-medium text-base mt-1">Manage registered students and open each profile to view purchases.</p>
                 </div>
 
                 <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
@@ -431,20 +430,6 @@ export default function AdminStudentsPage() {
                             </Button>
                         </div>
 
-                        <div className="flex border border-slate-200 p-1 rounded-xl bg-white shadow-sm w-fit">
-                            {(['all', 'registered', 'leads'] as const).map((t) => (
-                                <button
-                                    key={t}
-                                    onClick={() => setFilter(t)}
-                                    className={`px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${filter === t
-                                        ? 'bg-slate-100 text-slate-900'
-                                        : 'text-slate-400 hover:text-slate-600'
-                                        }`}
-                                >
-                                    {t.toUpperCase()}
-                                </button>
-                            ))}
-                        </div>
                     </div>
                 </div>
 
@@ -462,104 +447,117 @@ export default function AdminStudentsPage() {
                             </TableHeader>
                             <TableBody>
                                 {displayData.length > 0 ? (
-                                    displayData.map((student) => (
-                                        <TableRow
-                                            key={student.id}
-                                            className="group hover:bg-slate-50/30 transition-colors border-slate-200 even:bg-slate-50/50 cursor-pointer"
-                                            onClick={() => openStudentDetails(student)}
-                                        >
-                                            <TableCell className="pl-6 py-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="relative">
-                                                        <Avatar className="h-10 w-10 border-2 border-white shadow-sm">
-                                                            <AvatarImage src={student.avatar_url} />
-                                                            <AvatarFallback className={`bg-${student.type === 'registered' ? 'blue' : 'orange'}-100 text-${student.type === 'registered' ? 'blue' : 'orange'}-600 font-bold text-sm`}>
-                                                                {student.full_name?.charAt(0) || "S"}
-                                                            </AvatarFallback>
-                                                        </Avatar>
-                                                        <div className={`absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border border-white ${student.type === 'registered' ? 'bg-blue-500' : 'bg-orange-500'} flex items-center justify-center`}>
-                                                            {student.type === 'registered' ? <CheckCircle2 className="h-2 w-2 text-white" /> : <TrendingUp className="h-2 w-2 text-white" />}
+                                    studentsByMonth.map((group) => (
+                                        <Fragment key={group.key}>
+                                            <TableRow className="bg-slate-50/70 hover:bg-slate-50/70 border-slate-200">
+                                                <TableCell colSpan={5} className="px-6 py-3">
+                                                    <div className="flex items-center justify-between gap-3">
+                                                        <div className="text-xs font-bold uppercase tracking-wider text-slate-600">
+                                                            {group.label}
+                                                        </div>
+                                                        <div className="text-[11px] font-semibold text-slate-400">
+                                                            {group.range} • {group.students.length} {group.students.length === 1 ? "student" : "students"}
                                                         </div>
                                                     </div>
-                                                    <div>
-                                                        <div className="font-semibold text-slate-900 text-sm group-hover:text-blue-600 transition-colors">{student.full_name}</div>
-                                                        <div className="text-[10px] text-slate-400 font-medium tracking-tight">ID: {student.id.slice(0, 8)}</div>
-                                                    </div>
-                                                </div>
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="space-y-0.5">
-                                                    <div className="flex items-center text-slate-600 text-xs font-medium">
-                                                        <Mail className="h-3 w-3 text-slate-400 mr-2" />
-                                                        {student.email}
-                                                    </div>
-                                                    {student.phone && (
-                                                        <div className="flex items-center text-slate-600 text-xs font-medium">
-                                                            <Phone className="h-3 w-3 text-slate-400 mr-2" />
-                                                            {student.phone}
+                                                </TableCell>
+                                            </TableRow>
+                                            {group.students.map((student) => (
+                                                <TableRow
+                                                    key={student.id}
+                                                    className="group hover:bg-slate-50/30 transition-colors border-slate-200 even:bg-slate-50/50 cursor-pointer"
+                                                    onClick={() => openStudentDetails(student)}
+                                                >
+                                                    <TableCell className="pl-6 py-4">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="relative">
+                                                                <Avatar className="h-10 w-10 border-2 border-white shadow-sm">
+                                                                    <AvatarImage src={student.avatar_url} />
+                                                                    <AvatarFallback className="bg-blue-100 text-blue-600 font-bold text-sm">
+                                                                        {student.full_name?.charAt(0) || "S"}
+                                                                    </AvatarFallback>
+                                                                </Avatar>
+                                                                <div className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border border-white bg-blue-500 flex items-center justify-center">
+                                                                    <CheckCircle2 className="h-2 w-2 text-white" />
+                                                                </div>
+                                                            </div>
+                                                            <div>
+                                                                <div className="font-semibold text-slate-900 text-sm group-hover:text-blue-600 transition-colors">{student.full_name}</div>
+                                                                <div className="text-[10px] text-slate-400 font-medium tracking-tight">ID: {student.id.slice(0, 8)}</div>
+                                                            </div>
                                                         </div>
-                                                    )}
-                                                </div>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Badge variant="secondary" className={`border-0 px-2.5 py-0.5 rounded-md font-semibold text-[10px] uppercase tracking-wide ${student.type === 'registered'
-                                                    ? 'bg-blue-50 text-blue-600 hover:bg-blue-50'
-                                                    : 'bg-orange-50 text-orange-600 hover:bg-orange-50'
-                                                    }`}>
-                                                    {student.type === 'registered' ? 'Registered' : 'Lead'}
-                                                </Badge>
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="flex items-center text-slate-500 text-xs font-medium">
-                                                    <Calendar className="h-3.5 w-3.5 mr-2 text-slate-300" />
-                                                    {new Date(student.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                                                </div>
-                                            </TableCell>
-                                            <TableCell className="pr-6 text-right">
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild>
-                                                        <Button variant="ghost" className="h-8 w-8 p-0 rounded-lg hover:bg-slate-100" onClick={(event) => event.stopPropagation()}>
-                                                            <MoreHorizontal className="h-4 w-4 text-slate-400" />
-                                                        </Button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent
-                                                        align="end"
-                                                        className="w-48 rounded-xl border border-slate-200 shadow-xl p-1 bg-white"
-                                                        onClick={(event) => event.stopPropagation()}
-                                                    >
-                                                        <DropdownMenuLabel className="font-bold text-slate-900 text-[10px] uppercase tracking-wider mb-0.5 px-2">Management</DropdownMenuLabel>
-                                                        <DropdownMenuItem
-                                                            onClick={(event) => {
-                                                                event.stopPropagation()
-                                                                openEditDialog(student)
-                                                            }}
-                                                            className="rounded-lg font-semibold py-2 cursor-pointer text-sm text-slate-700 hover:text-slate-900"
-                                                        >
-                                                            <Pencil className="mr-2 h-3.5 w-3.5 text-blue-500" /> Edit Info
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem
-                                                            onClick={(event) => {
-                                                                event.stopPropagation()
-                                                                openMessageComposer(student)
-                                                            }}
-                                                            className="rounded-lg font-semibold py-2 cursor-pointer text-sm text-slate-700 hover:text-slate-900"
-                                                        >
-                                                            <Mail className="mr-2 h-3.5 w-3.5 text-slate-400" /> Message
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuSeparator className="bg-slate-100 my-1" />
-                                                        <DropdownMenuItem
-                                                            className="rounded-lg font-semibold py-2 text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer text-sm"
-                                                            onClick={(event) => {
-                                                                event.stopPropagation()
-                                                                handleDeleteStudent(student.id, student.type)
-                                                            }}
-                                                        >
-                                                            <Trash2 className="mr-2 h-3.5 w-3.5" /> Terminate
-                                                        </DropdownMenuItem>
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
-                                            </TableCell>
-                                        </TableRow>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <div className="space-y-0.5">
+                                                            <div className="flex items-center text-slate-600 text-xs font-medium">
+                                                                <Mail className="h-3 w-3 text-slate-400 mr-2" />
+                                                                {student.email}
+                                                            </div>
+                                                            {student.phone && (
+                                                                <div className="flex items-center text-slate-600 text-xs font-medium">
+                                                                    <Phone className="h-3 w-3 text-slate-400 mr-2" />
+                                                                    {student.phone}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Badge variant="secondary" className="border-0 px-2.5 py-0.5 rounded-md font-semibold text-[10px] uppercase tracking-wide bg-blue-50 text-blue-600 hover:bg-blue-50">
+                                                            Registered
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <div className="flex items-center text-slate-500 text-xs font-medium">
+                                                            <Calendar className="h-3.5 w-3.5 mr-2 text-slate-300" />
+                                                            {new Date(student.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="pr-6 text-right">
+                                                        <DropdownMenu>
+                                                            <DropdownMenuTrigger asChild>
+                                                                <Button variant="ghost" className="h-8 w-8 p-0 rounded-lg hover:bg-slate-100" onClick={(event) => event.stopPropagation()}>
+                                                                    <MoreHorizontal className="h-4 w-4 text-slate-400" />
+                                                                </Button>
+                                                            </DropdownMenuTrigger>
+                                                            <DropdownMenuContent
+                                                                align="end"
+                                                                className="w-48 rounded-xl border border-slate-200 shadow-xl p-1 bg-white"
+                                                                onClick={(event) => event.stopPropagation()}
+                                                            >
+                                                                <DropdownMenuLabel className="font-bold text-slate-900 text-[10px] uppercase tracking-wider mb-0.5 px-2">Management</DropdownMenuLabel>
+                                                                <DropdownMenuItem
+                                                                    onClick={(event) => {
+                                                                        event.stopPropagation()
+                                                                        openEditDialog(student)
+                                                                    }}
+                                                                    className="rounded-lg font-semibold py-2 cursor-pointer text-sm text-slate-700 hover:text-slate-900"
+                                                                >
+                                                                    <Pencil className="mr-2 h-3.5 w-3.5 text-blue-500" /> Edit Info
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem
+                                                                    onClick={(event) => {
+                                                                        event.stopPropagation()
+                                                                        openMessageComposer(student)
+                                                                    }}
+                                                                    className="rounded-lg font-semibold py-2 cursor-pointer text-sm text-slate-700 hover:text-slate-900"
+                                                                >
+                                                                    <Mail className="mr-2 h-3.5 w-3.5 text-slate-400" /> Message
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuSeparator className="bg-slate-100 my-1" />
+                                                                <DropdownMenuItem
+                                                                    className="rounded-lg font-semibold py-2 text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer text-sm"
+                                                                    onClick={(event) => {
+                                                                        event.stopPropagation()
+                                                                        handleDeleteStudent(student.id, 'registered')
+                                                                    }}
+                                                                >
+                                                                    <Trash2 className="mr-2 h-3.5 w-3.5" /> Terminate
+                                                                </DropdownMenuItem>
+                                                            </DropdownMenuContent>
+                                                        </DropdownMenu>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </Fragment>
                                     ))
                                 ) : (
                                     <TableRow>
@@ -568,7 +566,7 @@ export default function AdminStudentsPage() {
                                                 <div className="h-12 w-12 bg-slate-50 rounded-xl flex items-center justify-center">
                                                     <Users className="h-6 w-6 text-slate-200" />
                                                 </div>
-                                                <p className="text-slate-500 font-semibold text-sm">No students or leads found.</p>
+                                                <p className="text-slate-500 font-semibold text-sm">No students found.</p>
                                             </div>
                                         </TableCell>
                                     </TableRow>
@@ -577,117 +575,126 @@ export default function AdminStudentsPage() {
                         </Table>
                     ) : (
                         <div className="p-6">
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {displayData.length > 0 ? (
-                                    displayData.map((student) => (
-                                        <Card
-                                            key={student.id}
-                                            className="border border-slate-200 bg-white hover:shadow-md transition-shadow rounded-2xl overflow-hidden group cursor-pointer"
-                                            onClick={() => openStudentDetails(student)}
-                                        >
-                                            <CardContent className="p-6 space-y-4">
-                                                <div className="flex items-start justify-between">
-                                                    <div className="relative">
-                                                        <Avatar className="h-14 w-14 border-2 border-slate-100 shadow-sm">
-                                                            <AvatarImage src={student.avatar_url} />
-                                                            <AvatarFallback className={`bg-${student.type === 'registered' ? 'blue' : 'orange'}-100 text-${student.type === 'registered' ? 'blue' : 'orange'}-600 font-bold text-lg`}>
-                                                                {student.full_name?.charAt(0) || "S"}
-                                                            </AvatarFallback>
-                                                        </Avatar>
-                                                        <div className={`absolute -bottom-0.5 -right-0.5 h-5 w-5 rounded-full border-2 border-white ${student.type === 'registered' ? 'bg-blue-500' : 'bg-orange-500'} flex items-center justify-center shadow-sm`}>
-                                                            {student.type === 'registered' ? <CheckCircle2 className="h-3 w-3 text-white" /> : <TrendingUp className="h-3 w-3 text-white" />}
-                                                        </div>
-                                                    </div>
-                                                    <Badge variant="secondary" className={`border-0 px-2 py-0.5 rounded font-semibold text-[10px] uppercase tracking-wide ${student.type === 'registered'
-                                                        ? 'bg-blue-50 text-blue-600'
-                                                        : 'bg-orange-50 text-orange-600'
-                                                        }`}>
-                                                        {student.type === 'registered' ? 'Student' : 'Lead'}
-                                                    </Badge>
-                                                </div>
+                            {displayData.length > 0 ? (
+                                <div className="space-y-8">
+                                    {studentsByMonth.map((group) => (
+                                        <div key={group.key} className="space-y-3">
+                                            <div className="px-1 flex items-center justify-between gap-3">
+                                                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700">{group.label}</h3>
+                                                <p className="text-xs font-semibold text-slate-400">
+                                                    {group.range} • {group.students.length} {group.students.length === 1 ? "student" : "students"}
+                                                </p>
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                                {group.students.map((student) => (
+                                                    <Card
+                                                        key={student.id}
+                                                        className="border border-slate-200 bg-white hover:shadow-md transition-shadow rounded-2xl overflow-hidden group cursor-pointer"
+                                                        onClick={() => openStudentDetails(student)}
+                                                    >
+                                                        <CardContent className="p-6 space-y-4">
+                                                            <div className="flex items-start justify-between">
+                                                                <div className="relative">
+                                                                    <Avatar className="h-14 w-14 border-2 border-slate-100 shadow-sm">
+                                                                        <AvatarImage src={student.avatar_url} />
+                                                                        <AvatarFallback className="bg-blue-100 text-blue-600 font-bold text-lg">
+                                                                            {student.full_name?.charAt(0) || "S"}
+                                                                        </AvatarFallback>
+                                                                    </Avatar>
+                                                                    <div className="absolute -bottom-0.5 -right-0.5 h-5 w-5 rounded-full border-2 border-white bg-blue-500 flex items-center justify-center shadow-sm">
+                                                                        <CheckCircle2 className="h-3 w-3 text-white" />
+                                                                    </div>
+                                                                </div>
+                                                                <Badge variant="secondary" className="border-0 px-2 py-0.5 rounded font-semibold text-[10px] uppercase tracking-wide bg-blue-50 text-blue-600">
+                                                                    Student
+                                                                </Badge>
+                                                            </div>
 
-                                                <div className="space-y-0.5">
-                                                    <h3 className="text-lg font-bold text-slate-900 group-hover:text-blue-600 transition-colors truncate">{student.full_name}</h3>
-                                                    <p className="text-[10px] text-slate-400 font-semibold tracking-wide uppercase">ID: {student.id.slice(0, 8)}</p>
-                                                </div>
+                                                            <div className="space-y-0.5">
+                                                                <h3 className="text-lg font-bold text-slate-900 group-hover:text-blue-600 transition-colors truncate">{student.full_name}</h3>
+                                                                <p className="text-[10px] text-slate-400 font-semibold tracking-wide uppercase">ID: {student.id.slice(0, 8)}</p>
+                                                            </div>
 
-                                                <div className="space-y-2.5 pt-1">
-                                                    <div className="flex items-center text-slate-600 font-semibold text-xs">
-                                                        <Mail className="h-3.5 w-3.5 text-slate-400 mr-2.5 shrink-0" />
-                                                        <span className="truncate">{student.email}</span>
-                                                    </div>
-                                                    {student.phone && (
-                                                        <div className="flex items-center text-slate-600 font-semibold text-xs">
-                                                            <Phone className="h-3.5 w-3.5 text-slate-400 mr-2.5 shrink-0" />
-                                                            <span className="truncate">{student.phone}</span>
-                                                        </div>
-                                                    )}
-                                                </div>
+                                                            <div className="space-y-2.5 pt-1">
+                                                                <div className="flex items-center text-slate-600 font-semibold text-xs">
+                                                                    <Mail className="h-3.5 w-3.5 text-slate-400 mr-2.5 shrink-0" />
+                                                                    <span className="truncate">{student.email}</span>
+                                                                </div>
+                                                                {student.phone && (
+                                                                    <div className="flex items-center text-slate-600 font-semibold text-xs">
+                                                                        <Phone className="h-3.5 w-3.5 text-slate-400 mr-2.5 shrink-0" />
+                                                                        <span className="truncate">{student.phone}</span>
+                                                                    </div>
+                                                                )}
+                                                            </div>
 
-                                                <div className="pt-4 border-t border-slate-50 flex items-center justify-between">
-                                                    <div className="flex items-center text-slate-400 font-semibold text-[10px] uppercase tracking-wider">
-                                                        <Calendar className="h-3 w-3 mr-1.5" />
-                                                        {new Date(student.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                                                    </div>
-                                                    <DropdownMenu>
-                                                        <DropdownMenuTrigger asChild>
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                className="h-8 px-3 rounded-lg hover:bg-slate-100 font-bold text-[10px] uppercase tracking-wider"
-                                                                onClick={(event) => event.stopPropagation()}
-                                                            >
-                                                                Actions
-                                                            </Button>
-                                                        </DropdownMenuTrigger>
-                                                        <DropdownMenuContent
-                                                            align="end"
-                                                            className="w-48 rounded-xl border border-slate-200 shadow-xl p-1 bg-white"
-                                                            onClick={(event) => event.stopPropagation()}
-                                                        >
-                                                            <DropdownMenuItem
-                                                                onClick={(event) => {
-                                                                    event.stopPropagation()
-                                                                    openEditDialog(student)
-                                                                }}
-                                                                className="rounded-lg font-semibold py-2 cursor-pointer text-sm text-slate-700 hover:text-slate-900"
-                                                            >
-                                                                <Pencil className="mr-2 h-3.5 w-3.5 text-blue-500" /> Edit Info
-                                                            </DropdownMenuItem>
-                                                            <DropdownMenuItem
-                                                                onClick={(event) => {
-                                                                    event.stopPropagation()
-                                                                    openMessageComposer(student)
-                                                                }}
-                                                                className="rounded-lg font-semibold py-2 cursor-pointer text-sm text-slate-700 hover:text-slate-900"
-                                                            >
-                                                                <Mail className="mr-2 h-3.5 w-3.5 text-slate-400" /> Message
-                                                            </DropdownMenuItem>
-                                                            <DropdownMenuSeparator className="bg-slate-100 my-1" />
-                                                            <DropdownMenuItem
-                                                                className="rounded-lg font-semibold py-2 text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer text-sm"
-                                                                onClick={(event) => {
-                                                                    event.stopPropagation()
-                                                                    handleDeleteStudent(student.id, student.type)
-                                                                }}
-                                                            >
-                                                                <Trash2 className="mr-2 h-3.5 w-3.5" /> Terminate
-                                                            </DropdownMenuItem>
-                                                        </DropdownMenuContent>
-                                                    </DropdownMenu>
-                                                </div>
-                                            </CardContent>
-                                        </Card>
-                                    ))
-                                ) : (
-                                    <div className="col-span-full h-64 flex flex-col items-center justify-center gap-3 bg-slate-50 border border-dashed border-slate-200 rounded-2xl">
-                                        <div className="h-12 w-12 bg-white rounded-xl shadow-sm flex items-center justify-center">
-                                            <Users className="h-6 w-6 text-slate-200" />
+                                                            <div className="pt-4 border-t border-slate-50 flex items-center justify-between">
+                                                                <div className="flex items-center text-slate-400 font-semibold text-[10px] uppercase tracking-wider">
+                                                                    <Calendar className="h-3 w-3 mr-1.5" />
+                                                                    {new Date(student.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                                                </div>
+                                                                <DropdownMenu>
+                                                                    <DropdownMenuTrigger asChild>
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="sm"
+                                                                            className="h-8 px-3 rounded-lg hover:bg-slate-100 font-bold text-[10px] uppercase tracking-wider"
+                                                                            onClick={(event) => event.stopPropagation()}
+                                                                        >
+                                                                            Actions
+                                                                        </Button>
+                                                                    </DropdownMenuTrigger>
+                                                                    <DropdownMenuContent
+                                                                        align="end"
+                                                                        className="w-48 rounded-xl border border-slate-200 shadow-xl p-1 bg-white"
+                                                                        onClick={(event) => event.stopPropagation()}
+                                                                    >
+                                                                        <DropdownMenuItem
+                                                                            onClick={(event) => {
+                                                                                event.stopPropagation()
+                                                                                openEditDialog(student)
+                                                                            }}
+                                                                            className="rounded-lg font-semibold py-2 cursor-pointer text-sm text-slate-700 hover:text-slate-900"
+                                                                        >
+                                                                            <Pencil className="mr-2 h-3.5 w-3.5 text-blue-500" /> Edit Info
+                                                                        </DropdownMenuItem>
+                                                                        <DropdownMenuItem
+                                                                            onClick={(event) => {
+                                                                                event.stopPropagation()
+                                                                                openMessageComposer(student)
+                                                                            }}
+                                                                            className="rounded-lg font-semibold py-2 cursor-pointer text-sm text-slate-700 hover:text-slate-900"
+                                                                        >
+                                                                            <Mail className="mr-2 h-3.5 w-3.5 text-slate-400" /> Message
+                                                                        </DropdownMenuItem>
+                                                                        <DropdownMenuSeparator className="bg-slate-100 my-1" />
+                                                                        <DropdownMenuItem
+                                                                            className="rounded-lg font-semibold py-2 text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer text-sm"
+                                                                            onClick={(event) => {
+                                                                                event.stopPropagation()
+                                                                                handleDeleteStudent(student.id, 'registered')
+                                                                            }}
+                                                                        >
+                                                                            <Trash2 className="mr-2 h-3.5 w-3.5" /> Terminate
+                                                                        </DropdownMenuItem>
+                                                                    </DropdownMenuContent>
+                                                                </DropdownMenu>
+                                                            </div>
+                                                        </CardContent>
+                                                    </Card>
+                                                ))}
+                                            </div>
                                         </div>
-                                        <p className="text-slate-500 font-semibold text-sm">No results found</p>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="col-span-full h-64 flex flex-col items-center justify-center gap-3 bg-slate-50 border border-dashed border-slate-200 rounded-2xl">
+                                    <div className="h-12 w-12 bg-white rounded-xl shadow-sm flex items-center justify-center">
+                                        <Users className="h-6 w-6 text-slate-200" />
                                     </div>
-                                )}
-                            </div>
+                                    <p className="text-slate-500 font-semibold text-sm">No results found</p>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>

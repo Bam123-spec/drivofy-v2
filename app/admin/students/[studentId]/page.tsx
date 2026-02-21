@@ -27,12 +27,64 @@ function formatDate(value?: string | null) {
     })
 }
 
+const SERVICE_LABEL_BY_SLUG: Record<string, string> = {
+    "driving-practice-1hr": "Driving Practice 1 Hour",
+    "driving-practice-2hr": "Driving Practice 2 Hour",
+    "road-test-1hr": "Road Test 1 Hour",
+    "road-test-2hr": "Road Test 2 Hour",
+    "road-test": "Road Test",
+    "ten-hour-package": "10 Hour Package",
+    "10-hour-package": "10 Hour Package",
+    "btw-package": "Behind-the-Wheel Package",
+    "behind-the-wheel-package": "Behind-the-Wheel Package",
+}
+
+function normalizeSlug(value?: string | null) {
+    return String(value || "").trim().toLowerCase().replace(/_/g, "-")
+}
+
+function formatHourFromSlug(slug: string) {
+    const match = slug.match(/(\d+)\s*hr\b/)
+    if (!match?.[1]) return null
+    return `${match[1]} Hour`
+}
+
 function enrollmentLabel(enrollment: any) {
     if (enrollment?.classes?.name) return enrollment.classes.name
-    const serviceType = enrollment?.customer_details?.service_type
+    const details = enrollment?.customer_details || {}
+    const explicitName =
+        enrollment?.package_name ||
+        details?.package_name ||
+        details?.service_name ||
+        details?.product_name ||
+        details?.plan_name
+    if (explicitName) return String(explicitName)
+
+    const rawSlug =
+        details?.plan_slug ||
+        details?.service_slug ||
+        enrollment?.plan_key ||
+        enrollment?.service_slug
+    const slug = normalizeSlug(rawSlug)
+
+    if (slug && SERVICE_LABEL_BY_SLUG[slug]) return SERVICE_LABEL_BY_SLUG[slug]
+
+    if (slug.includes("driving-practice")) {
+        const hours = formatHourFromSlug(slug)
+        return hours ? `Driving Practice ${hours}` : "Driving Practice"
+    }
+
+    if (slug.includes("road-test")) {
+        const hours = formatHourFromSlug(slug)
+        return hours ? `Road Test ${hours}` : "Road Test"
+    }
+
+    const serviceType = details?.service_type
+    if (serviceType === "ROAD_TEST_PACKAGE") return "Road Test"
     if (serviceType === "TEN_HOUR_PACKAGE") return "10 Hour Package"
     if (serviceType === "BTW_PACKAGE") return "Behind-the-Wheel Package"
-    if (serviceType === "DRIVING_PRACTICE_PACKAGE") return "Driving Practice Package"
+    if (serviceType === "DRIVING_PRACTICE_PACKAGE") return "Driving Practice"
+    if (serviceType === "CLASS_ENROLLMENT") return "Class Enrollment"
     return "Driving Service"
 }
 

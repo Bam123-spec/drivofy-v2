@@ -46,12 +46,24 @@ export default function ManageClassPage() {
         return "No time specified"
     }
 
+    const formatClassDate = (value?: string | null) => {
+        if (!value) return "N/A"
+        const raw = String(value)
+        const parsed = /^\d{4}-\d{2}-\d{2}$/.test(raw)
+            ? new Date(`${raw}T00:00:00`)
+            : new Date(raw)
+        if (Number.isNaN(parsed.getTime())) return raw
+        return format(parsed, "MMMM d, yyyy")
+    }
+
     const fetchUpcomingClasses = async () => {
         try {
             setLoading(true)
-            const today = new Date().toISOString().split('T')[0]
+            const today = format(new Date(), "yyyy-MM-dd")
+            const todayStart = new Date()
+            todayStart.setHours(0, 0, 0, 0)
 
-            // Fetch top 6 upcoming DE classes
+            // Fetch active DE classes (not archived, not ended).
             const { data, error } = await supabase
                 .from('classes')
                 .select(`
@@ -60,13 +72,27 @@ export default function ManageClassPage() {
                 `)
                 .eq('class_type', 'DE')
                 .eq('is_archived', false)
-                .gte('end_date', today)
+                .or(`end_date.gte.${today},end_date.is.null`)
                 .order('start_date', { ascending: true })
-                .limit(6)
+                .limit(50)
 
             if (error) throw error
 
-            const baseClasses = data || []
+            const activeClasses = (data || []).filter((cls: any) => {
+                if (!cls.end_date) return true
+                const parsedEnd = new Date(String(cls.end_date))
+                if (Number.isNaN(parsedEnd.getTime())) return true
+
+                if (/^\d{4}-\d{2}-\d{2}$/.test(String(cls.end_date))) {
+                    parsedEnd.setHours(23, 59, 59, 999)
+                }
+
+                return parsedEnd >= todayStart
+            })
+
+            const baseClasses = activeClasses
+                .sort((a: any, b: any) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime())
+                .slice(0, 6)
             const classIds = baseClasses.map((cls: any) => cls.id)
 
             if (classIds.length === 0) {
@@ -182,7 +208,7 @@ export default function ManageClassPage() {
                                     <div className="space-y-2.5">
                                         <div className="flex items-center gap-2.5 text-slate-500 font-medium text-sm">
                                             <Calendar className="h-4 w-4 text-slate-300" />
-                                            <span>Starts {format(new Date(cls.start_date + 'T00:00:00'), "MMMM d, yyyy")}</span>
+                                            <span>Starts {formatClassDate(cls.start_date)}</span>
                                         </div>
                                         <div className="flex items-center gap-2.5 text-slate-500 font-medium text-sm">
                                             <Clock className="h-4 w-4 text-slate-300" />
@@ -199,11 +225,6 @@ export default function ManageClassPage() {
 
                                 <div className="mt-8 pt-6 border-t border-slate-50 flex items-center justify-between">
                                     <div className="flex items-center gap-2">
-                                        <div className="flex -space-x-2">
-                                            {[...Array(3)].map((_, i) => (
-                                                <div key={i} className="h-6 w-6 rounded-full border-2 border-white bg-slate-100" />
-                                            ))}
-                                        </div>
                                         <span className="text-[11px] font-bold text-slate-400 uppercase tracking-tight">Active Roster</span>
                                     </div>
 

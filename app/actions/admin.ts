@@ -125,12 +125,17 @@ export async function enrollStudent(classId: string, studentId: string) {
             .single()
 
         if (student?.email && classData) {
-            // Generate recovery link using Supabase Admin API
+            const configuredStudentPortalUrl = process.env.STUDENT_PORTAL_URL || 'https://portifol.com'
+            const normalizedStudentPortalUrl = configuredStudentPortalUrl.startsWith('http')
+                ? configuredStudentPortalUrl
+                : `https://${configuredStudentPortalUrl}`
+
+            // Generate magic link so students land directly in their portal dashboard.
             const { data: recoveryData, error: recoveryError } = await supabase.auth.admin.generateLink({
-                type: 'recovery',
+                type: 'magiclink',
                 email: student.email,
                 options: {
-                    redirectTo: 'https://portifol.com/student/reset-password?next=/student/dashboard'
+                    redirectTo: `${normalizedStudentPortalUrl}/auth/callback?next=/student/dashboard`
                 }
             })
 

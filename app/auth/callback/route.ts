@@ -7,7 +7,8 @@ export async function GET(request: Request) {
     const { searchParams, origin } = new URL(request.url)
     const code = searchParams.get('code')
     // if "next" is in param, use it as the redirect URL
-    const next = searchParams.get('next') ?? '/dashboard'
+    const nextParam = searchParams.get('next') ?? '/dashboard'
+    const next = nextParam.startsWith('/') ? nextParam : '/dashboard'
 
     if (code) {
         const cookieStore = await cookies()
@@ -48,9 +49,12 @@ export async function GET(request: Request) {
 
             return redirectResponse
         }
+
+        const errorMessage = encodeURIComponent(error.message || 'Your sign-in link is invalid or expired.')
+        const loginHref = encodeURIComponent('https://portifol.com/student/login')
+        return NextResponse.redirect(`${origin}/auth/auth-code-error?reason=expired&message=${errorMessage}&login=${loginHref}`)
     }
 
     // return the user to an error page with instructions
-    return NextResponse.redirect(`${origin}/auth/auth-code-error`)
+    return NextResponse.redirect(`${origin}/auth/auth-code-error?reason=invalid&login=${encodeURIComponent('https://portifol.com/student/login')}`)
 }
-
