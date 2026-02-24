@@ -173,14 +173,22 @@ export async function getEnrolledStudents(classId: string) {
         .from('enrollments')
         .select(`
             id,
+            student_id,
+            user_id,
             grade,
             status,
             enrolled_at,
             btw_credits_granted,
+            first_name,
+            last_name,
+            email,
+            phone,
+            customer_details,
             student:profiles!student_id (
                 id,
                 full_name,
                 email,
+                phone,
                 avatar_url
             )
         `)
@@ -193,14 +201,42 @@ export async function getEnrolledStudents(classId: string) {
         return []
     }
 
-    return data.map((e: any) => ({
-        enrollmentId: e.id,
-        grade: e.grade,
-        ...e.student,
-        status: e.status,
-        enrolledAt: e.enrolled_at,
-        btw_credits_granted: e.btw_credits_granted
-    }))
+    return data.map((e: any) => {
+        const student = Array.isArray(e.student) ? e.student[0] : e.student
+        const customerDetails = (e.customer_details && typeof e.customer_details === "object")
+            ? e.customer_details
+            : {}
+
+        const enrollmentName = [e.first_name, e.last_name].filter(Boolean).join(" ").trim()
+        const full_name =
+            student?.full_name ||
+            customerDetails.name ||
+            enrollmentName ||
+            "Unknown Student"
+        const email =
+            student?.email ||
+            e.email ||
+            customerDetails.email ||
+            null
+        const phone =
+            student?.phone ||
+            e.phone ||
+            customerDetails.phone ||
+            null
+
+        return {
+            enrollmentId: e.id,
+            id: student?.id || e.student_id || e.user_id || e.id,
+            grade: e.grade,
+            full_name,
+            email,
+            phone,
+            avatar_url: student?.avatar_url || null,
+            status: e.status,
+            enrolledAt: e.enrolled_at,
+            btw_credits_granted: e.btw_credits_granted
+        }
+    })
 }
 
 export async function removeStudentFromClass(enrollmentId: string) {
