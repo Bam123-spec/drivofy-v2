@@ -75,8 +75,8 @@ export async function POST(request: Request) {
             const { data: magicLinkData, error: magicLinkError } = await publicSupabase.auth.signInWithOtp({
                 email: existingEmail,
                 options: {
-                    // Student onboarding should always land on the Selam reset-password page.
-                    emailRedirectTo: 'https://selamdrivingschool.com/update-password',
+                    // Student onboarding should always land on the Selam student reset-password page.
+                    emailRedirectTo: 'https://www.selamdrivingschool.com/student/update-password',
                     shouldCreateUser: true,
                     data: {
                         full_name: full_name,

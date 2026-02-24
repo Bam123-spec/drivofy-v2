@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabaseClient"
-import { useRouter } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -18,6 +18,10 @@ export default function UpdatePasswordPage() {
     const [isLoading, setIsLoading] = useState(false)
     const [isCheckingSession, setIsCheckingSession] = useState(true)
     const router = useRouter()
+    const pathname = usePathname()
+    const isStudentResetRoute = pathname?.startsWith("/student/")
+    const expiredLinkRedirect = isStudentResetRoute ? "/student/login" : "/forgot-password"
+    const postResetLoginRedirect = isStudentResetRoute ? "/student/login" : "/login"
 
     useEffect(() => {
         let mounted = true
@@ -39,7 +43,7 @@ export default function UpdatePasswordPage() {
                 if (error) {
                     console.error('[UPDATE_PASSWORD] Error in URL:', error, errorDescription)
                     toast.error(errorDescription || 'Invalid or expired link')
-                    setTimeout(() => router.push('/forgot-password'), 2000)
+                    setTimeout(() => router.push(expiredLinkRedirect), 2000)
                     setIsCheckingSession(false)
                     return
                 }
@@ -55,7 +59,7 @@ export default function UpdatePasswordPage() {
                     if (error) {
                         console.error('[UPDATE_PASSWORD] Error setting session:', error)
                         toast.error('Failed to verify link. Please try again.')
-                        setTimeout(() => router.push('/forgot-password'), 2000)
+                        setTimeout(() => router.push(expiredLinkRedirect), 2000)
                         setIsCheckingSession(false)
                         return
                     }
@@ -149,7 +153,7 @@ export default function UpdatePasswordPage() {
 
                 if (error.message.includes('session_not_found') || error.message.includes('Auth session missing')) {
                     toast.error("Invalid or expired link. Please request a new password reset.")
-                    setTimeout(() => router.push('/forgot-password'), 2000)
+                    setTimeout(() => router.push(expiredLinkRedirect), 2000)
                     return
                 }
 
@@ -163,7 +167,7 @@ export default function UpdatePasswordPage() {
             await supabase.auth.signOut()
 
             setTimeout(() => {
-                router.push("/login")
+                router.push(postResetLoginRedirect)
             }, 1500)
         } catch (error: any) {
             console.error("Error updating password:", error)
