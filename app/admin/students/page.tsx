@@ -131,13 +131,26 @@ export default function AdminStudentsPage() {
             // captured at checkout even if profiles.phone hasn't been synced yet.
             const contactByEmail = new Map<string, { phone?: string | null }>()
             for (const lead of (enrollments || []) as EnrollmentLike[]) {
-                const email = getLeadEmail(lead)?.toLowerCase()
-                if (!email || contactByEmail.has(email)) continue
-                contactByEmail.set(email, { phone: getLeadPhone(lead) })
+                const email = getLeadEmail(lead)?.trim().toLowerCase()
+                if (!email) continue
+
+                const candidatePhone = getLeadPhone(lead)
+                const existing = contactByEmail.get(email)
+
+                // Keep the first row (newest) but backfill phone from older purchases
+                // if the latest enrollment record doesn't include it.
+                if (!existing) {
+                    contactByEmail.set(email, { phone: candidatePhone || null })
+                    continue
+                }
+
+                if (!existing.phone && candidatePhone) {
+                    contactByEmail.set(email, { ...existing, phone: candidatePhone })
+                }
             }
 
             const hydratedStudents = (profiles || []).map((profile: any) => {
-                const email = profile.email?.toLowerCase()
+                const email = profile.email?.trim().toLowerCase()
                 const fallback = email ? contactByEmail.get(email) : null
                 return {
                     ...profile,
