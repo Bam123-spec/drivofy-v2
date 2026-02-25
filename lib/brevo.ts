@@ -86,7 +86,7 @@ export function generateBtwCooldownReadyEmail(userName: string) {
 }
 
 export function generateGradePassingEmail(userName: string, courseName: string, grade: string) {
-    const dashboardLink = 'https://portifol.com/student/behind-the-wheel';
+    const dashboardLink = 'https://www.selamdrivingschool.com/student/login';
 
     return {
         subject: `Congratulations! You've passed ${courseName}`,
