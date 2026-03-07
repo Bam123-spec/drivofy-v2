@@ -229,6 +229,52 @@ export function generateInvitationEmail(userName: string, inviteLink: string, ro
     };
 }
 
+export function generateStudentPortalInstructionsEmail(userName: string) {
+    const loginLink = "https://www.selamdrivingschool.com/student/login"
+
+    return {
+        subject: "Welcome to Selam Driving School - Access Your Student Portal",
+        htmlContent: `
+            <div style="font-family: 'Inter', sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; color: #1e293b; line-height: 1.65;">
+                <div style="text-align: center; margin-bottom: 28px;">
+                    <h1 style="color: #0f172a; font-size: 24px; font-weight: 800; margin: 0; letter-spacing: -0.02em;">SELAM DRIVING SCHOOL</h1>
+                    <div style="height: 4px; width: 40px; background: #2563eb; margin: 12px auto 0; border-radius: 2px;"></div>
+                </div>
+
+                <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 24px; padding: 32px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+                    <h2 style="color: #0f172a; font-size: 22px; font-weight: 800; margin: 0 0 12px 0;">Welcome ${userName} 🎉</h2>
+                    <p style="margin: 0 0 20px 0; font-size: 15px; color: #475569;">
+                        You are now part of the Selam Driving School family. Use the button below to open your student login.
+                    </p>
+
+                    <div style="text-align: center; margin: 22px 0 26px 0;">
+                        <a href="${loginLink}" style="display: inline-block; background: #2563eb; color: #ffffff; padding: 14px 30px; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 15px;">
+                            Open Student Login
+                        </a>
+                    </div>
+
+                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 18px 18px 16px 18px;">
+                        <p style="margin: 0 0 10px 0; font-weight: 700; color: #0f172a;">If you've not logged in to the app yet:</p>
+                        <p style="margin: 0; color: #475569; font-size: 14px;">
+                            Step 1 - Click forget password<br>
+                            Step 2 - Enter Email and click "Send reset link" button<br>
+                            Step 4 - Go to Gmail and click the recent email<br>
+                            Step 5 - Click Reset Password<br>
+                            Step 6 - Enter your new password and clcik "Update Password"<br>
+                            Step 7 - You are part of the Selam Driving School family
+                        </p>
+                    </div>
+
+                    <p style="margin: 20px 0 0 0; font-size: 13px; color: #64748b;">
+                        If the button above doesn't work, copy and paste this link into your browser:<br>
+                        <a href="${loginLink}" style="color: #2563eb; text-decoration: none;">${loginLink}</a>
+                    </p>
+                </div>
+            </div>
+        `
+    }
+}
+
 export function generateClassEnrollmentEmail(userName: string, className: string, startDate: string, recoveryLink: string) {
     return {
         subject: `Enrolled in ${className} - Selam Driving School`,

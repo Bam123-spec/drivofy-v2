@@ -2,8 +2,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { createServerClient } from '@supabase/ssr'
-import { createClient } from '@supabase/supabase-js'
-import { sendTransactionalEmail, generateInvitationEmail } from '@/lib/brevo'
+import { sendTransactionalEmail, generateInvitationEmail, generateStudentPortalInstructionsEmail } from '@/lib/brevo'
 
 function isValidEmail(email: string) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
@@ -56,41 +55,44 @@ export async function POST(request: Request) {
 
         console.log(`[API] Inviting user: ${email} as ${role}`)
 
-        // Students use Supabase Magic Link email flow.
+        // Students use Selam onboarding email flow with login instructions.
         if (role === 'student') {
             const existingEmail = String(email || '').trim().toLowerCase()
-
-            const publicSupabase = createClient(
-                process.env.NEXT_PUBLIC_SUPABASE_URL!,
-                process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-                {
-                    auth: {
-                        autoRefreshToken: false,
-                        persistSession: false,
-                        detectSessionInUrl: false,
-                    },
-                }
-            )
-
-            const { data: magicLinkData, error: magicLinkError } = await publicSupabase.auth.signInWithOtp({
+            const { data: createData, error: createError } = await supabaseAdmin.auth.admin.createUser({
                 email: existingEmail,
-                options: {
-                    // Student onboarding should always land on the Selam student reset-password page.
-                    emailRedirectTo: 'https://www.selamdrivingschool.com/student/update-password',
-                    shouldCreateUser: true,
-                    data: {
-                        full_name: full_name,
-                        phone: phone,
-                        role: role,
-                        organization_id: inviterProfile?.organization_id
-                    }
+                email_confirm: true,
+                user_metadata: {
+                    full_name: full_name,
+                    phone: phone,
+                    role: role,
+                    organization_id: inviterProfile?.organization_id
                 }
             })
 
-            if (magicLinkError) {
-                console.error('Student Magic Link Error:', magicLinkError)
+            const alreadyExists =
+                createError &&
+                createError.message &&
+                createError.message.toLowerCase().includes('already')
+
+            if (createError && !alreadyExists) {
+                console.error('Student Create User Error:', createError)
                 return NextResponse.json(
-                    { error: magicLinkError.message },
+                    { error: createError.message },
+                    { status: 500 }
+                )
+            }
+
+            const { subject, htmlContent } = generateStudentPortalInstructionsEmail(full_name)
+            const emailRes = await sendTransactionalEmail({
+                to: [{ email: existingEmail, name: full_name }],
+                subject,
+                htmlContent
+            })
+
+            if (!emailRes.success) {
+                console.error('Student Onboarding Email Error:', emailRes.error)
+                return NextResponse.json(
+                    { error: 'Student created but onboarding email failed to send.' },
                     { status: 500 }
                 )
             }
@@ -101,7 +103,7 @@ export async function POST(request: Request) {
                     email,
                     role,
                     name: full_name,
-                    source: 'supabase_magic_link'
+                    source: 'student_login_instruction_email'
                 },
                 target_resource: `Student: ${full_name}`,
                 ip_address: 'api_route',
@@ -109,8 +111,8 @@ export async function POST(request: Request) {
 
             return NextResponse.json({
                 success: true,
-                message: 'Student added. Magic link email sent.',
-                user: magicLinkData?.user || null
+                message: 'Student added. Login instructions email sent.',
+                user: createData?.user || null
             })
         }
 
