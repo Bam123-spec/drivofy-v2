@@ -254,7 +254,7 @@ export function generateStudentPortalInstructionsEmail(userName: string) {
                     </div>
 
                     <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 18px 18px 16px 18px;">
-                        <p style="margin: 0 0 10px 0; font-weight: 700; color: #0f172a;">If you've not logged in to the app yet:</p>
+                        <p style="margin: 0 0 10px 0; font-weight: 700; color: #0f172a;">If you've not logged in to your student portal in our website yet and created a password, follow this:</p>
                         <p style="margin: 0; color: #475569; font-size: 14px;">
                             Step 1 - Click forget password<br>
                             Step 2 - Enter Email and click "Send reset link" button<br>
