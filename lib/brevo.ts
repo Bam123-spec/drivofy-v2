@@ -57,7 +57,7 @@ export async function sendTransactionalEmail({ to, subject, htmlContent, sender 
 }
 
 export function generateBtwCooldownReadyEmail(userName: string) {
-    const dashboardLink = 'https://portifol.com/student/behind-the-wheel';
+    const dashboardLink = 'https://www.selamdrivingschool.com/student/behind-the-wheel';
 
     return {
         subject: "You can book your next Behind-the-Wheel session",
@@ -149,8 +149,8 @@ export function generateGradeFailingEmail(userName: string, courseName: string, 
 }
 
 export function generateBtwFinalEmail(userName: string) {
-    const extraPracticeLink = 'https://portifol.com/extra-driving-practice';
-    const roadTestLink = 'https://portifol.com/road-test-service';
+    const extraPracticeLink = 'https://www.selamdrivingschool.com/extra-driving-practice';
+    const roadTestLink = 'https://www.selamdrivingschool.com/road-test-service';
 
     return {
         subject: "Congratulations on completing your Behind-the-Wheel training!",

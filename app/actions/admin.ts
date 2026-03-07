@@ -110,7 +110,7 @@ export async function enrollStudent(classId: string, studentId: string) {
 
     console.log("Enrollment successful")
 
-    // 4. Send Email Notification to Student with Password Recovery Link
+    // 4. Send enrollment email with Selam student portal login link
     try {
         const { data: student } = await supabase
             .from('profiles')
@@ -125,40 +125,20 @@ export async function enrollStudent(classId: string, studentId: string) {
             .single()
 
         if (student?.email && classData) {
-            const configuredStudentPortalUrl = process.env.STUDENT_PORTAL_URL || 'https://portifol.com'
-            const normalizedStudentPortalUrl = configuredStudentPortalUrl.startsWith('http')
-                ? configuredStudentPortalUrl
-                : `https://${configuredStudentPortalUrl}`
-
-            // Generate magic link so students land directly in their portal dashboard.
-            const { data: recoveryData, error: recoveryError } = await supabase.auth.admin.generateLink({
-                type: 'magiclink',
-                email: student.email,
-                options: {
-                    redirectTo: `${normalizedStudentPortalUrl}/auth/callback?next=/student/dashboard`
-                }
-            })
-
-            if (recoveryError) {
-                console.error('Failed to generate recovery link:', recoveryError)
-                // Fallback to basic email without link if recovery fails
-                throw recoveryError
-            }
-
-            const recoveryLink = recoveryData.properties.action_link
+            const studentPortalLoginLink = 'https://www.selamdrivingschool.com/student/login'
 
             const { subject, htmlContent } = generateClassEnrollmentEmail(
                 student.full_name,
                 classData.name,
                 new Date(classData.start_date).toLocaleDateString(),
-                recoveryLink
+                studentPortalLoginLink
             )
             await sendTransactionalEmail({
                 to: [{ email: student.email, name: student.full_name }],
                 subject,
                 htmlContent
             })
-            console.log("✅ Enrollment confirmation email sent to student with recovery link")
+            console.log("✅ Enrollment confirmation email sent to student with Selam portal login link")
         }
     } catch (e) {
         console.error("Failed to send enrollment email:", e)

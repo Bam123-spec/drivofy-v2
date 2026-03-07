@@ -15,7 +15,7 @@ export async function GET(request: Request) {
         }
 
         const supabaseAdmin = createAdminClient()
-        const liveUrl = 'https://portifol.com'
+        const liveUrl = 'https://www.selamdrivingschool.com'
 
         console.log('[TEST] Testing inviteUserByEmail for:', email)
 

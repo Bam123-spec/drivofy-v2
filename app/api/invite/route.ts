@@ -51,7 +51,7 @@ export async function POST(request: Request) {
             .single()
 
         const supabaseAdmin = createAdminClient()
-        const liveUrl = 'https://portifol.com'
+        const liveUrl = 'https://www.selamdrivingschool.com'
 
         console.log(`[API] Inviting user: ${email} as ${role}`)
 

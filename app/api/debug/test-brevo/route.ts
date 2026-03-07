@@ -16,7 +16,7 @@ export async function POST(request: Request) {
             htmlContent: `
                 <div style="font-family: sans-serif; padding: 20px;">
                     <h2>Brevo Integration Test Successful!</h2>
-                    <p>If you're reading this, the Brevo API integration is working correctly for <strong>portifol.com</strong>.</p>
+                    <p>If you're reading this, the Brevo API integration is working correctly for <strong>selamdrivingschool.com</strong>.</p>
                     <p>Time: ${new Date().toLocaleString()}</p>
                 </div>
             `

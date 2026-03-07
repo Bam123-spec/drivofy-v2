@@ -69,7 +69,7 @@ export async function updateAdminUser(userId: string, data: { full_name?: string
 export async function sendPasswordReset(email: string) {
     try {
         const supabase = await createClient()
-        const liveUrl = 'https://portifol.com';
+        const liveUrl = 'https://www.selamdrivingschool.com';
 
         // Use Supabase's native password reset email system
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
