@@ -25,10 +25,12 @@ export function Hero() {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5 }}
-                        className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-sm font-medium text-white/80 backdrop-blur-md transition-colors hover:bg-white/10 hover:border-primary/50"
+                        className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-1.5 text-sm font-medium text-white/95 shadow-[0_0_0_1px_rgba(255,255,255,0.04),0_10px_30px_rgba(0,0,0,0.25)] backdrop-blur-md transition-colors hover:bg-white/15 hover:border-primary/50"
                     >
                         <span className="flex h-2 w-2 rounded-full bg-primary shadow-[0_0_10px_#8b5cf6]" />
-                        <span className="text-gradient">The #1 Platform for Modern Driving Schools</span>
+                        <span className="text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.35)]">
+                            The #1 Platform for Modern Driving Schools
+                        </span>
                     </motion.div>
 
                     {/* Headline */}
