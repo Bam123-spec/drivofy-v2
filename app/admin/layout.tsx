@@ -267,7 +267,7 @@ export default function AdminLayout({
                         <button onClick={() => setSidebarOpen(true)} className="p-2 -ml-2 text-muted-foreground hover:text-primary transition-colors">
                             <Menu className="h-6 w-6" />
                         </button>
-                        <span className="font-bold text-lg text-foreground tracking-tight">Drivofy</span>
+                        <span className="font-bold text-lg text-foreground tracking-tight">Selam</span>
                     </div>
 
                     {/* Desktop Search & Actions */}

@@ -84,10 +84,10 @@ export default function PricingPage() {
         <div className="min-h-screen flex flex-col bg-[#0A0A0B] text-white selection:bg-primary/30">
             <Header />
 
-            <main className="flex-1 pt-40 pb-20">
+            <main className="flex-1 pt-24 pb-20">
                 <div className="container mx-auto px-4">
                     {/* Header Section */}
-                    <div className="max-w-3xl mx-auto text-center mb-20 animate-in fade-in slide-in-from-bottom-6 duration-700 pt-64 md:pt-80">
+                    <div className="max-w-3xl mx-auto text-center mb-16 animate-in fade-in slide-in-from-bottom-6 duration-700">
                         <Badge variant="outline" className="mb-4 bg-white/5 border-white/10 text-white/60 uppercase tracking-widest text-[10px] font-black px-3 py-1">
                             Pricing Plans
                         </Badge>

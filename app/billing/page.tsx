@@ -55,13 +55,13 @@ export default async function BillingPage({ searchParams }: { searchParams: { su
             <Card>
                 <CardHeader>
                     <CardTitle>Subscription Status</CardTitle>
-                    <CardDescription>Manage your Drivofy subscription</CardDescription>
+                    <CardDescription>Manage your Selam Driving School subscription</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                     <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                         <div>
                             <p className="font-medium text-gray-900">Current Plan</p>
-                            <p className="text-sm text-gray-500">Drivofy Pro</p>
+                            <p className="text-sm text-gray-500">Selam Pro</p>
                         </div>
                         <div className="flex items-center gap-4">
                             <SyncBillingButton />

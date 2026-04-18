@@ -6,6 +6,7 @@ import { Menu, X, LogOut, UserIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
+import { usePathname } from "next/navigation"
 import { getUser, logout, mapSupabaseUser, type User } from "@/lib/auth"
 import { supabase } from "@/lib/supabaseClient"
 
@@ -13,6 +14,20 @@ export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [user, setUser] = useState<User | null>(null)
   const router = useRouter()
+  const pathname = usePathname()
+  const isMarketingRoute =
+    pathname === "/" ||
+    pathname.startsWith("/pricing") ||
+    pathname.startsWith("/features") ||
+    pathname.startsWith("/how-it-works") ||
+    pathname.startsWith("/resources") ||
+    pathname.startsWith("/contact") ||
+    pathname.startsWith("/signup") ||
+    pathname.startsWith("/privacy-policy") ||
+    pathname.startsWith("/terms-of-service") ||
+    pathname.startsWith("/services")
+  const brandLogo = isMarketingRoute ? "/drivofy-logo.png" : "/logo.jpg"
+  const brandAlt = isMarketingRoute ? "Drivofy" : "Selam Driving School"
 
   useEffect(() => {
     let active = true
@@ -49,8 +64,8 @@ export function Header() {
           <Link href="/" className="flex items-center gap-2 transition-opacity hover:opacity-80">
             <div className="relative h-32 w-auto flex items-center">
               <Image
-                src="/drivofy-logo.png"
-                alt="Selam Driving School"
+                src={brandLogo}
+                alt={brandAlt}
                 width={320}
                 height={120}
                 className="h-32 w-auto -my-6"

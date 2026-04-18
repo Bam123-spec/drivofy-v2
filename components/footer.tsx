@@ -1,8 +1,28 @@
+"use client"
+
 import Link from "next/link"
 import Image from "next/image"
+import { usePathname } from "next/navigation"
 
 export function Footer() {
   const currentYear = new Date().getFullYear()
+  const pathname = usePathname()
+  const isMarketingRoute =
+    pathname === "/" ||
+    pathname.startsWith("/pricing") ||
+    pathname.startsWith("/features") ||
+    pathname.startsWith("/how-it-works") ||
+    pathname.startsWith("/resources") ||
+    pathname.startsWith("/contact") ||
+    pathname.startsWith("/signup") ||
+    pathname.startsWith("/privacy-policy") ||
+    pathname.startsWith("/terms-of-service") ||
+    pathname.startsWith("/services")
+  const brandLogo = isMarketingRoute ? "/drivofy-logo.png" : "/logo.jpg"
+  const brandAlt = isMarketingRoute ? "Drivofy" : "Selam Driving School"
+  const brandCopyright = isMarketingRoute
+    ? "Drivofy - Driving School Management Software"
+    : "Selam Driving School"
 
   return (
     <footer className="border-t border-border bg-muted/30">
@@ -11,8 +31,8 @@ export function Footer() {
           <div className="md:col-span-2">
             <Link href="/" className="flex items-center mb-4">
               <Image
-                src="/drivofy-logo.png"
-                alt="Selam Driving School"
+                src={brandLogo}
+                alt={brandAlt}
                 width={180}
                 height={50}
                 className="h-16 w-auto"
@@ -82,7 +102,7 @@ export function Footer() {
         </div>
 
         <div className="mt-12 pt-8 border-t border-border flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-muted-foreground text-center md:text-left">© {currentYear} Selam Driving School. All rights reserved.</p>
+          <p className="text-sm text-muted-foreground text-center md:text-left">© {currentYear} {brandCopyright}. All rights reserved.</p>
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <Link href="/privacy-policy" className="hover:text-foreground transition-colors">
               Privacy Policy
