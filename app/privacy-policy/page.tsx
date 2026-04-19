@@ -1,5 +1,13 @@
+import type { Metadata } from "next"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
+
+export const metadata: Metadata = {
+  title: "Privacy Policy | Drivofy",
+  description:
+    "Privacy policy for Drivofy, the driving school software platform for scheduling, student management, and automation.",
+  keywords: ["driving school software", "privacy policy", "drivofy"],
+}
 
 export default function PrivacyPolicyPage() {
   return (

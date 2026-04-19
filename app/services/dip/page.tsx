@@ -5,8 +5,14 @@ import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 
 export const metadata = {
-    title: "Driver Improvement Program (DIP) | Drivofy",
-    description: "MVA-approved Driver Improvement Program for point reduction or court referrals.",
+    title: "Driver Improvement Program (DIP) | Drivofy Driving School Software",
+    description: "MVA-approved Driver Improvement Program for point reduction or court referrals, powered by Drivofy driving school software.",
+    keywords: [
+        "driving school software",
+        "driving school management software",
+        "driver improvement program",
+        "drivofy",
+    ],
 }
 
 import { cookies } from "next/headers"

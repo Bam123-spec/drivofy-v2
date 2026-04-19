@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import Link from "next/link"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
@@ -16,6 +17,18 @@ import {
   Shield,
   CheckCircle2,
 } from "lucide-react"
+
+export const metadata: Metadata = {
+  title: "Driving School Software Resources | Drivofy",
+  description:
+    "Guides and resources for driving school owners covering scheduling, automations, student retention, and growth.",
+  keywords: [
+    "driving school software",
+    "driving school management software",
+    "driving school resources",
+    "driving school automation",
+  ],
+}
 
 const insights = [
   {

@@ -1,5 +1,13 @@
+import type { Metadata } from "next"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
+
+export const metadata: Metadata = {
+  title: "Terms of Service | Drivofy",
+  description:
+    "Terms of service for Drivofy, the driving school software platform for scheduling, bookings, and student operations.",
+  keywords: ["driving school software", "terms of service", "drivofy"],
+}
 
 export default function TermsOfServicePage() {
   return (

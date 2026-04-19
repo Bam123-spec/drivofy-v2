@@ -6,8 +6,14 @@ import { Footer } from "@/components/footer"
 import { cookies } from "next/headers"
 
 export const metadata = {
-    title: "3-Hour Alcohol & Drug Program (RSEP) | Drivofy",
-    description: "Complete your MVA-required 3-Hour Alcohol & Drug Education Program online.",
+    title: "3-Hour Alcohol & Drug Program (RSEP) | Drivofy Driving School Software",
+    description: "Complete your MVA-required 3-Hour Alcohol & Drug Education Program online with Drivofy driving school software.",
+    keywords: [
+        "driving school software",
+        "driving school management software",
+        "RSEP",
+        "drivofy",
+    ],
 }
 
 export default async function RSEPPage() {
