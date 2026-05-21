@@ -25,7 +25,7 @@ export function CTA() {
                         <span className="text-gradient-primary">driving school?</span>
                     </h2>
                     <p className="text-xl text-white/60 mb-12 max-w-2xl mx-auto">
-                        Join 500+ driving schools that have switched to Drivofy.
+                        Join 5+ driving schools that have switched to Drivofy.
                         Start your 30-day free trial today.
                     </p>
 
