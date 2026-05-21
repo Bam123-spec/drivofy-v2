@@ -3,7 +3,7 @@
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { ArrowRight, CheckCircle, Play, Star } from "lucide-react"
+import { ArrowRight, Building2, Play, ShieldCheck, Zap } from "lucide-react"
 import { GlassCard } from "@/components/ui/glass-card"
 
 export function Hero() {
@@ -79,20 +79,36 @@ export function Hero() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ duration: 1, delay: 0.5 }}
-                        className="mt-12 flex items-center gap-4 text-sm text-white/40"
+                        className="mt-12 flex flex-col items-center gap-4 text-sm text-white/40 sm:flex-row"
                     >
-                        <div className="flex -space-x-2">
-                            {[1, 2, 3, 4].map((i) => (
-                                <div key={i} className="h-8 w-8 rounded-full border-2 border-[#0A0A0B] bg-white/10" />
-                            ))}
-                        </div>
-                        <div className="flex items-center gap-1">
-                            <div className="flex">
-                                {[1, 2, 3, 4, 5].map((i) => (
-                                    <Star key={i} className="h-3.5 w-3.5 fill-primary text-primary" />
-                                ))}
+                        <div className="inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/5 px-4 py-2.5 text-white/70 shadow-[0_0_0_1px_rgba(255,255,255,0.02)] backdrop-blur-md">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/20 text-primary">
+                                <Building2 className="h-4 w-4" />
                             </div>
-                            <span className="font-medium text-white/80">4.9/5 from 5+ schools</span>
+                            <div className="flex flex-col items-start leading-tight">
+                                <span className="text-xs uppercase tracking-[0.2em] text-white/40">Trusted by</span>
+                                <span className="font-medium text-white/85">5+ driving schools</span>
+                            </div>
+                        </div>
+
+                        <div className="inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/5 px-4 py-2.5 text-white/70 shadow-[0_0_0_1px_rgba(255,255,255,0.02)] backdrop-blur-md">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/15 text-blue-300">
+                                <ShieldCheck className="h-4 w-4" />
+                            </div>
+                            <div className="flex flex-col items-start leading-tight">
+                                <span className="text-xs uppercase tracking-[0.2em] text-white/40">Automated</span>
+                                <span className="font-medium text-white/85">Scheduling & payments</span>
+                            </div>
+                        </div>
+
+                        <div className="inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/5 px-4 py-2.5 text-white/70 shadow-[0_0_0_1px_rgba(255,255,255,0.02)] backdrop-blur-md">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-300">
+                                <Zap className="h-4 w-4" />
+                            </div>
+                            <div className="flex flex-col items-start leading-tight">
+                                <span className="text-xs uppercase tracking-[0.2em] text-white/40">Result</span>
+                                <span className="font-medium text-white/85">4.9/5 from 5+ schools</span>
+                            </div>
                         </div>
                     </motion.div>
                 </div>
